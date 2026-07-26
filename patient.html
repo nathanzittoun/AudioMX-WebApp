@@ -26,13 +26,7 @@
     </div>
   </section>
 
-  <!-- Cache-bust so the pop-out never runs a stale copy of these scripts. -->
-  <script>
-    (function () {
-      var v = Date.now();
-      document.write('<scr' + 'ipt src="protocol.js?v=' + v + '"><\/scr' + 'ipt>');
-      document.write('<scr' + 'ipt src="patient-window.js?v=' + v + '"><\/scr' + 'ipt>');
-    })();
-  </script>
+  <script src="%BASE_URL%legacy/protocol.js"></script>
+  <script src="%BASE_URL%legacy/patient-window.js"></script>
 </body>
 </html>

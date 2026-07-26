@@ -450,28 +450,24 @@
     <div id="log" class="logBox"></div>
   </div>
 
-  <script src="app.js"></script>
-  <script src="noiseAttenuator.js"></script>
-  <script src="analysis.js"></script>
-  <script src="audio.js"></script>
-  <script src="serial.js"></script>
-  <script src="computerMic.js"></script>
-  <script src="wifi.js"></script>
-  <script src="db.js"></script>
-  <script src="zip.js"></script>
-  <script src="protocol.js"></script>
-  <script src="features.js"></script>
-  <script src="fhir.js"></script>
-  <!-- Cache-bust the OAuth scripts so a stale copy can never break the Epic
-       login (GitHub Pages + browsers cache .js, which caused redirect drift). -->
-  <script>
-    (function () {
-      var v = Date.now();
-      document.write('<scr' + 'ipt src="smart.js?v=' + v + '"><\/scr' + 'ipt>');
-      document.write('<scr' + 'ipt src="ehr.js?v=' + v + '"><\/scr' + 'ipt>');
-    })();
-  </script>
-  <script src="clinical.js"></script>
-  <script src="main.js"></script>
+  <!-- Not yet converted to ES modules, so Vite copies these verbatim from
+       public/legacy/. Load order is load-bearing: every file shares one global
+       scope and app.js must define the shared state before anything reads it. -->
+  <script src="%BASE_URL%legacy/app.js"></script>
+  <script src="%BASE_URL%legacy/noiseAttenuator.js"></script>
+  <script src="%BASE_URL%legacy/analysis.js"></script>
+  <script src="%BASE_URL%legacy/audio.js"></script>
+  <script src="%BASE_URL%legacy/serial.js"></script>
+  <script src="%BASE_URL%legacy/computerMic.js"></script>
+  <script src="%BASE_URL%legacy/wifi.js"></script>
+  <script src="%BASE_URL%legacy/db.js"></script>
+  <script src="%BASE_URL%legacy/zip.js"></script>
+  <script src="%BASE_URL%legacy/protocol.js"></script>
+  <script src="%BASE_URL%legacy/features.js"></script>
+  <script src="%BASE_URL%legacy/fhir.js"></script>
+  <script src="%BASE_URL%legacy/smart.js"></script>
+  <script src="%BASE_URL%legacy/ehr.js"></script>
+  <script src="%BASE_URL%legacy/clinical.js"></script>
+  <script src="%BASE_URL%legacy/main.js"></script>
 </body>
 </html>
