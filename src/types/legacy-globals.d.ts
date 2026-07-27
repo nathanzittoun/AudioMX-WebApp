@@ -49,7 +49,6 @@ declare function plotNoiseSpectrum(): void;
 // ---- analysis (analysis.js) ----
 declare function drawSpectrumBackground(minFreq?: number, maxFreq?: number): void;
 declare function drawLiveSpectrum(): void;
-declare function clearLiveSpectrogram(): void;
 declare function calibrateNoiseFloor(): void;
 declare function plotNoiseSpectrum(): void;
 declare function resetFftZoom(): void;

@@ -85,6 +85,52 @@ T("axe frequentiel jusqu'a Nyquist", dsp && Math.abs(dsp.nyquist - 8000) < 10, d
 T("dbfs / clamp / goertzel publies", (await ev(
   "Math.round(dbfs(32768))===0 && clamp(5,0,1)===1 && typeof goertzelMagnitude==='function'")) === true);
 
+// --- 1a1. spectrogrammes : on lit les pixels, pas le code ---
+// Ces fonctions ne renvoient rien et ne tournent qu'avec un micro branche :
+// une constante disparue y a vecu 4 commits en jetant une ReferenceError par
+// frame, sans que rien ne le signale. Le canvas, lui, ne ment pas.
+const sg = await ev(`(()=>{
+  const cv = document.getElementById('liveSpectrogram');
+  const c = cv.getContext('2d');
+  clearLiveSpectrogram();
+  // Apres effacement : #0e0e14 partout.
+  const blank = c.getImageData(0, 0, cv.width, cv.height).data;
+  let cleared = true;
+  for (let i = 0; i < blank.length; i += 4)
+    if (blank[i] !== 14 || blank[i+1] !== 14 || blank[i+2] !== 20) { cleared = false; break; }
+
+  // Trame FFT synthetique : toute l'energie dans les basses frequences.
+  const bins = 512, mag = new Float32Array(bins);
+  for (let i = 0; i < bins; i++) mag[i] = i < 32 ? -25 : -95;
+  pushLiveSpectrogramColumn({ magnitudes: mag, fftSize: 1024 }, performance.now());
+
+  const col = c.getImageData(cv.width - 1, 0, 1, cv.height).data;
+  const lum = y => col[y*4] + col[y*4+1] + col[y*4+2];
+  return { cleared, top: lum(0), bottom: lum(cv.height - 1) };
+})()`);
+T("spectrogramme live efface au noir", sg?.cleared === true);
+// y=0 est le Nyquist, y=height le continu : l'energie basse doit eclairer le bas.
+T("spectrogramme live peint la colonne (bas clair, haut sombre)",
+  sg && sg.bottom > 400 && sg.top < 100, sg ? `bas ${sg.bottom} / haut ${sg.top}` : "-");
+
+const ssg = await ev(`(()=>{
+  const cv = document.getElementById('analysisSpectrogram');
+  const n = 16384, s = new Int16Array(n);
+  for (let i = 0; i < n; i++) s[i] = Math.round(12000 * Math.sin(2*Math.PI*1000*i/16000));
+  renderStaticSpectrogram(cv.getContext('2d'), cv, s, 16000);
+  const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+  // La ligne la plus lumineuse est la frequence dominante.
+  let bestY = -1, best = -1;
+  for (let y = 0; y < cv.height; y++) {
+    let sum = 0;
+    for (let x = 0; x < cv.width; x++) { const p = (y*cv.width + x)*4; sum += d[p] + d[p+1] + d[p+2]; }
+    if (sum > best) { best = sum; bestY = y; }
+  }
+  return { freq: (1 - bestY/cv.height) * 8000 };
+})()`);
+T("spectrogramme statique place le 1 kHz au bon endroit",
+  ssg && Math.abs(ssg.freq - 1000) < 300, ssg ? Math.round(ssg.freq) + " Hz" : "-");
+
 // --- 1a0. WAV: aller-retour complet, sans micro ---
 const wav = await ev(`(()=>{
   const s = Int16Array.from([0, 1000, -1000, 32767, -32768, 42]);

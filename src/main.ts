@@ -21,6 +21,7 @@ import { connectWifiMems } from "./device/wifiSource";
 import { initEhr } from "./ehr/ehrPanel";
 import { clearAllData, restoreRecordings } from "./storage/library";
 import { renderRecordings, setAudioMode, updateAnalysisSourceSelect } from "./rnd/libraryView";
+import { clearLiveSpectrogram } from "./ui/canvas/spectrogram";
 
 function boot(): void {
   // ---- navigation ----

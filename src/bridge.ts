@@ -53,6 +53,9 @@ import { clamp, dbfs, dbToBar, goertzelMagnitude } from "./core/dsp/levels";
 import { accumulateFftFrame, fftRadix2, hannWindow, nextPowerOfTwo } from "./core/dsp/fft";
 import { computeSpectrum, findDominantFrequencies, interpretSpectrum } from "./core/dsp/spectrum";
 import { spectrogramColor } from "./ui/canvas/spectrogramColor";
+import {
+  clearLiveSpectrogram, pushLiveSpectrogramColumn, renderStaticSpectrogram,
+} from "./ui/canvas/spectrogram";
 import { ctx2d, el } from "./ui/dom";
 import { extractVoiceFeatures, formatFeatures } from "./core/features";
 import { createZip } from "./core/zip";
@@ -221,6 +224,9 @@ Object.assign(globalThis, {
   nextPowerOfTwo, hannWindow, fftRadix2, accumulateFftFrame,
   computeSpectrum, findDominantFrequencies, interpretSpectrum,
   spectrogramColor,
+  // Spectrogram drawing: app.js clears it per take, analysis.js feeds the live
+  // one and asks for the static one when the FFT is replotted.
+  clearLiveSpectrogram, pushLiveSpectrogramColumn, renderStaticSpectrogram,
   // audio.js -> analyzeRecording() jumps to the analyse view.
   showTab,
   // audio.js stamps features onto a take; clinical.js renders them in the chart.
