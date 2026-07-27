@@ -13,6 +13,8 @@
 // still making the owner obvious at the call site, and leaves room to swap any
 // property for a real accessor later without touching callers.
 
+import type { VoiceFeatures } from "./features";
+
 /** Which microphone is selected, and how it is attached. */
 export type SourceId = "mems" | "computer";
 /** How the MEMS device is reached. Meaningless when sourceId is "computer". */
@@ -60,4 +62,75 @@ export const capture = {
    * `noiseAttenuatorEnabled`, wired up in bridge.ts.
    */
   noiseFilterEnabled: false,
+};
+
+/**
+ * What binds a take to the exam that produced it. Null for R&D takes, which
+ * have no patient. Today this is smuggled through a shared global that
+ * clinical.js sets and audio.js reads; it becomes an explicit parameter to
+ * saveRecording() once the recorder is extracted.
+ */
+export interface RecordingMeta {
+  patientId: string;
+  patientName: string;
+  sessionId: string;
+  testId: string;
+  testName: string;
+  notes: string;
+}
+
+/** One stored take. Mirrors the IndexedDB "recordings" schema. */
+export interface Recording {
+  id: number;
+  number: number;
+  frames: number;
+  values: number;
+  duration: number;
+  channels: number;
+  mode: ChannelMode;
+  source: string;
+  createdAt: Date | string;
+  /** Mono, de-interleaved copy used for FFT and feature extraction. */
+  analysisSamples: Int16Array;
+  blob: Blob;
+  filtered: Int16Array | null;
+  features: VoiceFeatures | null;
+  meta: RecordingMeta | null;
+  name?: string;
+}
+
+/** Result of an averaged FFT over a selected region. */
+export interface Spectrum {
+  frequencies: Float64Array;
+  magnitudes: Float64Array;
+  fftSize: number;
+  sampleRate: number;
+  averagedFrames: number;
+}
+
+/** Which handle of the analysis selection is being dragged. */
+export type DragMode = null | "left" | "right" | "middle";
+
+/** Saved takes for this browser, newest first. */
+export const library = {
+  recordings: [] as Recording[],
+  /** Human-facing counter shown on each card; not the storage key. */
+  nextIndex: 1,
+};
+
+/** Top-level area: "rnd" (Record/Analyze/Library) or "clinical". */
+export const ui = {
+  mode: "rnd" as "rnd" | "clinical",
+};
+
+/** R&D analysis view state. Not used by the clinical mode. */
+export const analysis = {
+  lastSpectrum: null as Spectrum | null,
+  lastSpectrumSourceName: "none",
+  /** Selection bounds as fractions of the waveform, 0..1. */
+  selectionStart: 0,
+  selectionEnd: 1,
+  dragMode: null as DragMode,
+  /** dBFS reference captured from a silent take, or null when uncalibrated. */
+  calibratedNoiseFloorDb: null as number | null,
 };

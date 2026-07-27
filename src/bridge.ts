@@ -19,7 +19,7 @@ import { showTab } from "./ui/tabs";
 import { extractVoiceFeatures, formatFeatures } from "./core/features";
 import { createZip } from "./core/zip";
 import { PROTOCOL_TESTS, getProtocolTest } from "./core/protocol";
-import { capture, device } from "./core/state";
+import { analysis, capture, device, library, ui } from "./core/state";
 import {
   resetNoiseAttenuator,
   processNoiseAttenuator,
@@ -57,6 +57,15 @@ alias("inputSource", device, "sourceId");
 alias("memsConnectionType", device, "transport");
 alias("isConnected", device, "connected");
 alias("byteBuffer", device, "byteBuffer");
+alias("recordings", library, "recordings");
+alias("recordingIndex", library, "nextIndex");
+alias("appMode", ui, "mode");
+alias("lastSpectrum", analysis, "lastSpectrum");
+alias("lastSpectrumSourceName", analysis, "lastSpectrumSourceName");
+alias("analysisSelectionStart", analysis, "selectionStart");
+alias("analysisSelectionEnd", analysis, "selectionEnd");
+alias("analysisDragMode", analysis, "dragMode");
+alias("calibratedNoiseFloorDb", analysis, "calibratedNoiseFloorDb");
 
 Object.assign(globalThis, {
   // audio.js -> analyzeRecording() jumps to the analyse view.

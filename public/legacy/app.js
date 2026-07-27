@@ -12,8 +12,6 @@ let writer;
 // isRecording, audioMode and noiseAttenuatorEnabled. A `let` here would shadow
 // them and split the source of truth.
 
-// Top-level app area: "rnd" (Record/Analyze/Library) or "clinical".
-let appMode = "rnd";
 // Metadata attached to the next saved recording (set by the clinical flow).
 let activeTestMeta = null;
 
@@ -32,17 +30,6 @@ let computerCaptureRate = SAMPLE_RATE;
 
 
 
-let recordings = [];
-let recordingIndex = 1;
-
-let calibratedNoiseFloorDb = null;
-
-let lastSpectrum = null;
-let lastSpectrumSourceName = "none";
-let analysisSelectionStart = 0;
-let analysisSelectionEnd = 1;
-let analysisDragMode = null;
-// options: null, "left", "right", "middle"
 
 const connectBtn = document.getElementById("connectBtn");
 const startBtn = document.getElementById("startBtn");
