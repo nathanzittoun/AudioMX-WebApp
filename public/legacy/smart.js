@@ -18,6 +18,16 @@
 // the Phase 4 items (backend token handling, audit, BAA) — do not point this
 // at production patient data as-is.
 
+// The directory the app is served from, always ending in "/". Dropping the
+// trailing filename means index.html, patient.html and a bare directory URL all
+// collapse to the same value, which is what Epic has registered.
+//   /AudioMX-WebApp/index.html -> /AudioMX-WebApp/
+//   /AudioMX-WebApp/           -> /AudioMX-WebApp/
+//   /                          -> /
+function smartAppRoot() {
+  return location.origin + location.pathname.replace(/[^/]*$/, "");
+}
+
 const SMART = {
   // ---- EDIT AFTER REGISTERING ON fhir.epic.com --------------------------
   // Epic app NON-PRODUCTION Client ID (public client — not a secret; it also
@@ -28,12 +38,13 @@ const SMART = {
   // Epic sandbox; swap for WCM's real FHIR base later.
   iss: "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4",
 
-  // The redirect URI Epic sends you back to. PINNED to one fixed URL so it
-  // can't drift with how the page is opened — a mismatch is exactly what
-  // triggers Epic's "The request is invalid". Register this EXACT string on
-  // Epic. Epic will send you back here (the app root serves index.html, which
-  // loads ehr.js and finishes the login), no matter which page you launched from.
-  redirectUri: "https://nathanzittoun.github.io/esp32-usb-mic-control/",
+  // The redirect URI Epic sends you back to. Derived from where the page is
+  // actually served rather than pinned, so dev (http://localhost:5173/) and
+  // prod (the Pages URL) each hand Epic their own registered address, and a
+  // repo rename can't silently break the round-trip the way a pinned string
+  // did. Every value this can produce must be registered on Epic verbatim.
+  // Resolves to the app root, so it holds whichever page launched the login.
+  redirectUri: smartAppRoot(),
 
   // What we ask permission to do — must line up with the scopes registered on
   // Epic. Reading Patient + Observation is the proof; DocumentReference is the
@@ -79,25 +90,15 @@ async function smartDiscover() {
 
 // ---- step 1: start the login -------------------------------------------
 
-// True when the page is being served from where the pinned redirect points,
-// so Epic will accept the round-trip. Launching from file:// or 127.0.0.1
-// (Live Server) sends a redirect Epic doesn't know and fails with
-// "The request is invalid".
-function smartOriginOk() {
-  try { return SMART.redirectUri.indexOf(location.origin + location.pathname) === 0 ||
-               SMART.redirectUri === location.origin + "/"; }
-  catch (e) { return false; }
-}
-
 async function smartLaunch() {
   if (!SMART.clientId || SMART.clientId.indexOf("PASTE_") === 0) {
     throw new Error("Set SMART.clientId to your Epic non-production Client ID first.");
   }
-  // Warn early if the current page can't be the redirect target — otherwise
-  // Epic just shows an opaque "request is invalid" after the user logs in.
-  if (location.protocol === "file:" || /^(127\.0\.0\.1|localhost)/.test(location.host)) {
-    throw new Error("Open the app at " + SMART.redirectUri +
-      " (not a local/Live Server URL) — Epic only accepts the registered address.");
+  // file:// has no usable origin, so there is nothing Epic could redirect back
+  // to. A localhost dev server is fine as long as its exact URL is registered.
+  if (location.protocol === "file:") {
+    throw new Error("Open the app over http(s) (npm run dev) — a file:// URL " +
+      "cannot be an OAuth redirect target.");
   }
 
   const cfg = await smartDiscover();
@@ -167,8 +168,10 @@ async function smartHandleRedirect() {
     fhirBase: SMART.iss
   };
 
-  // Strip ?code=… from the address bar so a refresh doesn't re-run it.
-  history.replaceState({}, "", SMART.redirectUri);
+  // Strip ?code=… from the address bar so a refresh doesn't re-run it. Uses the
+  // live pathname rather than redirectUri: replaceState throws a SecurityError
+  // on anything cross-origin, and this keeps the user on the page they're on.
+  history.replaceState({}, "", location.pathname);
   return true;
 }
 

@@ -29,16 +29,16 @@ function ehrPatientName(p) {
 function renderEhrHint() {
   const hint = ehrEl("cEhrHint");
   if (!hint) return;
-  const onHost = !(location.protocol === "file:" ||
-    /^(127\.0\.0\.1|localhost)/.test(location.host));
-  if (onHost) {
+  // redirectUri now follows wherever the app is served, so localhost is a valid
+  // target once registered. Only file:// can never work.
+  if (location.protocol === "file:") {
+    hint.className = "clinEhrHint warn";
+    hint.textContent = "⚠ Open the app over http(s) (npm run dev) — a file:// " +
+      "URL cannot be an OAuth redirect target.";
+  } else {
     hint.className = "clinEhrHint";
     hint.textContent = "Sign-in returns to " + SMART.redirectUri +
-      " — this must be registered on Epic.";
-  } else {
-    hint.className = "clinEhrHint warn";
-    hint.textContent = "⚠ Open the app at " + SMART.redirectUri +
-      " to connect to Epic — a local/Live Server URL will be rejected.";
+      " — this exact URL must be registered on Epic.";
   }
 }
 
