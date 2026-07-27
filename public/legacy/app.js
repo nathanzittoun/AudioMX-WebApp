@@ -7,18 +7,16 @@ let port;
 let reader;
 let writer;
 
-let inputSource = "mems";
-// options: "mems", "computer"
-// noiseAttenuatorEnabled now lives in src/core/state.ts; bridge.ts installs a
-// globalThis accessor. A `let` here would shadow it and split the source of truth.
+// Device and capture state now live in src/core/state.ts; bridge.ts installs
+// globalThis accessors for inputSource, memsConnectionType, isConnected,
+// isRecording, audioMode and noiseAttenuatorEnabled. A `let` here would shadow
+// them and split the source of truth.
 
 // Top-level app area: "rnd" (Record/Analyze/Library) or "clinical".
 let appMode = "rnd";
 // Metadata attached to the next saved recording (set by the clinical flow).
 let activeTestMeta = null;
 
-let memsConnectionType = "usb";
-// options: "usb", "wifi"
 
 let wifiSocket = null;
 let wifiConnected = false;
@@ -32,8 +30,6 @@ let computerMicReady = false;
 // for. computerMic.js resamples to SAMPLE_RATE when they differ.
 let computerCaptureRate = SAMPLE_RATE;
 
-let isConnected = false;
-let isRecording = false;
 
 let byteBuffer = [];
 
@@ -42,7 +38,6 @@ let currentFrameCount = 0;
 let currentValueCount = 0;
 let liveSamples = [];
 
-let audioMode = "stereo";
 
 let recordings = [];
 let recordingIndex = 1;

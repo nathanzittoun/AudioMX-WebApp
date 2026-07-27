@@ -13,8 +13,26 @@
 // still making the owner obvious at the call site, and leaves room to swap any
 // property for a real accessor later without touching callers.
 
+/** Which microphone is selected, and how it is attached. */
+export type SourceId = "mems" | "computer";
+/** How the MEMS device is reached. Meaningless when sourceId is "computer". */
+export type Transport = "usb" | "wifi";
+/** Which of the two MEMS channels ends up in the stored take. */
+export type ChannelMode = "stereo" | "left" | "right";
+
+/** The selected input and its connection status. */
+export const device = {
+  sourceId: "mems" as SourceId,
+  transport: "usb" as Transport,
+  /** True once the transport is open and streaming is possible. */
+  connected: false,
+};
+
 /** Live capture settings and flags. */
 export const capture = {
+  /** True between startRecording() and stopRecording(). */
+  recording: false,
+  channelMode: "stereo" as ChannelMode,
   /**
    * When ON the cleanup chain is baked into the stored take; when OFF the raw
    * signal is stored. Legacy code still reads this as the global

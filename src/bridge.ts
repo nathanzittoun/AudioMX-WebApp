@@ -19,7 +19,7 @@ import { showTab } from "./ui/tabs";
 import { extractVoiceFeatures, formatFeatures } from "./core/features";
 import { createZip } from "./core/zip";
 import { PROTOCOL_TESTS, getProtocolTest } from "./core/protocol";
-import { capture } from "./core/state";
+import { capture, device } from "./core/state";
 import {
   resetNoiseAttenuator,
   processNoiseAttenuator,
@@ -35,11 +35,22 @@ import { toggleNoiseAttenuator } from "./rnd/noiseToggle";
 // app.js in the same commit: a top-level `let` is a global *lexical* binding,
 // and it would shadow this property entirely — legacy code would keep using its
 // own copy and the two would silently drift apart.
-Object.defineProperty(globalThis, "noiseAttenuatorEnabled", {
-  get: () => capture.noiseFilterEnabled,
-  set: (v: boolean) => { capture.noiseFilterEnabled = v; },
-  configurable: true,
-});
+// Each entry pairs a legacy global name with the state field that now owns it.
+// The matching `let` must be gone from app.js, or it shadows the accessor.
+function alias<T extends object>(name: string, holder: T, key: keyof T): void {
+  Object.defineProperty(globalThis, name, {
+    get: () => holder[key],
+    set: (v) => { holder[key] = v as T[keyof T]; },
+    configurable: true,
+  });
+}
+
+alias("noiseAttenuatorEnabled", capture, "noiseFilterEnabled");
+alias("isRecording", capture, "recording");
+alias("audioMode", capture, "channelMode");
+alias("inputSource", device, "sourceId");
+alias("memsConnectionType", device, "transport");
+alias("isConnected", device, "connected");
 
 Object.assign(globalThis, {
   // audio.js -> analyzeRecording() jumps to the analyse view.
