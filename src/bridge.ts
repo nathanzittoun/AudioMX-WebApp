@@ -17,6 +17,7 @@
 
 import { showTab } from "./ui/tabs";
 import { ingest, ingestMemsFrame } from "./core/recorder";
+import { encodeWav, makeAnalysisSamples, mergeChunks } from "./core/wav";
 import {
   clearAllData, deletePatient, deleteRecording as deleteRecordingFromDb,
   loadPatients, restoreRecordings, saveRecording, savePatient,
@@ -148,6 +149,8 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // WAV assembly, used by audio.js when a take is saved.
+  encodeWav, makeAnalysisSamples, mergeChunks,
   // One ingest path for every transport, under the two names they used.
   addSamples: ingestMemsFrame,
   addComputerMicSamples: (s: Int16Array) => ingest(s, 1),

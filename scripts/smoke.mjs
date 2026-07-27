@@ -74,6 +74,32 @@ T("axe frequentiel jusqu'a Nyquist", dsp && Math.abs(dsp.nyquist - 8000) < 10, d
 T("dbfs / clamp / goertzel publies", (await ev(
   "Math.round(dbfs(32768))===0 && clamp(5,0,1)===1 && typeof goertzelMagnitude==='function'")) === true);
 
+// --- 1a0. WAV: aller-retour complet, sans micro ---
+const wav = await ev(`(()=>{
+  const s = Int16Array.from([0, 1000, -1000, 32767, -32768, 42]);
+  const b = encodeWav(s, 16000, 1);
+  const v = new DataView(b);
+  const tag = o => String.fromCharCode(v.getUint8(o),v.getUint8(o+1),v.getUint8(o+2),v.getUint8(o+3));
+  const back = [];
+  for (let i = 0; i < s.length; i++) back.push(v.getInt16(44 + i*2, true));
+  return { riff: tag(0), wave: tag(8), fmt: tag(12), data: tag(36),
+           pcm: v.getUint16(20,true), channels: v.getUint16(22,true),
+           rate: v.getUint32(24,true), byteRate: v.getUint32(28,true),
+           blockAlign: v.getUint16(32,true), bits: v.getUint16(34,true),
+           dataSize: v.getUint32(40,true), bytes: b.byteLength,
+           roundTrip: JSON.stringify(back) === JSON.stringify(Array.from(s)) };
+})()`);
+T("WAV: en-tetes RIFF/WAVE/fmt/data", wav &&
+  wav.riff === "RIFF" && wav.wave === "WAVE" && wav.fmt === "fmt " && wav.data === "data");
+T("WAV: PCM 16 bits mono a 16 kHz", wav &&
+  wav.pcm === 1 && wav.bits === 16 && wav.channels === 1 && wav.rate === 16000);
+T("WAV: byteRate et blockAlign coherents", wav && wav.byteRate === 32000 && wav.blockAlign === 2);
+T("WAV: taille = 44 + donnees", wav && wav.dataSize === 12 && wav.bytes === 56);
+// Les bornes de l'int16 sont exactement ou un encodeur se casse.
+T("WAV: echantillons intacts, bornes comprises", wav?.roundTrip === true);
+T("mixage mono d'une prise stereo", (await ev(
+  "JSON.stringify(Array.from(makeAnalysisSamples(Int16Array.from([100,300, -50,50]), 'stereo')))")) === "[200,0]");
+
 // --- 1a1. chemin MEMS, sans materiel ---
 // serial.js et wifi.js partagent addSamples(). Rien d'autre dans ce test ne
 // l'exerce, donc une regression y serait passee inapercue.
