@@ -57,6 +57,21 @@ for (const g of ["SAMPLE_RATE", "PROTOCOL_TESTS", "extractVoiceFeatures", "creat
 }
 T("6 tests de protocole rendus", (await ev("document.getElementById('cTestList')?.children.length")) === 6);
 
+// --- 1b. bridge accessor: legacy global <-> state.ts, both directions ---
+T("filtre OFF au demarrage", (await ev("noiseAttenuatorEnabled")) === false);
+await ev("toggleNoiseAttenuator()");
+T("toggle -> global lit true", (await ev("noiseAttenuatorEnabled")) === true);
+T("toggle -> l'UI suit state.ts", (await ev("noiseAttenuatorBtn.textContent")) === "Noise filter ON");
+// A legacy-style direct write must reach state.ts, not a shadowing copy: if it
+// did not, the next toggle would read a stale `true` and flip the button OFF.
+await ev("noiseAttenuatorEnabled = false");
+await ev("toggleNoiseAttenuator()");
+T("ecriture legacy propagee jusqu'a state.ts",
+  (await ev("noiseAttenuatorBtn.textContent")) === "Noise filter ON" &&
+  (await ev("noiseAttenuatorEnabled")) === true);
+await ev("toggleNoiseAttenuator()"); // back to OFF for the capture below
+T("retour a OFF", (await ev("noiseAttenuatorEnabled")) === false);
+
 // --- 2. R&D: capture -> library ---
 await ev("setAppMode('rnd')");
 await ev("setInputSource('computer')"); await new Promise(r => setTimeout(r, 300));

@@ -29,6 +29,7 @@ declare const analysisSourceSelect: HTMLSelectElement;
 // ---- app shell (app.js) ----
 declare function setAppMode(mode: string): void;
 declare function setStatus(text: string, kind: string): void;
+declare function log(message: string): void;
 declare function clearCanvas(): void;
 declare function updateCurrentStats(): void;
 declare function setInputSource(source: string): Promise<void>;

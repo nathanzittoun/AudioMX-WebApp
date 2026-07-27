@@ -9,7 +9,8 @@ let writer;
 
 let inputSource = "mems";
 // options: "mems", "computer"
-let noiseAttenuatorEnabled = false;
+// noiseAttenuatorEnabled now lives in src/core/state.ts; bridge.ts installs a
+// globalThis accessor. A `let` here would shadow it and split the source of truth.
 
 // Top-level app area: "rnd" (Record/Analyze/Library) or "clinical".
 let appMode = "rnd";
