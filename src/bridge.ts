@@ -15,4 +15,7 @@
 // This file shrinks with every conversion and is deleted once public/legacy/
 // is empty.
 
-export {};
+import { showTab } from "./ui/tabs";
+
+// audio.js -> analyzeRecording() calls showTab() to jump to the analyse view.
+Object.assign(globalThis, { showTab });
