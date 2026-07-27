@@ -13,6 +13,12 @@ import { createResampler } from "./resample";
 import { log } from "../ui/log";
 import { setStatus } from "../ui/status";
 
+/**
+ * ScriptProcessor buffer, in samples at the capture rate. Also the size of the
+ * problem in preRollFrames() below.
+ */
+const PROCESSOR_BUFFER = 4096;
+
 const resampler = createResampler();
 
 let stream: MediaStream | null = null;
@@ -27,6 +33,22 @@ export function captureRate(): number {
 
 export function isReady(): boolean {
   return context !== null;
+}
+
+/**
+ * How much audio the first block after Start carries from *before* Start.
+ *
+ * A ScriptProcessor hands over a buffer that has already been filling while we
+ * were not recording, so the first block to arrive covers a window reaching
+ * back up to one buffer. Recording it verbatim means the take opens with the
+ * room as it was before the clinician pressed anything — and, in the clinical
+ * exam, with the countdown's go tone.
+ *
+ * Returned in frames at SAMPLE_RATE, which is what the ingest path counts, so
+ * it stays correct when the browser refuses our rate and we resample.
+ */
+export function preRollFrames(): number {
+  return Math.ceil((PROCESSOR_BUFFER * SAMPLE_RATE) / captureRate());
 }
 
 export async function connectComputerMic(): Promise<void> {
@@ -68,7 +90,7 @@ export async function connectComputerMic(): Promise<void> {
     }
 
     sourceNode = context.createMediaStreamSource(stream);
-    processorNode = context.createScriptProcessor(4096, 1, 1);
+    processorNode = context.createScriptProcessor(PROCESSOR_BUFFER, 1, 1);
 
     processorNode.onaudioprocess = event => {
       if (!capture.recording || device.sourceId !== "computer") return;

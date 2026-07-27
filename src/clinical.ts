@@ -81,6 +81,19 @@ let lastClinicalRecording: Recording | null = null;
 
 // Seconds of "get ready" countdown shown to the patient before recording.
 const READY_SECONDS = 5;
+
+/**
+ * The "go" tone: pitch, and how long it sounds.
+ *
+ * The recording must not contain it. F0, HNR, jitter and shimmer are computed
+ * over the whole take, so a fifth of a second of pure 990 Hz sitting at the
+ * start does not merely sound wrong — it moves the numbers the exam exists to
+ * produce. Capture therefore starts once the tone has finished, and the
+ * computer mic additionally drops its pre-roll block, which would otherwise
+ * carry the tone back into the take.
+ */
+const GO_BEEP_HZ = 990;
+const GO_BEEP_MS = 220;
 let clinicalPhase: ClinicalPhase = "idle";
 
 // Two transports to the pop-out patient window (patient.html): BroadcastChannel
@@ -808,8 +821,9 @@ function runGetReady(seconds: number, onDone: () => void): void {
     if (remain <= 0) {
       stopClinicalTimer();
       setCountNumber("");
-      clinicalBeep(990, 220); // "go" beep
-      onDone();
+      clinicalBeep(GO_BEEP_HZ, GO_BEEP_MS);
+      // After the tone, not with it.
+      setTimeout(onDone, GO_BEEP_MS);
     }
   }, 60);
 }

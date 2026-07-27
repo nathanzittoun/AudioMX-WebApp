@@ -4,7 +4,9 @@ import { SAMPLE_RATE } from "./core/constants";
 import { resetNoiseAttenuator } from "./core/dsp/noiseFilter";
 import { saveCurrentRecording } from "./core/recorder";
 import { capture, device, ui, type RecordingMeta, type SourceId } from "./core/state";
-import { disconnectComputerMic, startComputerMicCapture, stopComputerMicCapture } from "./device/computerMicSource";
+import {
+  disconnectComputerMic, preRollFrames, startComputerMicCapture, stopComputerMicCapture,
+} from "./device/computerMicSource";
 import { closeSerialPort, sendCommand } from "./device/serialSource";
 import { disconnectWifi, sendWifiCommand } from "./device/wifiSource";
 import { setAudioMode } from "./rnd/libraryView";
@@ -133,10 +135,16 @@ export async function startRecording(meta?: RecordingMeta | null): Promise<void>
   capture.frames = 0;
   capture.values = 0;
   capture.live = [];
-  capture.warmupFrames =
-    device.sourceId === "mems" && device.transport === "usb"
-      ? Math.round(SAMPLE_RATE * 0.2)
-      : 0;
+  // Audio to discard before the take really begins. Two different reasons:
+  // USB has a power-on thump as the port opens, and the computer mic's first
+  // block reaches back before Start (see preRollFrames). Wi-Fi has neither.
+  if (device.sourceId === "computer") {
+    capture.warmupFrames = preRollFrames();
+  } else if (device.transport === "usb") {
+    capture.warmupFrames = Math.round(SAMPLE_RATE * 0.2);
+  } else {
+    capture.warmupFrames = 0;
+  }
   capture.recording = true;
 
   const startBtn = el<HTMLButtonElement>("startBtn");

@@ -414,6 +414,29 @@ T("le glisser a bien replote le FFT", drag && drag.source !== drag.before.source
   drag.source.includes("_selected_0_"), drag?.source);
 T("duree selectionnee affichee", drag && (drag.label || "").endsWith(" s selected"), drag?.label);
 
+// --- 3b. le warm-up jette bien le pre-roll --------------------------------
+// Un ScriptProcessor livre un buffer qui se remplissait deja avant le Start :
+// sans ce rejet, la prise s'ouvre sur l'instant d'avant — et en clinique sur
+// le bip de depart, qui fausserait F0/HNR/jitter calcules sur toute la prise.
+const warm = await ev(`(()=>{
+  const c = audiomx.state.capture;
+  const block = new Int16Array(4096).fill(1000);
+  const preRoll = audiomx.computerMicSource.preRollFrames();
+
+  c.recording = true; c.chunks = []; c.frames = 0; c.values = 0; c.live = [];
+  c.warmupFrames = preRoll;
+  audiomx.recorder.ingest(block, 1);
+  const afterFirst = c.frames;
+  audiomx.recorder.ingest(block, 1);
+  const afterSecond = c.frames;
+  c.recording = false; c.chunks = []; c.frames = 0; c.values = 0; c.live = [];
+  return { preRoll, afterFirst, afterSecond };
+})()`);
+T("pre-roll dimensionne sur un buffer", warm && warm.preRoll >= 1024,
+  warm ? warm.preRoll + " trames" : "-");
+T("la premiere trame (l'avant-Start) est jetee", warm?.afterFirst === 0);
+T("la suivante est bien enregistree", warm?.afterSecond === 4096, warm?.afterSecond + " trames");
+
 // --- 4. clinique ---
 await ev("audiomx.app.setAppMode('clinical'); audiomx.clinical.setClinicalTab('patients')");
 await ev("document.getElementById('cNpId').value='PT-SMOKE'; document.getElementById('cNpName').value='Test'; document.getElementById('cNewPatientForm').requestSubmit()");
@@ -457,7 +480,7 @@ T("Start met l'examen en attente du patient", (await ev(
   "document.getElementById('pReadyWrap')?.style.display")) === "block");
 
 await ev("document.getElementById('pReadyBtn').click()");
-await new Promise(r => setTimeout(r, 6500));   // 5 s de decompte + marge
+await new Promise(r => setTimeout(r, 7000));   // 5 s de decompte + bip de depart + marge
 T("le decompte a lance l'enregistrement", (await ev("audiomx.state.capture.recording")) === true);
 
 await new Promise(r => setTimeout(r, 2000));
