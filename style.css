@@ -1060,6 +1060,37 @@ audio {
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+/* Inline "new patient" form. Replaces a chain of four prompt() dialogs, which
+   Chrome silently suppresses once the user ticks "prevent additional dialogs". */
+.newPatientForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--card-solid);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 20px;
+  margin-top: 14px;
+}
+
+.newPatientFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.newPatientFields input,
+.newPatientFields select { width: 100%; min-width: 0; }
+
+.newPatientActions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.newPatientError {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--wcm-red);
+}
+
 .patientTable { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
 .patientRow {
   display: flex;

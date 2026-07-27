@@ -259,7 +259,9 @@ function initClinical() {
   cStopBtn.addEventListener("click", stopClinicalTest);
   cNotesInput.addEventListener("input", () => { clinicalNotes = cNotesInput.value; });
 
-  document.getElementById("cNewPatientBtn").addEventListener("click", createNewPatient);
+  document.getElementById("cNewPatientBtn").addEventListener("click", openNewPatientForm);
+  document.getElementById("cNewPatientForm").addEventListener("submit", submitNewPatient);
+  document.getElementById("cNpCancel").addEventListener("click", closeNewPatientForm);
   document.getElementById("cNewSessionBtn").addEventListener("click", startNewSession);
   cPatientSearch.addEventListener("input", () => renderPatientTable());
 
@@ -418,19 +420,56 @@ function renderPatientTable() {
   }
 }
 
-function createNewPatient() {
-  const id = (prompt("New patient — Patient ID (e.g. PT-0142):") || "").trim();
-  if (!id) return;
+// Show/hide the inline creation form. Kept separate from submission so the
+// Cancel button and a successful create can share the same reset.
+function openNewPatientForm() {
+  const form = document.getElementById("cNewPatientForm");
+  if (!form) return;
+  form.hidden = false;
+  document.getElementById("cNewPatientBtn").hidden = true;
+  document.getElementById("cNpId").focus();
+}
+
+function closeNewPatientForm() {
+  const form = document.getElementById("cNewPatientForm");
+  if (!form) return;
+  form.reset();
+  form.hidden = true;
+  document.getElementById("cNpError").hidden = true;
+  document.getElementById("cNewPatientBtn").hidden = false;
+}
+
+function submitNewPatient(event) {
+  event.preventDefault();
+
+  const err = document.getElementById("cNpError");
+  const id = document.getElementById("cNpId").value.trim();
+  if (!id) {
+    err.textContent = "Patient ID is required.";
+    err.hidden = false;
+    document.getElementById("cNpId").focus();
+    return;
+  }
+
+  // Reusing an existing ID opens that patient rather than silently creating a
+  // duplicate — same behaviour the prompt() flow had.
   let patient = clinicalPatients.find(p => p.id === id);
   if (!patient) {
-    const name = (prompt("Optional patient name / label:") || "").trim();
-    const age = (prompt("Age (optional):") || "").trim();
-    const sex = (prompt("Sex (M / F / other, optional):") || "").trim();
-    patient = { id, name, age, sex, createdAt: new Date() };
+    patient = {
+      id,
+      name: document.getElementById("cNpName").value.trim(),
+      age: document.getElementById("cNpAge").value.trim(),
+      sex: document.getElementById("cNpSex").value,
+      createdAt: new Date()
+    };
     clinicalPatients.push(patient);
     savePatientToDb(patient);
     log("Patient created: " + id);
+  } else {
+    log("Patient " + id + " already exists — opening it.");
   }
+
+  closeNewPatientForm();
   renderPatientTable();
   openPatient(id);
 }

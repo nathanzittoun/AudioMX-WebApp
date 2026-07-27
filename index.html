@@ -307,6 +307,38 @@
           </div>
           <button id="cNewPatientBtn" class="primaryBtn">+ New patient</button>
         </div>
+
+        <form id="cNewPatientForm" class="newPatientForm" hidden>
+          <div class="newPatientFields">
+            <div class="fieldGroup">
+              <label for="cNpId">Patient ID *</label>
+              <input id="cNpId" type="text" placeholder="PT-0142" autocomplete="off" required />
+            </div>
+            <div class="fieldGroup">
+              <label for="cNpName">Name / label</label>
+              <input id="cNpName" type="text" placeholder="Optional" autocomplete="off" />
+            </div>
+            <div class="fieldGroup">
+              <label for="cNpAge">Age</label>
+              <input id="cNpAge" type="number" min="0" max="120" placeholder="Optional" autocomplete="off" />
+            </div>
+            <div class="fieldGroup">
+              <label for="cNpSex">Sex</label>
+              <select id="cNpSex">
+                <option value="">Not specified</option>
+                <option value="F">F</option>
+                <option value="M">M</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <p id="cNpError" class="newPatientError" hidden></p>
+          <div class="newPatientActions">
+            <button type="submit" class="primaryBtn">Create patient</button>
+            <button type="button" id="cNpCancel" class="secondaryBtn">Cancel</button>
+          </div>
+        </form>
+
         <div class="fieldGroup">
           <label for="cPatientSearch">Search</label>
           <input id="cPatientSearch" type="text" placeholder="Search by ID or name" />
