@@ -41,7 +41,6 @@ declare function stopRecording(): Promise<void>;
 declare function closeSerialPort(): Promise<void>;
 declare function disconnectWifi(): void;
 declare function disconnectComputerMic(): Promise<void>;
-declare function connectWifiMems(): void;
 
 // ---- capture + library (audio.js) ----
 declare function onClinicalRecordingSaved(recording: unknown): void;

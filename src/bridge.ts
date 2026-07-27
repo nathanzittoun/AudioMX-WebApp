@@ -34,6 +34,10 @@ import {
 } from "./device/serialSource";
 import { createFrameParser } from "./device/framing";
 import {
+  connectWifiMems, disconnectWifi, getWifiUrl,
+  reconnectDelayMs, sendWifiCommand,
+} from "./device/wifiSource";
+import {
   connectComputerMic, disconnectComputerMic,
   startComputerMicCapture, stopComputerMicCapture,
 } from "./device/computerMicSource";
@@ -162,6 +166,8 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // Wi-Fi transport.
+  connectWifiMems, disconnectWifi, sendWifiCommand, getWifiUrl, reconnectDelayMs,
   // USB serial transport.
   connectSerial, openSerialPort, closeSerialPort, sendCommand, createFrameParser,
   handleSerialDisconnected, setIntentionalClose,

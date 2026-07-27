@@ -148,6 +148,14 @@ T("trame coupee: reassemblee a l'arrivee du reste",
 T("deux trames dans une seule lecture", JSON.stringify(fr?.two) === JSON.stringify([[1],[2,3]]));
 T("resynchronisation apres octets parasites", JSON.stringify(fr?.after) === JSON.stringify([[5,5]]));
 
+// --- 1a0d. backoff de reconnexion Wi-Fi ---
+// Pur, donc verifiable sans attendre 15 secondes de tentatives.
+T('backoff exponentiel plafonne a 8 s', (await ev(
+  'JSON.stringify([1,2,3,4,5].map(reconnectDelayMs))')) === '[1000,2000,4000,8000,8000]');
+T('adresse Wi-Fi par defaut si le champ est vide', (await ev(
+  "(()=>{const i=document.getElementById('wifiUrlInput');const old=i.value;i.value='  ';const r=getWifiUrl();i.value=old;return r})()"
+)) === 'ws://192.168.4.1:81');
+
 // --- 1a1. chemin MEMS, sans materiel ---
 // serial.js et wifi.js partagent addSamples(). Rien d'autre dans ce test ne
 // l'exerce, donc une regression y serait passee inapercue.

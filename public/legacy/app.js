@@ -6,9 +6,6 @@
 // isRecording, audioMode and noiseAttenuatorEnabled. A `let` here would shadow
 // them and split the source of truth.
 
-let wifiSocket = null;
-let wifiConnected = false;
-
 function log(message) {
   const line = document.createElement("div");
   const time = new Date().toLocaleTimeString();
@@ -303,6 +300,5 @@ async function disconnectCurrentSource() {
   }
 
   isConnected = false;
-  wifiConnected = false;
   noiseAttenuatorBtn.disabled = true;
 }

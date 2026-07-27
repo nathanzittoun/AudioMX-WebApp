@@ -8,6 +8,7 @@
 import { showTab } from "./ui/tabs";
 import { reflectDeviceSupport, watchWifiUrl } from "./device/reflectSupport";
 import { connectSerial, initSerial } from "./device/serialSource";
+import { connectWifiMems } from "./device/wifiSource";
 import { clearAllData, restoreRecordings } from "./storage/library";
 import { renderRecordings, setAudioMode, updateAnalysisSourceSelect } from "./rnd/libraryView";
 
