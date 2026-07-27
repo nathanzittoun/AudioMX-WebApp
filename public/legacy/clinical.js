@@ -105,12 +105,29 @@ function setCountNumber(text) {
   }
 }
 
-// Short beep (WebAudio).
+// One long-lived context for every beep. Creating and closing an AudioContext
+// per beep made the OS reconfigure the audio device six times during a 5-second
+// countdown, the last one landing ~220 ms after the recorder had started —
+// enough to silence or puncture the capture running alongside it. Matching
+// SAMPLE_RATE keeps playback and capture on one device configuration.
+let clinicalBeepCtx = null;
+
+function clinicalBeepContext() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  if (!clinicalBeepCtx) {
+    try { clinicalBeepCtx = new AC({ sampleRate: SAMPLE_RATE }); }
+    catch (e) { clinicalBeepCtx = new AC(); }
+  }
+  // Autoplay policy can park it; resuming is a no-op when already running.
+  if (clinicalBeepCtx.state === "suspended") clinicalBeepCtx.resume();
+  return clinicalBeepCtx;
+}
+
 function clinicalBeep(freq, ms) {
   try {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    const ctx = new AC();
+    const ctx = clinicalBeepContext();
+    if (!ctx) return;
     const o = ctx.createOscillator();
     const g = ctx.createGain();
     o.type = "sine";
@@ -120,7 +137,8 @@ function clinicalBeep(freq, ms) {
     g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (ms || 150) / 1000);
     o.start();
     o.stop(ctx.currentTime + (ms || 150) / 1000);
-    o.onended = () => { try { ctx.close(); } catch (e) {} };
+    // Only the nodes are disposable; the context stays open for the next beep.
+    o.onended = () => { try { o.disconnect(); g.disconnect(); } catch (e) {} };
   } catch (e) { /* ignore */ }
 }
 

@@ -27,6 +27,9 @@ let computerMediaStream = null;
 let computerSourceNode = null;
 let computerProcessorNode = null;
 let computerMicReady = false;
+// The rate the browser actually gave us, which is not always the one we asked
+// for. computerMic.js resamples to SAMPLE_RATE when they differ.
+let computerCaptureRate = SAMPLE_RATE;
 
 let isConnected = false;
 let isRecording = false;
@@ -139,7 +142,22 @@ function setAppMode(mode) {
 }
 
 // Route the live monitors to whichever area is active.
+// Called once per audio buffer from the capture callbacks, which run on the
+// main thread. Drawing synchronously there can overrun the buffer period and
+// make the audio engine drop samples — heard as periodic gaps in the take.
+// Coalescing to one draw per animation frame keeps the monitors smooth while
+// letting the capture callback return immediately.
+let liveMonitorFrame = 0;
+
 function renderLiveMonitors() {
+  if (liveMonitorFrame) return;
+  liveMonitorFrame = requestAnimationFrame(() => {
+    liveMonitorFrame = 0;
+    drawLiveMonitorsNow();
+  });
+}
+
+function drawLiveMonitorsNow() {
   if (appMode === "clinical") {
     drawClinicalMonitors();
   } else {
@@ -150,6 +168,12 @@ function renderLiveMonitors() {
 }
 
 function clearActiveMonitors() {
+  // Drop any coalesced draw still queued, or it would repaint stale samples
+  // over the canvases we are about to clear.
+  if (liveMonitorFrame) {
+    cancelAnimationFrame(liveMonitorFrame);
+    liveMonitorFrame = 0;
+  }
   clearCanvas();
   clearLiveSpectrogram();
   if (typeof clearClinicalMonitors === "function") {
