@@ -18,6 +18,7 @@
 import { showTab } from "./ui/tabs";
 import { ingest, ingestMemsFrame } from "./core/recorder";
 import { encodeWav, makeAnalysisSamples, mergeChunks } from "./core/wav";
+import { recordingBaseName, sanitizeForFilename, triggerDownload } from "./ui/download";
 import {
   clearAllData, deletePatient, deleteRecording as deleteRecordingFromDb,
   loadPatients, restoreRecordings, saveRecording, savePatient,
@@ -149,6 +150,8 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // Filenames and downloads: audio.js, clinical.js and fhir.js all use these.
+  sanitizeForFilename, recordingBaseName, triggerDownload,
   // WAV assembly, used by audio.js when a take is saved.
   encodeWav, makeAnalysisSamples, mergeChunks,
   // One ingest path for every transport, under the two names they used.

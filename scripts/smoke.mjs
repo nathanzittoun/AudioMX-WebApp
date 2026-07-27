@@ -100,6 +100,16 @@ T("WAV: echantillons intacts, bornes comprises", wav?.roundTrip === true);
 T("mixage mono d'une prise stereo", (await ev(
   "JSON.stringify(Array.from(makeAnalysisSamples(Int16Array.from([100,300, -50,50]), 'stereo')))")) === "[200,0]");
 
+// --- 1a0b. nommage des fichiers exportes ---
+// Un fichier sorti de l'app doit rester identifiable seul, dans un dossier.
+T("nom de fichier clinique porte patient/session/test", (await ev(`
+  recordingBaseName({ number:1, source:'mic', mode:'mono', createdAt:new Date('2026-07-27T10:00:00Z'),
+    meta:{patientId:'PT 0142',sessionId:'S-1',testId:'mpt'} })`)) === 'PT-0142__S-1__mpt__2026-07-27T10-00-00-000Z');
+T("nom R&D sans patient", (await ev(`
+  recordingBaseName({ number:7, source:'Computer mic', mode:'stereo',
+    createdAt:new Date('2026-07-27T10:00:00Z'), meta:null }).startsWith('audiomx_recording_7_computer_mic_stereo')`)) === true);
+T("caracteres dangereux neutralises", (await ev("sanitizeForFilename('  a/b:c*d  ')")) === 'a-b-c-d');
+
 // --- 1a1. chemin MEMS, sans materiel ---
 // serial.js et wifi.js partagent addSamples(). Rien d'autre dans ce test ne
 // l'exerce, donc une regression y serait passee inapercue.

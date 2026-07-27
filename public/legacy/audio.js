@@ -209,42 +209,6 @@ function analyzeRecording(recordingId) {
   plotNoiseSpectrum();
 }
 
-function sanitizeForFilename(text) {
-  return String(text).trim().replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
-}
-
-// Build a descriptive base filename: a custom name if set, otherwise
-// PatientID__Session__Test__timestamp for clinical takes, else a generic name.
-function recordingBaseName(recording) {
-  const timestamp = recording.createdAt.toISOString().replace(/[:.]/g, "-");
-
-  if (recording.name) {
-    return sanitizeForFilename(recording.name) + "_" + timestamp;
-  }
-
-  if (recording.meta && recording.meta.patientId) {
-    return [
-      sanitizeForFilename(recording.meta.patientId),
-      sanitizeForFilename(recording.meta.sessionId || "session"),
-      sanitizeForFilename(recording.meta.testId || "test"),
-      timestamp
-    ].join("__");
-  }
-
-  return "audiomx_recording_" + recording.number + "_" +
-    recording.source.replace(/\s+/g, "_").toLowerCase() + "_" +
-    recording.mode + "_" + timestamp;
-}
-
-function triggerDownload(url, filename) {
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
 function downloadRecording(recording) {
   triggerDownload(recording.url, recordingBaseName(recording) + ".wav");
   log("Recording " + recording.number + " downloaded.");
