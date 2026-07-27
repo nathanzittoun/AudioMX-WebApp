@@ -69,6 +69,10 @@ import {
   applyFilterOffline,
 } from "./core/dsp/noiseFilter";
 import { toggleNoiseAttenuator } from "./rnd/noiseToggle";
+import {
+  clearCanvas, log, renderLiveMonitors, setAppMode, setInputSource, setStatus,
+  startRecording, stopRecording, updateCurrentStats,
+} from "./app";
 
 // `noiseAttenuatorEnabled` is state, not a function, and app.js/audio.js/
 // computerMic.js both read AND write it. An accessor keeps the single source of
@@ -178,6 +182,9 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // Application shell. clinical.js still calls these by their legacy names.
+  clearCanvas, log, renderLiveMonitors, setAppMode, setInputSource, setStatus,
+  startRecording, stopRecording, updateCurrentStats,
   // SMART on FHIR, under the names ehr.js uses.
   smartLaunch: launch,
   smartHandleRedirect: handleRedirect,

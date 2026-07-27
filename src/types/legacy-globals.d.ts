@@ -44,6 +44,8 @@ declare function disconnectComputerMic(): Promise<void>;
 
 // ---- capture + library (audio.js) ----
 declare function onClinicalRecordingSaved(recording: unknown): void;
+declare function drawClinicalMonitors(): void;
+declare function clearClinicalMonitors(): void;
 
 // ---- noise filter (noiseAttenuator.js) ----
 declare function toggleNoiseAttenuator(): void;

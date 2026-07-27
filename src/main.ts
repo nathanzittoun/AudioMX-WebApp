@@ -34,6 +34,10 @@ import {
 import {
   downloadFftCsv, drawSpectrumBackground, plotNoiseSpectrum, resetFftZoom,
 } from "./rnd/fftView";
+import {
+  clearCanvas, setAppMode, setInputSource, setStatus, startRecording,
+  stopRecording, updateCurrentStats,
+} from "./app";
 
 function boot(): void {
   // ---- navigation ----
@@ -48,7 +52,7 @@ function boot(): void {
   document.querySelectorAll<HTMLElement>(".modeSwitchBtn").forEach(btn => {
     btn.addEventListener("click", () => {
       const mode = btn.dataset["mode"];
-      if (mode) setAppMode(mode);
+      if (mode === "rnd" || mode === "clinical") setAppMode(mode);
     });
   });
 
@@ -66,7 +70,7 @@ function boot(): void {
   document.querySelectorAll<HTMLElement>(".sourceBtn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const source = btn.dataset["source"];
-      if (source) await setInputSource(source);
+      if (source === "mems" || source === "computer") await setInputSource(source);
     });
   });
 

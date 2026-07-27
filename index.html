@@ -492,7 +492,6 @@
   <!-- Not yet converted to ES modules, so Vite copies these verbatim from
        public/legacy/. Load order is load-bearing: every file shares one global
        scope and app.js must define the shared state before anything reads it. -->
-  <script defer src="%BASE_URL%legacy/app.js"></script>
   <script defer src="%BASE_URL%legacy/clinical.js"></script>
 
   <script type="module" src="/src/main.ts"></script>
