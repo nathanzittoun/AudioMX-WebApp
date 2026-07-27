@@ -48,6 +48,14 @@ await cmd("Page.addScriptToEvaluateOnNewDocument", { source: `(() => {
   const Counted = function (...args) { window.__audioContexts++; return new Real(...args); };
   Counted.prototype = Real.prototype;
   window.AudioContext = Counted;
+
+  // Un headless a document.visibilityState === "hidden", et requestAnimationFrame
+  // n'y tourne jamais. Les moniteurs live passent tous par rAF : sans ce relais,
+  // ils ne dessinent rien ici et le canvas ne peut rien prouver. On remplace la
+  // planification, pas la logique — l'app garde son "une frame en attente a la
+  // fois", elle est juste declenchee par le timer.
+  window.requestAnimationFrame = cb => setTimeout(() => cb(performance.now()), 0);
+  window.cancelAnimationFrame = handle => clearTimeout(handle);
 })()` });
 await cmd("Network.setCacheDisabled", { cacheDisabled: true });
 
@@ -64,6 +72,22 @@ const T = (label, ok, detail = "") => {
   ok ? pass++ : fail++;
   console.log(`  ${ok ? "✅" : "❌"} ${label}${detail ? `  (${detail})` : ""}`);
 };
+
+// Compte les pixels d'une couleur de trace sur un canvas. Les moniteurs live ne
+// renvoient rien et n'existent qu'en cours de capture : seul le canvas peut
+// dire s'ils dessinent. Un abonnement au bus manquant les avait laisses vides
+// pendant plusieurs commits sans qu'aucune assertion ne bronche.
+const traced = async (canvasId, [r, g, b]) => ev(`(()=>{
+  const cv = document.getElementById('${canvasId}');
+  if (!cv) return -1;
+  const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+  let n = 0;
+  for (let i = 0; i < d.length; i += 4)
+    if (Math.abs(d[i]-${r}) < 40 && Math.abs(d[i+1]-${g}) < 40 && Math.abs(d[i+2]-${b}) < 40) n++;
+  return n;
+})()`);
+const CRIMSON = [179, 27, 27];   // trace R&D
+const STEEL   = [59, 111, 176];  // trace clinique
 
 console.log(`\n  === SMOKE ${BASE} ===`);
 await go();
@@ -346,7 +370,12 @@ await ev("audiomx.app.setInputSource('computer')"); await new Promise(r => setTi
 await ev("audiomx.computerMicSource.connectComputerMic()"); await new Promise(r => setTimeout(r, 2200));
 T("micro ordi connecte", (await ev("audiomx.state.device.connected")) === true);
 await ev("audiomx.app.startRecording()"); await new Promise(r => setTimeout(r, 2000));
+// Pendant la capture, pas apres : les moniteurs live sont effaces a l'arret.
+const rndWave = await traced("waveform", CRIMSON);
+const rndSpec = await traced("liveSpectrum", CRIMSON);
 await ev("audiomx.app.stopRecording()"); await new Promise(r => setTimeout(r, 1200));
+T("forme d'onde live dessinee (R&D)", rndWave > 200, rndWave + " px de trace");
+T("spectre live dessine (R&D)", rndSpec > 200, rndSpec + " px de trace");
 T("enregistrement sauvegarde", (await ev("audiomx.state.library.recordings.length")) === 1);
 T("duree ~2s", Math.abs((await ev("audiomx.state.library.recordings[0]?.duration")) - 2) < 0.35, (await ev("audiomx.state.library.recordings[0]?.duration")) + "s");
 T("features extraites", (await ev("!!audiomx.state.library.recordings[0]?.features")));
@@ -432,6 +461,8 @@ await new Promise(r => setTimeout(r, 6500));   // 5 s de decompte + marge
 T("le decompte a lance l'enregistrement", (await ev("audiomx.state.capture.recording")) === true);
 
 await new Promise(r => setTimeout(r, 2000));
+const clinWave = await traced("cWaveform", STEEL);
+const clinSpec = await traced("cSpectrum", STEEL);
 await ev("document.getElementById('cStopBtn').click()");
 await new Promise(r => setTimeout(r, 1500));
 
@@ -455,6 +486,10 @@ T("un seul AudioContext pour toute l'app", exam?.contexts === 1,
 T("la prise clinique n'est PAS silencieuse", exam && exam.max > 1000,
   exam ? "amplitude max " + exam.max : "-");
 T("prise rattachee au patient", exam?.patient === "PT-SMOKE");
+// Le clinicien doit voir le signal pendant l'examen, pas seulement l'entendre
+// apres coup : c'est ce qui lui dit que le micro capte vraiment.
+T("forme d'onde live dessinee (clinique)", clinWave > 200, clinWave + " px de trace");
+T("spectre live dessine (clinique)", clinSpec > 200, clinSpec + " px de trace");
 T("quality gate affiche apres l'examen", exam?.gate === "block");
 
 // --- 5. persistance + exports ---

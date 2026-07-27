@@ -15,7 +15,7 @@ import { ctx2d, el } from "./ui/dom";
 import { log } from "./ui/log";
 import { setStatus } from "./ui/status";
 import { updateCurrentStats } from "./ui/captureStats";
-import { emit } from "./core/bus";
+import { emit, on } from "./core/bus";
 
 export function setAppMode(mode: "rnd" | "clinical"): void {
   ui.mode = mode;
@@ -29,6 +29,12 @@ export function setAppMode(mode: "rnd" | "clinical"): void {
 }
 
 let liveMonitorFrame = 0;
+
+// The ingest path announces every block it takes in; this is what turns that
+// into a repaint. The subscription is the whole point of the event and its
+// absence is invisible: renderLiveMonitors() is exported, so an unused-symbol
+// check cannot see that nothing calls it, and the monitors simply stay blank.
+on("capture:tick", () => renderLiveMonitors());
 
 export function renderLiveMonitors(): void {
   if (liveMonitorFrame) return;
