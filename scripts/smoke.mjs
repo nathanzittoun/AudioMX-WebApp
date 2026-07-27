@@ -332,10 +332,37 @@ T("features extraites", (await ev("!!recordings[0]?.features")));
 T("WAV a 16 kHz", (await ev("recordings[0].blob.arrayBuffer().then(b=>new DataView(b).getUint32(24,true))")) === 16000);
 
 // --- 3. analyse ---  (le select attend "recording-<id>", pas un index)
-await ev("analysisSourceSelect.value='recording-'+recordings[0].id; resetAnalysisSelection(); plotNoiseSpectrum()");
+await ev("analysisSourceSelect.value='recording-'+recordings[0].id;" +
+  "audiomx.analysisSelection.resetAnalysisSelection(); audiomx.fftView.plotNoiseSpectrum()");
 T("spectre calcule", (await ev(
   "!!lastSpectrum && lastSpectrum.magnitudes.length>0 && lastSpectrum.frequencies.length>0")));
 T("frequences dominantes affichees", (await ev("/\\d+ Hz/.test(dominantFrequenciesEl.textContent)")) === true);
+
+// La selection a la souris : c'est elle qui decide quel audio part au FFT,
+// au CSV et au spectrogramme. On tire vraiment la poignee droite.
+const drag = await ev(`(()=>{
+  showTab('analyzeView');
+  const cv = document.getElementById('analysisWaveformCanvas');
+  const r = cv.getBoundingClientRect();
+  const at = f => ({ clientX: r.left + r.width*f, clientY: r.top + r.height/2, bubbles: true });
+  const a = audiomx.state.analysis;
+  const before = { end: a.selectionEnd, source: a.lastSpectrumSourceName };
+
+  cv.dispatchEvent(new MouseEvent('mousedown', at(1)));
+  window.dispatchEvent(new MouseEvent('mousemove', at(0.5)));
+  window.dispatchEvent(new MouseEvent('mouseup', at(0.5)));
+
+  return { before, end: a.selectionEnd, mode: a.dragMode, source: a.lastSpectrumSourceName,
+           label: document.getElementById('selectedRangeLabel').textContent };
+})()`);
+T("poignee droite deplacee a la moitie", drag && Math.abs(drag.end - 0.5) < 0.02,
+  drag ? drag.before?.end + " -> " + drag.end?.toFixed(3) : "-");
+T("relacher termine le glisser", drag?.mode === null);
+// La source du dernier FFT porte les bornes : preuve que le bus a bien
+// declenche le replot, sans que la forme d'onde connaisse le panneau FFT.
+T("le glisser a bien replote le FFT", drag && drag.source !== drag.before.source &&
+  drag.source.includes("_selected_0_"), drag?.source);
+T("duree selectionnee affichee", drag && (drag.label || "").endsWith(" s selected"), drag?.label);
 
 // --- 4. clinique ---
 await ev("setAppMode('clinical'); setClinicalTab('patients')");

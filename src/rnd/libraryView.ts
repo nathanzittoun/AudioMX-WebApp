@@ -12,6 +12,8 @@ import { recordingBaseName, triggerDownload } from "../ui/download";
 import { el, requireEl } from "../ui/dom";
 import { showTab } from "../ui/tabs";
 import { on } from "../core/bus";
+import { resetAnalysisSelection } from "./analysisSelection";
+import { plotNoiseSpectrum } from "./fftView";
 
 export function setAudioMode(mode: "stereo" | "left" | "right"): void {
   if (capture.recording) {

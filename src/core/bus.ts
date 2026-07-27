@@ -15,6 +15,13 @@ export interface Events {
   "library:changed": void;
   /** A take finished saving. Carries the take itself. */
   "recording:saved": unknown;
+  /**
+   * The Analyze region moved. Announced rather than called directly so the
+   * waveform never has to know the FFT panel exists — the two are wired
+   * together only in the R&D view, and the clinical Chart will want the same
+   * selection without the spectrum.
+   */
+  "analysis:selection-changed": void;
 }
 
 type Handler<K extends keyof Events> = (payload: Events[K]) => void;

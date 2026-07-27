@@ -14,6 +14,10 @@
 // looked perfect. DOMContentLoaded is the one moment guaranteed to be after
 // every deferred classic script in both layouts.
 
+// Installs window.audiomx. Imported for the side effect, first, so it is
+// available even if something below throws during boot.
+import "./devtools";
+
 import { showTab } from "./ui/tabs";
 import { reflectDeviceSupport, watchWifiUrl } from "./device/reflectSupport";
 import { connectSerial, initSerial } from "./device/serialSource";
@@ -24,6 +28,12 @@ import { renderRecordings, setAudioMode, updateAnalysisSourceSelect } from "./rn
 import { clearLiveSpectrogram } from "./ui/canvas/spectrogram";
 import { calibrateNoiseFloor } from "./rnd/meters";
 import { drawLiveSpectrum } from "./rnd/liveSpectrum";
+import {
+  drawAnalysisWaveform, initAnalysisWaveformSelection, resetAnalysisSelection,
+} from "./rnd/analysisSelection";
+import {
+  downloadFftCsv, drawSpectrumBackground, plotNoiseSpectrum, resetFftZoom,
+} from "./rnd/fftView";
 
 function boot(): void {
   // ---- navigation ----

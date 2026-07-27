@@ -5,6 +5,10 @@
 // publishes it. Once audio.js is converted, that publication goes away and this
 // becomes an ordinary import.
 
+import { SAMPLE_RATE } from "../core/constants";
+import { drawSpectrumBackground } from "../rnd/fftView";
+import { el } from "./dom";
+
 export function showTab(tabId: string): void {
   document.querySelectorAll(".view").forEach(view => {
     view.classList.remove("activeView");
@@ -20,8 +24,8 @@ export function showTab(tabId: string): void {
   // be redrawn whenever the analyse view becomes visible.
   if (tabId === "analyzeView") {
     drawSpectrumBackground(
-      Number(fftMinFreqInput.value) || 0,
-      Number(fftMaxFreqInput.value) || SAMPLE_RATE / 2
+      Number(el<HTMLInputElement>("fftMinFreqInput")?.value) || 0,
+      Number(el<HTMLInputElement>("fftMaxFreqInput")?.value) || SAMPLE_RATE / 2
     );
   }
 }

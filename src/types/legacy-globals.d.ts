@@ -44,16 +44,6 @@ declare function disconnectComputerMic(): Promise<void>;
 
 // ---- capture + library (audio.js) ----
 declare function onClinicalRecordingSaved(recording: unknown): void;
-declare function plotNoiseSpectrum(): void;
-
-// ---- analysis (analysis.js) ----
-declare function drawSpectrumBackground(minFreq?: number, maxFreq?: number): void;
-declare function plotNoiseSpectrum(): void;
-declare function resetFftZoom(): void;
-declare function downloadFftCsv(): void;
-declare function resetAnalysisSelection(): void;
-declare function drawAnalysisWaveform(): void;
-declare function initAnalysisWaveformSelection(): void;
 
 // ---- noise filter (noiseAttenuator.js) ----
 declare function toggleNoiseAttenuator(): void;
