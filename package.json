@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "AudioMX — voice biomarker capture and analysis for clinical and R&D use",
+  "description": "AudioMX \u2014 voice biomarker capture and analysis for clinical and R&D use",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
