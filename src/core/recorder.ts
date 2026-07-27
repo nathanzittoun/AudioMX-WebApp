@@ -12,7 +12,7 @@ import { encodeWav, makeAnalysisSamples, mergeChunks } from "./wav";
 import { extractVoiceFeatures, type VoiceFeatures } from "./features";
 import { saveRecording } from "../storage/library";
 import { emit } from "./bus";
-import { capture, device, library, type ChannelMode, type Recording } from "./state";
+import { capture, device, library, type Recording } from "./state";
 import { processNoiseAttenuator } from "./dsp/noiseFilter";
 
 /**
@@ -73,7 +73,8 @@ export function ingestMemsFrame(payloadBytes: Uint8Array): void {
   );
 
   const frameCount = payloadBytes.byteLength / 4;
-  const mode: ChannelMode = capture.channelMode;
+  // Only reachable on the MEMS path, so "computer" cannot occur here.
+  const mode = capture.channelMode;
   const stereo = mode === "stereo";
 
   const out = new Int16Array(stereo ? frameCount * 2 : frameCount);

@@ -28,6 +28,10 @@ import {
   loadPatients, restoreRecordings, saveRecording, savePatient,
 } from "./storage/library";
 import { computerMicSupport, serialSupport, wifiSupport } from "./device/support";
+import {
+  connectComputerMic, disconnectComputerMic,
+  startComputerMicCapture, stopComputerMicCapture,
+} from "./device/computerMicSource";
 import { BAUD_RATE, FFT_SIZE, MAX_LIVE_SAMPLES, SAMPLE_RATE } from "./core/constants";
 import { clamp, dbfs, dbToBar, goertzelMagnitude } from "./core/dsp/levels";
 import { accumulateFftFrame, fftRadix2, hannWindow, nextPowerOfTwo } from "./core/dsp/fft";
@@ -154,6 +158,9 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // Computer microphone transport.
+  connectComputerMic, disconnectComputerMic,
+  startComputerMicCapture, stopComputerMicCapture,
   // R&D Library view — analysis.js and clinical.js still call into it.
   renderRecordings, updateAnalysisSourceSelect, setAudioMode,
   analyzeRecording, downloadRecording, renameRecording, deleteRecording,

@@ -61,7 +61,12 @@ export const device = {
 export const capture = {
   /** True between startRecording() and stopRecording(). */
   recording: false,
-  channelMode: "stereo" as ChannelMode,
+  /**
+   * Doubles as a source marker: setInputSource writes the literal "computer"
+   * here when the computer mic is selected. Typed honestly rather than as
+   * ChannelMode, which the value routinely violated.
+   */
+  channelMode: "stereo" as RecordedMode,
 
   /** Blocks accumulated for the take in progress, concatenated on save. */
   chunks: [] as Int16Array[],

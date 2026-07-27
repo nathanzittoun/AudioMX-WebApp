@@ -10,18 +10,8 @@ let writer;
 // isRecording, audioMode and noiseAttenuatorEnabled. A `let` here would shadow
 // them and split the source of truth.
 
-
 let wifiSocket = null;
 let wifiConnected = false;
-
-let computerAudioContext = null;
-let computerMediaStream = null;
-let computerSourceNode = null;
-let computerProcessorNode = null;
-let computerMicReady = false;
-// The rate the browser actually gave us, which is not always the one we asked
-// for. computerMic.js resamples to SAMPLE_RATE when they differ.
-let computerCaptureRate = SAMPLE_RATE;
 
 function log(message) {
   const line = document.createElement("div");
@@ -333,27 +323,7 @@ async function disconnectCurrentSource() {
   }
 
   try {
-    if (computerProcessorNode) {
-      computerProcessorNode.disconnect();
-      computerProcessorNode = null;
-    }
-
-    if (computerSourceNode) {
-      computerSourceNode.disconnect();
-      computerSourceNode = null;
-    }
-
-    if (computerMediaStream) {
-      computerMediaStream.getTracks().forEach(track => track.stop());
-      computerMediaStream = null;
-    }
-
-    if (computerAudioContext) {
-      await computerAudioContext.close();
-      computerAudioContext = null;
-    }
-
-    computerMicReady = false;
+    await disconnectComputerMic();
   } catch (error) {
     console.warn("Computer mic disconnect issue:", error);
   }
