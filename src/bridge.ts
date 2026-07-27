@@ -21,6 +21,7 @@ import {
   listObservations, loadPatient, writeDocumentReference,
 } from "./ehr/smart";
 import { redirectUri } from "./ehr/config";
+import { initEhr, patientDisplayName } from "./ehr/ehrPanel";
 import { ingest, ingestMemsFrame, saveCurrentRecording } from "./core/recorder";
 import { encodeWav, makeAnalysisSamples, mergeChunks } from "./core/wav";
 import { recordingBaseName, sanitizeForFilename, triggerDownload } from "./ui/download";
@@ -179,6 +180,7 @@ Object.assign(globalThis, {
   smartListObservations: listObservations,
   smartWriteDocumentReference: writeDocumentReference,
   smartRedirectUri: redirectUri,
+  initEhr, patientDisplayName,
   // Wi-Fi transport.
   connectWifiMems, disconnectWifi, sendWifiCommand, getWifiUrl, reconnectDelayMs,
   // USB serial transport.

@@ -76,4 +76,4 @@ declare function renderPatientTable(): void;
 declare function renderExamHeader(): void;
 declare function renderChart(): void;
 declare function initClinical(): void;
-declare function initEhr(): Promise<void>;
+declare function setClinicalTab(tab: string): void;

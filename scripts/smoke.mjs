@@ -204,6 +204,18 @@ T("un input non supporte expose sa raison", (await ev(`(()=>{
   return ids.every(id=>{const b=document.getElementById(id);
     return !b || (b.disabled ? (b.title||'').length>20 : !b.title)});})()`)) === true);
 
+// --- 1a3. panneau Epic ---
+T('indice Epic affiche l URI de retour exacte', (await ev(
+  "(()=>{const h=document.getElementById('cEhrHint');return !!h && h.textContent.includes(location.origin)})()"
+)) === true);
+T('nom patient FHIR: champ text prioritaire', (await ev(
+  "patientDisplayName({id:'x', name:[{text:'Jane Q Doe', given:['Jane'], family:'Doe'}]})"
+)) === 'Jane Q Doe');
+T('nom patient FHIR: reconstruit sinon', (await ev(
+  "patientDisplayName({id:'x', name:[{given:['Jane','Q'], family:'Doe'}]})"
+)) === 'Jane Q Doe');
+T('nom patient FHIR: repli sur l id', (await ev("patientDisplayName({id:'epic-123'})")) === 'epic-123');
+
 // --- 1b. bridge accessor: legacy global <-> state.ts, both directions ---
 T("filtre OFF au demarrage", (await ev("noiseAttenuatorEnabled")) === false);
 await ev("toggleNoiseAttenuator()");
