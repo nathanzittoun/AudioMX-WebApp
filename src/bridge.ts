@@ -20,6 +20,10 @@ import { ingest, ingestMemsFrame, saveCurrentRecording } from "./core/recorder";
 import { encodeWav, makeAnalysisSamples, mergeChunks } from "./core/wav";
 import { recordingBaseName, sanitizeForFilename, triggerDownload } from "./ui/download";
 import {
+  analyzeRecording, deleteRecording, downloadRecording, renameRecording,
+  renderRecordings, setAudioMode, updateAnalysisSourceSelect,
+} from "./rnd/libraryView";
+import {
   clearAllData, deletePatient, deleteRecording as deleteRecordingFromDb,
   loadPatients, restoreRecordings, saveRecording, savePatient,
 } from "./storage/library";
@@ -150,6 +154,9 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // R&D Library view — analysis.js and clinical.js still call into it.
+  renderRecordings, updateAnalysisSourceSelect, setAudioMode,
+  analyzeRecording, downloadRecording, renameRecording, deleteRecording,
   // Filenames and downloads: audio.js, clinical.js and fhir.js all use these.
   sanitizeForFilename, recordingBaseName, triggerDownload,
   // WAV assembly, used by audio.js when a take is saved.

@@ -6,6 +6,7 @@
 
 import { library, type Recording } from "../core/state";
 import { storage } from "./index";
+import { emit } from "../core/bus";
 import type { StoredPatient, StoredRecording } from "./types";
 
 export async function savePatient(patient: StoredPatient): Promise<void> {
@@ -82,8 +83,7 @@ export async function restoreRecordings(): Promise<void> {
   }
   library.nextIndex = maxNumber + 1;
 
-  renderRecordings();
-  updateAnalysisSourceSelect();
+  emit("library:changed", undefined);
   // The patient list and chart are derived from recordings, so they only
   // become correct once the takes are back.
   loadClinicalPatients();
@@ -110,8 +110,7 @@ export async function clearAllData(): Promise<void> {
   currentPatient = null;
   currentSessionId = null;
 
-  renderRecordings();
-  updateAnalysisSourceSelect();
+  emit("library:changed", undefined);
   renderPatientTable();
   renderExamHeader();
   renderChart();

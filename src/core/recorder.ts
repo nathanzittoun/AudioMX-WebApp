@@ -11,6 +11,7 @@ import { MAX_LIVE_SAMPLES, SAMPLE_RATE } from "./constants";
 import { encodeWav, makeAnalysisSamples, mergeChunks } from "./wav";
 import { extractVoiceFeatures, type VoiceFeatures } from "./features";
 import { saveRecording } from "../storage/library";
+import { emit } from "./bus";
 import { capture, device, library, type ChannelMode, type Recording } from "./state";
 import { processNoiseAttenuator } from "./dsp/noiseFilter";
 
@@ -146,8 +147,8 @@ export function saveCurrentRecording(): void {
 
   library.recordings.unshift(recording);
 
-  renderRecordings();
-  updateAnalysisSourceSelect();
+  // core/ must not reach into a view; the R&D library subscribes to this.
+  emit("library:changed", undefined);
 
   // Best-effort and non-blocking: the take is already in memory and on screen.
   void saveRecording(recording);

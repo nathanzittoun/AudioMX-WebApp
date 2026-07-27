@@ -8,6 +8,7 @@
 import { showTab } from "./ui/tabs";
 import { reflectDeviceSupport, watchWifiUrl } from "./device/reflectSupport";
 import { clearAllData, restoreRecordings } from "./storage/library";
+import { renderRecordings, setAudioMode, updateAnalysisSourceSelect } from "./rnd/libraryView";
 
 // ---- navigation ----
 
@@ -46,7 +47,7 @@ document.querySelectorAll<HTMLElement>(".sourceBtn").forEach(btn => {
 document.querySelectorAll<HTMLElement>(".modeBtn").forEach(btn => {
   btn.addEventListener("click", () => {
     const mode = btn.dataset["mode"];
-    if (mode) setAudioMode(mode);
+    if (mode === "stereo" || mode === "left" || mode === "right") setAudioMode(mode);
   });
 });
 

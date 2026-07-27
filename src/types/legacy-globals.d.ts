@@ -42,10 +42,8 @@ declare function connectSerial(): Promise<void>;
 declare function connectWifiMems(): void;
 
 // ---- capture + library (audio.js) ----
-declare function setAudioMode(mode: string): void;
-declare function renderRecordings(): void;
 declare function onClinicalRecordingSaved(recording: unknown): void;
-declare function updateAnalysisSourceSelect(): void;
+declare function plotNoiseSpectrum(): void;
 
 // ---- analysis (analysis.js) ----
 declare function drawSpectrumBackground(minFreq?: number, maxFreq?: number): void;
