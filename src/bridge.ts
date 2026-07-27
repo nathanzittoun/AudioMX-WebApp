@@ -18,6 +18,7 @@
 import { showTab } from "./ui/tabs";
 import { extractVoiceFeatures, formatFeatures } from "./core/features";
 import { createZip } from "./core/zip";
+import { PROTOCOL_TESTS, getProtocolTest } from "./core/protocol";
 
 Object.assign(globalThis, {
   // audio.js -> analyzeRecording() jumps to the analyse view.
@@ -27,4 +28,7 @@ Object.assign(globalThis, {
   formatFeatures,
   // clinical.js -> exportRecordingsZip() packs a session as one download.
   createZip,
+  // clinical.js drives the exam from the test list and looks tests up by id.
+  PROTOCOL_TESTS,
+  getProtocolTest,
 });

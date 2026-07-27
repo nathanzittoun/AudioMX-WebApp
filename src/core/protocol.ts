@@ -1,6 +1,25 @@
 // Voice-task protocol for the Clinical section, based on the AudioMX protocol
 // (MPT, DDK/ODT, CAPE-V, Rainbow Passage) plus cough and spontaneous speech.
 // Patient instructions are kept at roughly a Grade-4 reading level.
+//
+// Shared by both windows: the clinician view drives the exam from it, and the
+// patient pop-out renders patientTitle/patientSteps/reads from the same source.
+
+export interface ProtocolTest {
+  id: string;
+  name: string;
+  icon: string;
+  /** Shown large on the patient screen. */
+  patientTitle: string;
+  /** Numbered instructions on the patient screen. */
+  patientSteps: string[];
+  /** Text the patient reads aloud, or null when the task is not a reading. */
+  reads: string[] | null;
+  /** Timer length in seconds, or null when the task runs until stopped. */
+  holdSeconds: number | null;
+  /** Clinician-facing rationale — never shown to the patient. */
+  clinicianNote: string;
+}
 
 const CAPEV_SENTENCES = [
   "The blue spot is on the key again.",
@@ -17,7 +36,7 @@ const RAINBOW_PASSAGE =
   "beautiful colors. These take the shape of a long round arch, with its " +
   "path high above, and its two ends apparently beyond the horizon.";
 
-const PROTOCOL_TESTS = [
+export const PROTOCOL_TESTS: ProtocolTest[] = [
   {
     id: "mpt",
     name: "Sustained Vowel (MPT)",
@@ -100,6 +119,6 @@ const PROTOCOL_TESTS = [
   }
 ];
 
-function getProtocolTest(id) {
-  return PROTOCOL_TESTS.find(t => t.id === id) || null;
+export function getProtocolTest(id: string): ProtocolTest | null {
+  return PROTOCOL_TESTS.find(t => t.id === id) ?? null;
 }

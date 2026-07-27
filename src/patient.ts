@@ -1,22 +1,47 @@
 // Runs inside the popped-out patient window (patient.html). It renders the
 // patient-facing prompt and stays in sync with the clinician dashboard over a
 // BroadcastChannel — no shared scope, just messages.
+//
+// Its own Vite entry, separate from index.html: this window shares nothing with
+// the clinician app except the protocol definition and these messages.
+
+import { getProtocolTest } from "./core/protocol";
+
+type PatientMessage =
+  | { kind: "test"; testId: string }
+  | { kind: "go"; on: boolean }
+  | { kind: "countdown"; seconds: number }
+  | { kind: "timerStart"; seconds: number | null }
+  | { kind: "timerStop" }
+  | { kind: "ready" };
+
+interface PatientSnapshot {
+  testId?: string;
+  go?: boolean;
+  last?: PatientMessage;
+}
 
 const patientChannel = new BroadcastChannel("audiomx-patient");
 
-let pwTimer = null;
+let pwTimer: number | null = null;
 let pwTimerStart = 0;
 let pwTimerDuration = 0;
 
-const pwIcon = document.getElementById("pTaskIcon");
-const pwTitle = document.getElementById("pTaskTitle");
-const pwSteps = document.getElementById("pSteps");
-const pwReads = document.getElementById("pReads");
-const pwGoBar = document.getElementById("pGoBar");
-const pwTimerBar = document.getElementById("pTimerBar");
-const pwTimerWrap = document.getElementById("pTimerWrap");
+const el = (id: string): HTMLElement => {
+  const node = document.getElementById(id);
+  if (!node) throw new Error(`patient.html is missing #${id}`);
+  return node;
+};
 
-function pwRenderTest(testId) {
+const pwIcon = el("pTaskIcon");
+const pwTitle = el("pTaskTitle");
+const pwSteps = el("pSteps");
+const pwReads = el("pReads");
+const pwGoBar = el("pGoBar");
+const pwTimerBar = el("pTimerBar");
+const pwTimerWrap = el("pTimerWrap");
+
+function pwRenderTest(testId: string): void {
   const test = getProtocolTest(testId);
   if (!test) return;
 
@@ -44,18 +69,18 @@ function pwRenderTest(testId) {
   }
 }
 
-function pwSetGo(on) {
+function pwSetGo(on: boolean): void {
   pwGoBar.classList.toggle("go", on);
   pwGoBar.textContent = on ? "● Recording — begin speaking" : "Get ready…";
 }
 
-function pwStartTimer(seconds) {
+function pwStartTimer(seconds: number | null): void {
   pwStopTimer();
   pwTimerWrap.style.display = "block";
   pwTimerStart = performance.now();
   pwTimerDuration = seconds ? seconds * 1000 : 0;
 
-  pwTimer = setInterval(() => {
+  pwTimer = window.setInterval(() => {
     const elapsed = performance.now() - pwTimerStart;
     if (pwTimerDuration > 0) {
       pwTimerBar.style.width = Math.max(0, 1 - elapsed / pwTimerDuration) * 100 + "%";
@@ -65,8 +90,8 @@ function pwStartTimer(seconds) {
   }, 100);
 }
 
-function pwStopTimer() {
-  if (pwTimer) {
+function pwStopTimer(): void {
+  if (pwTimer !== null) {
     clearInterval(pwTimer);
     pwTimer = null;
   }
@@ -75,8 +100,8 @@ function pwStopTimer() {
 
 let pwGotState = false;
 
-function pwHandle(m) {
-  m = m || {};
+function pwHandle(m: PatientMessage | null | undefined): void {
+  if (!m) return;
   if (m.kind === "test") { pwGotState = true; pwRenderTest(m.testId); }
   else if (m.kind === "go") { pwGotState = true; pwSetGo(m.on); }
   else if (m.kind === "countdown") { pwGotState = true; pwCountdown(m.seconds); }
@@ -85,14 +110,14 @@ function pwHandle(m) {
 }
 
 // "Get ready" countdown: grey go-bar + green timer bar sliding to empty.
-function pwCountdown(seconds) {
+function pwCountdown(seconds: number): void {
   pwGoBar.classList.remove("go");
   pwGoBar.textContent = "Get ready…";
   pwStartTimer(seconds);
 }
 
 // Apply a full snapshot (from localStorage).
-function pwApplyState(st) {
+function pwApplyState(st: PatientSnapshot | null): void {
   if (!st) return;
   pwGotState = true;
   if (st.testId) pwRenderTest(st.testId);
@@ -103,30 +128,30 @@ function pwApplyState(st) {
 }
 
 // Transport 1+2: BroadcastChannel + postMessage from the opener.
-patientChannel.onmessage = event => pwHandle(event.data);
-window.addEventListener("message", event => pwHandle(event.data));
+patientChannel.onmessage = event => pwHandle(event.data as PatientMessage);
+window.addEventListener("message", event => pwHandle(event.data as PatientMessage));
 
 // Transport 3 (most reliable, same origin): localStorage. Read the current
 // state immediately on load, then follow live updates via storage events.
 try {
   const snapshot = localStorage.getItem("audiomx-patient");
-  if (snapshot) pwApplyState(JSON.parse(snapshot));
+  if (snapshot) pwApplyState(JSON.parse(snapshot) as PatientSnapshot);
 } catch (e) { /* ignore */ }
 
 window.addEventListener("storage", event => {
   if (event.key === "audiomx-patient" && event.newValue) {
-    try { pwApplyState(JSON.parse(event.newValue)); } catch (e) { /* ignore */ }
+    try { pwApplyState(JSON.parse(event.newValue) as PatientSnapshot); } catch (e) { /* ignore */ }
   }
 });
 
 // Ask the clinician dashboard for the current state, retrying until it answers.
 let pwReadyTries = 0;
-function pwRequestState() {
+function pwRequestState(): void {
   if (pwGotState || pwReadyTries > 40) return;
   pwReadyTries++;
   patientChannel.postMessage({ kind: "ready" });
   if (window.opener) {
-    try { window.opener.postMessage({ kind: "ready" }, "*"); } catch (e) { /* ignore */ }
+    try { (window.opener as Window).postMessage({ kind: "ready" }, "*"); } catch (e) { /* ignore */ }
   }
   setTimeout(pwRequestState, 300);
 }

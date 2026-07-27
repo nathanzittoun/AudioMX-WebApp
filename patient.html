@@ -26,7 +26,8 @@
     </div>
   </section>
 
-  <script src="%BASE_URL%legacy/protocol.js"></script>
-  <script src="%BASE_URL%legacy/patientwindow.js"></script>
+  <!-- Its own module entry. This window shares nothing with the clinician app
+       except the protocol definition and the messages between them. -->
+  <script type="module" src="/src/patient.ts"></script>
 </body>
 </html>

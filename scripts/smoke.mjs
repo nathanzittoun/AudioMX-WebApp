@@ -104,8 +104,21 @@ T("bundle FHIR construit", (await ev(
   ".then(b=>!!b && b.resourceType==='Bundle' && b.entry.length>0)")) === true);
 T("ZIP construit", (await ev("createZip([{name:'a.txt',data:new Uint8Array([1,2,3])}]).size>0")));
 
-// --- 6. fenetre patient ---
+// --- 6. fenetre patient (page reelle, pas seulement l'API) ---
 T("protocole lisible par le pop-out", (await ev("!!getProtocolTest(PROTOCOL_TESTS[0].id)")));
+const wantTitle = await ev("PROTOCOL_TESTS[0].patientTitle");
+// Same origin, so the snapshot survives the navigation and the pop-out picks
+// it up on load exactly as it does when the clinician opens the window.
+await ev(`localStorage.setItem('audiomx-patient', JSON.stringify({testId:'${await ev("PROTOCOL_TESTS[0].id")}',go:true}))`);
+await cmd("Page.navigate", { url: BASE + "patient.html" });
+await new Promise(r => setTimeout(r, 2500));
+T("pop-out rend la consigne du protocole", (await ev("document.getElementById('pTaskTitle').textContent")) === wantTitle);
+T("pop-out affiche les etapes", (await ev("document.getElementById('pSteps').children.length")) > 0);
+T("pop-out reflete l'etat 'recording'", (await ev("document.getElementById('pGoBar').classList.contains('go')")) === true);
+await new Promise(r => setTimeout(r, 3500));
+T("pop-out ne bascule PAS sur l'erreur apres 5 s",
+  (await ev("document.getElementById('pTaskTitle').textContent")) === wantTitle);
+await ev("localStorage.removeItem('audiomx-patient')");
 
 // --- 7. reload -> restauration ---
 await go();
