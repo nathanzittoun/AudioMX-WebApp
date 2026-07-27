@@ -1091,6 +1091,13 @@ audio {
   color: var(--wcm-red);
 }
 
+/* An input this browser or page cannot use. Kept legible rather than hidden:
+   the reason lives in the title attribute and must stay reachable. */
+.unsupported {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .patientTable { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
 .patientRow {
   display: flex;

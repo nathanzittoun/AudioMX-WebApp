@@ -16,6 +16,7 @@
 // is empty.
 
 import { showTab } from "./ui/tabs";
+import { computerMicSupport, serialSupport, wifiSupport } from "./device/support";
 import { BAUD_RATE, FFT_SIZE, MAX_LIVE_SAMPLES, SAMPLE_RATE } from "./core/constants";
 import { clamp, dbfs, dbToBar, goertzelMagnitude } from "./core/dsp/levels";
 import { accumulateFftFrame, fftRadix2, hannWindow, nextPowerOfTwo } from "./core/dsp/fft";
@@ -141,6 +142,9 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // serial.js / computerMic.js / wifi.js report the real reason instead of
+  // a generic alert or a silent failure.
+  serialSupport, computerMicSupport, wifiSupport,
   // Acquisition constants, read all over the legacy files.
   SAMPLE_RATE, BAUD_RATE, MAX_LIVE_SAMPLES, FFT_SIZE,
   // Pure DSP extracted out of analysis.js, which now only draws.

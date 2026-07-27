@@ -74,6 +74,19 @@ T("axe frequentiel jusqu'a Nyquist", dsp && Math.abs(dsp.nyquist - 8000) < 10, d
 T("dbfs / clamp / goertzel publies", (await ev(
   "Math.round(dbfs(32768))===0 && clamp(5,0,1)===1 && typeof goertzelMagnitude==='function'")) === true);
 
+// --- 1a2. detection de capacites (le chemin iOS) ---
+T("micro ordi supporte sur localhost", (await ev("computerMicSupport().ok")) === true);
+T("serialSupport renvoie un verdict", (await ev("typeof serialSupport().ok")) === "boolean");
+// La branche qui compte : https + ws:// est bloque par le navigateur, silencieusement.
+T("ws:// depuis https -> refuse avec raison", (await ev(
+  "(()=>{const r=wifiSupport('ws://192.168.4.1:81','https:');return !r.ok && /https/.test(r.reason)})()")) === true);
+T("ws:// depuis http -> autorise", (await ev("wifiSupport('ws://192.168.4.1:81','http:').ok")) === true);
+T("wss:// depuis https -> autorise", (await ev("wifiSupport('wss://device.example/','https:').ok")) === true);
+T("un input non supporte expose sa raison", (await ev(`(()=>{
+  const ids=['cConnectUsb','cConnectWifi','cConnectComputer'];
+  return ids.every(id=>{const b=document.getElementById(id);
+    return !b || (b.disabled ? (b.title||'').length>20 : !b.title)});})()`)) === true);
+
 // --- 1b. bridge accessor: legacy global <-> state.ts, both directions ---
 T("filtre OFF au demarrage", (await ev("noiseAttenuatorEnabled")) === false);
 await ev("toggleNoiseAttenuator()");

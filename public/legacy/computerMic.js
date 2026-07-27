@@ -47,8 +47,10 @@ function resampleMicBlock(input, inRate, outRate) {
 
 async function connectComputerMic() {
   try {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert("Computer microphone access is not supported in this browser.");
+    const mic = computerMicSupport();
+    if (!mic.ok) {
+      setStatus("Microphone unavailable", "idle");
+      log(mic.reason);
       return;
     }
 

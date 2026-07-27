@@ -17,8 +17,10 @@ async function connectSerial() {
     return;
   }
 
-  if (!("serial" in navigator)) {
-    alert("Web Serial is not supported. Use Chrome or Edge.");
+  const serial = serialSupport();
+  if (!serial.ok) {
+    setStatus("USB unavailable", "idle");
+    log(serial.reason);
     return;
   }
 

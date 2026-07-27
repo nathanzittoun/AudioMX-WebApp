@@ -6,6 +6,7 @@
 // unchanged in behaviour: wire every control, then draw the initial state.
 
 import { showTab } from "./ui/tabs";
+import { reflectDeviceSupport, watchWifiUrl } from "./device/reflectSupport";
 
 // ---- navigation ----
 
@@ -84,6 +85,10 @@ updateCurrentStats();
 renderRecordings();
 updateAnalysisSourceSelect();
 setStatus("Not connected", "idle");
+
+// Mark unusable inputs before the clinician can reach for them.
+reflectDeviceSupport();
+watchWifiUrl();
 
 initClinical();
 initEhr();
