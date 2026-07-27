@@ -366,9 +366,13 @@ export async function buildFhirBundle(
 
 // ---- the download --------------------------------------------------------
 
-export async function downloadPatientFhir(): Promise<void> {
-  if (!currentPatient) { alert("Open a patient first."); return; }
-  const patient = currentPatient;
+/**
+ * Takes the patient rather than reading a global: this module is imported by
+ * clinical.ts, so reaching back for clinical state would be a cycle — and the
+ * export is worth being able to call with an explicit patient anyway.
+ */
+export async function downloadPatientFhir(patient: StoredPatient | null): Promise<void> {
+  if (!patient) { alert("Open a patient first."); return; }
 
   const items = library.recordings.filter(r => r.meta?.patientId === patient.id);
   if (items.length === 0) { alert("No recordings for this patient."); return; }

@@ -87,7 +87,7 @@ export async function restoreRecordings(): Promise<void> {
   emit("library:changed", undefined);
   // The patient list and chart are derived from recordings, so they only
   // become correct once the takes are back.
-  loadClinicalPatients();
+  emit("patients:changed", undefined);
 
   log("Restored " + stored.length + " saved recording(s) from this browser.");
 }
@@ -107,14 +107,10 @@ export async function clearAllData(): Promise<void> {
   library.recordings = [];
   library.nextIndex = 1;
 
-  clinicalPatients = [];
-  currentPatient = null;
-  currentSessionId = null;
-
   emit("library:changed", undefined);
-  renderPatientTable();
-  renderExamHeader();
-  renderChart();
+  // The clinical view owns the selected patient and session, so it clears them
+  // itself rather than having storage reach into its state.
+  emit("data:cleared", undefined);
 
   log("All patients and recordings cleared.");
 }

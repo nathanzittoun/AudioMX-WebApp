@@ -14,6 +14,8 @@ import { clearLiveSpectrogram } from "./ui/canvas/spectrogram";
 import { ctx2d, el } from "./ui/dom";
 import { log } from "./ui/log";
 import { setStatus } from "./ui/status";
+import { updateCurrentStats } from "./ui/captureStats";
+import { emit } from "./core/bus";
 
 export function setAppMode(mode: "rnd" | "clinical"): void {
   ui.mode = mode;
@@ -33,7 +35,9 @@ export function renderLiveMonitors(): void {
   liveMonitorFrame = requestAnimationFrame(() => {
     liveMonitorFrame = 0;
     if (ui.mode === "clinical") {
-      drawClinicalMonitors();
+      // Announced, not called: clinical.ts imports this module for the capture
+      // controls, so importing it back would be a cycle.
+      emit("monitors:tick", undefined);
     } else {
       drawLiveWaveform();
       drawLiveSpectrum();
@@ -49,18 +53,7 @@ function clearActiveMonitors(): void {
   }
   clearCanvas();
   clearLiveSpectrogram();
-  if (typeof clearClinicalMonitors === "function") clearClinicalMonitors();
-}
-
-export function updateCurrentStats(): void {
-  const duration = capture.frames / SAMPLE_RATE;
-  const channelText = capture.channelMode === "stereo" ? "2 channels" : "1 channel";
-  const durationBox = el("durationBox");
-  const sampleBox = el("sampleBox");
-  const recordingStateBox = el("recordingStateBox");
-  if (durationBox) durationBox.textContent = "Duration: " + duration.toFixed(2) + " s";
-  if (sampleBox) sampleBox.textContent = "Frames: " + capture.frames + " · " + channelText;
-  if (recordingStateBox) recordingStateBox.textContent = capture.recording ? "Recording" : "Idle";
+  emit("monitors:clear", undefined);
 }
 
 async function sendMemsCommand(command: string): Promise<void> {

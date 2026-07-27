@@ -71,8 +71,9 @@ import {
 import { toggleNoiseAttenuator } from "./rnd/noiseToggle";
 import {
   clearCanvas, renderLiveMonitors, setAppMode, setInputSource,
-  startRecording, stopRecording, updateCurrentStats,
+  startRecording, stopRecording,
 } from "./app";
+import { updateCurrentStats } from "./ui/captureStats";
 import { log } from "./ui/log";
 import { setStatus } from "./ui/status";
 import {

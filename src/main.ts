@@ -36,8 +36,9 @@ import {
 } from "./rnd/fftView";
 import {
   clearCanvas, setAppMode, setInputSource, startRecording,
-  stopRecording, updateCurrentStats,
+  stopRecording,
 } from "./app";
+import { updateCurrentStats } from "./ui/captureStats";
 import { setStatus } from "./ui/status";
 import { el, requireEl } from "./ui/dom";
 import { toggleNoiseAttenuator } from "./rnd/noiseToggle";

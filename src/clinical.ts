@@ -11,6 +11,7 @@ import { SAMPLE_RATE } from "./core/constants";
 import { capture, device, library, ui, type Recording, type RecordingMeta } from "./core/state";
 import { clamp, dbfs } from "./core/dsp/levels";
 import { computeSpectrum } from "./core/dsp/spectrum";
+import { on } from "./core/bus";
 import { formatFeatures, type VoiceFeatures } from "./core/features";
 import { createZip, type ZipFile } from "./core/zip";
 import { connectSerial } from "./device/serialSource";
@@ -393,7 +394,7 @@ export function initClinical(): void {
   requireEl("cConnectComputer").addEventListener("click", () => void clinicalConnect("computer"));
   requireEl("cPopoutBtn").addEventListener("click", openPatientView);
   requireEl("cExportPatientBtn").addEventListener("click", () => void downloadPatientAll());
-  el("cExportFhirBtn")?.addEventListener("click", () => void downloadPatientFhir());
+  el("cExportFhirBtn")?.addEventListener("click", () => void downloadPatientFhir(currentPatient));
 
   // Space toggles Start/End while in the Exam tab (not while typing).
   window.addEventListener("keydown", event => {
@@ -1369,6 +1370,40 @@ function updateClinicalMetrics(samples: ArrayLike<number> | null): void {
   cClipEl.textContent = m.clip.toFixed(2) + "%";
   cLevelBar.style.width = clamp(((m.rms + 80) / 80) * 100, 0, 100) + "%";
 }
+
+// ---- Subscriptions ------------------------------------------------------
+//
+// Registered on import, once. Everything that used to call into this file from
+// a lower layer — the ingest path, storage, the R&D library — now announces
+// what happened instead, which is what lets core/ and storage/ stay free of
+// any reference to the clinical UI.
+
+// The shell owns the animation-frame throttle; it decides by mode which
+// monitors to paint and this is the clinical half.
+on("monitors:tick", () => drawClinicalMonitors());
+on("monitors:clear", () => clearClinicalMonitors());
+
+// An exam take finished saving. R&D takes carry no meta and are filtered out
+// by the emitter, so anything arriving here belongs to a patient.
+on("recording:saved", recording => onClinicalRecordingSaved(recording));
+
+// Takes were restored from storage: the patient list and the chart are derived
+// from them and are only correct once they are back.
+on("patients:changed", () => void loadClinicalPatients());
+
+// A take was renamed or deleted anywhere in the app; the chart shows takes.
+on("library:changed", () => renderChart());
+
+// Everything was wiped. The selected patient and session live here, so this
+// module clears them rather than having storage reach into its state.
+on("data:cleared", () => {
+  clinicalPatients = [];
+  currentPatient = null;
+  currentSessionId = null;
+  renderPatientTable();
+  renderExamHeader();
+  renderChart();
+});
 
 /**
  * Read access to the clinical state for the browser smoke suite, which drives

@@ -15,6 +15,7 @@ import { emit } from "./bus";
 import { capture, device, library, type Recording } from "./state";
 import { processNoiseAttenuator } from "./dsp/noiseFilter";
 import { log } from "../ui/log";
+import { updateCurrentStats } from "../ui/captureStats";
 
 /**
  * Take one block of interleaved samples into the recording in progress.
@@ -57,7 +58,9 @@ export function ingest(samples: Int16Array, channels: 1 | 2): void {
   }
 
   updateCurrentStats();
-  renderLiveMonitors();
+  // The shell owns the animation-frame throttle and decides which monitors to
+  // paint; core/ only reports that audio arrived.
+  emit("capture:tick", undefined);
 }
 
 /**
@@ -156,9 +159,7 @@ export function saveCurrentRecording(): void {
   void saveRecording(recording);
 
   // Let the clinical view refresh its session review if this was an exam take.
-  if (recording.meta && typeof onClinicalRecordingSaved === "function") {
-    onClinicalRecordingSaved(recording);
-  }
+  if (recording.meta) emit("recording:saved", recording);
 
   log("Recording " + recording.number + " saved from " + sourceLabel + ".");
 }

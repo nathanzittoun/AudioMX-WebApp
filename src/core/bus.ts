@@ -9,12 +9,29 @@
 // Notification only, never state: the data still lives in state.ts. An event
 // that carried state would just be a second source of truth.
 
+import type { Recording } from "./state";
+
 /** Closed map of events. A typo in a name is a compile error, unlike a string bus. */
 export interface Events {
   /** The set of saved takes changed — added, renamed, deleted or reloaded. */
   "library:changed": void;
   /** A take finished saving. Carries the take itself. */
-  "recording:saved": unknown;
+  "recording:saved": Recording;
+  /** A block of audio was ingested; whatever is on screen should repaint. */
+  "capture:tick": void;
+  /**
+   * Repaint the clinician's exam monitors. Separate from capture:tick because
+   * the shell owns the animation-frame throttle and dispatches by mode: this
+   * is how app.ts drives the clinical canvases without importing them, which
+   * would be a cycle — clinical.ts needs the shell's capture controls.
+   */
+  "monitors:tick": void;
+  /** Blank every monitor: a take ended, or the input changed. */
+  "monitors:clear": void;
+  /** The stored patient list changed and should be re-read. */
+  "patients:changed": void;
+  /** Every patient and take was wiped; views must drop their own state too. */
+  "data:cleared": void;
   /**
    * The Analyze region moved. Announced rather than called directly so the
    * waveform never has to know the FFT panel exists — the two are wired

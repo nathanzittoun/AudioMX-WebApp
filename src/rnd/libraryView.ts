@@ -11,10 +11,11 @@ import { deleteRecording as removeFromStorage, saveRecording } from "../storage/
 import { recordingBaseName, triggerDownload } from "../ui/download";
 import { el, requireEl } from "../ui/dom";
 import { showTab } from "../ui/tabs";
-import { on } from "../core/bus";
+import { emit, on } from "../core/bus";
 import { resetAnalysisSelection } from "./analysisSelection";
 import { plotNoiseSpectrum } from "./fftView";
 import { log } from "../ui/log";
+import { updateCurrentStats } from "../ui/captureStats";
 
 export function setAudioMode(mode: "stereo" | "left" | "right"): void {
   if (capture.recording) {
@@ -170,9 +171,9 @@ export function renameRecording(id: number): void {
 
   target.name = next.trim() || undefined;
 
-  renderRecordings();
-  updateAnalysisSourceSelect();
-  renderChart();
+  // One announcement instead of three direct calls: the R&D list, the source
+  // picker and the patient chart all subscribe to it.
+  emit("library:changed", undefined);
   void saveRecording(target);
 
   log("Recording renamed to: " + (target.name || "Recording " + target.number));
@@ -194,8 +195,7 @@ export function deleteRecording(id: number): void {
 
   void removeFromStorage(id);
 
-  renderRecordings();
-  updateAnalysisSourceSelect();
+  emit("library:changed", undefined);
 
   log("Recording deleted.");
 }
