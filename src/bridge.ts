@@ -17,6 +17,7 @@
 
 import { showTab } from "./ui/tabs";
 import { extractVoiceFeatures, formatFeatures } from "./core/features";
+import { createZip } from "./core/zip";
 
 Object.assign(globalThis, {
   // audio.js -> analyzeRecording() jumps to the analyse view.
@@ -24,4 +25,6 @@ Object.assign(globalThis, {
   // audio.js stamps features onto a take; clinical.js renders them in the chart.
   extractVoiceFeatures,
   formatFeatures,
+  // clinical.js -> exportRecordingsZip() packs a session as one download.
+  createZip,
 });
