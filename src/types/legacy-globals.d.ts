@@ -69,7 +69,9 @@ declare function toggleNoiseAttenuator(): void;
 // assign these because a classic script's top-level `let` lives in the global
 // lexical environment, which module scope also chains to.
 declare let clinicalPatients: unknown[];
-declare let currentPatient: { id: string } | null;
+// Typed as the persisted shape, which is what clinical.js actually puts here —
+// the FHIR export reads name/age/sex off it to build the Patient resource.
+declare let currentPatient: import("../storage/types").StoredPatient | null;
 declare let currentSessionId: string | null;
 declare function loadClinicalPatients(): void;
 declare function renderPatientTable(): void;

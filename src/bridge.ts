@@ -22,6 +22,7 @@ import {
 } from "./ehr/smart";
 import { redirectUri } from "./ehr/config";
 import { initEhr, patientDisplayName } from "./ehr/ehrPanel";
+import { buildFhirBundle, downloadPatientFhir } from "./ehr/fhirExport";
 import { ingest, ingestMemsFrame, saveCurrentRecording } from "./core/recorder";
 import { encodeWav, makeAnalysisSamples, mergeChunks } from "./core/wav";
 import { recordingBaseName, sanitizeForFilename, triggerDownload } from "./ui/download";
@@ -181,6 +182,8 @@ Object.assign(globalThis, {
   smartWriteDocumentReference: writeDocumentReference,
   smartRedirectUri: redirectUri,
   initEhr, patientDisplayName,
+  // clinical.js wires the "Export FHIR" button to downloadPatientFhir.
+  buildFhirBundle, downloadPatientFhir,
   // Wi-Fi transport.
   connectWifiMems, disconnectWifi, sendWifiCommand, getWifiUrl, reconnectDelayMs,
   // USB serial transport.
