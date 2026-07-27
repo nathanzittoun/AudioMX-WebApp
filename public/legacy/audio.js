@@ -145,9 +145,12 @@ function saveCurrentRecording() {
     url,
     filtered,
     features,
-    meta: activeTestMeta,
+    meta: pendingTestMeta,
     createdAt: new Date()
   };
+
+  // Consumed: the next take must not inherit this one's patient.
+  pendingTestMeta = null;
 
   recordings.unshift(recording);
 

@@ -29,7 +29,9 @@ document.querySelectorAll<HTMLElement>(".modeSwitchBtn").forEach(btn => {
 
 connectBtn.addEventListener("click", connectSerial);
 connectWifiBtn.addEventListener("click", connectWifiMems);
-startBtn.addEventListener("click", startRecording);
+// Wrapped: a bare reference would hand the click Event to startRecording()
+// as the take metadata.
+startBtn.addEventListener("click", () => void startRecording());
 stopBtn.addEventListener("click", stopRecording);
 calibrateNoiseBtn.addEventListener("click", calibrateNoiseFloor);
 noiseAttenuatorBtn.addEventListener("click", toggleNoiseAttenuator);

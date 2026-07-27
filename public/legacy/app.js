@@ -10,8 +10,6 @@ let writer;
 // isRecording, audioMode and noiseAttenuatorEnabled. A `let` here would shadow
 // them and split the source of truth.
 
-// Metadata attached to the next saved recording (set by the clinical flow).
-let activeTestMeta = null;
 
 let wifiSocket = null;
 let wifiConnected = false;
@@ -184,10 +182,15 @@ function drawLiveWaveform() {
   ctx.stroke();
 }
 
-async function startRecording() {
+// `meta` binds this take to a patient/session/test. Passed in by the clinical
+// flow; absent for R&D takes. Captured here rather than read from a shared
+// global at save time, so it cannot be changed by anyone mid-recording.
+async function startRecording(meta) {
   if (!isConnected) {
     return;
   }
+
+  pendingTestMeta = meta || null;
 
   resetNoiseAttenuator();
 

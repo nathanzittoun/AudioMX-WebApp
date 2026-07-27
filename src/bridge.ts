@@ -64,6 +64,7 @@ alias("currentFrameCount", capture, "frames");
 alias("currentValueCount", capture, "values");
 alias("liveSamples", capture, "live");
 alias("recordingWarmupFrames", capture, "warmupFrames");
+alias("pendingTestMeta", capture, "pendingMeta");
 alias("inputSource", device, "sourceId");
 alias("memsConnectionType", device, "transport");
 alias("isConnected", device, "connected");

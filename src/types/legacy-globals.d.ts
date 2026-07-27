@@ -33,7 +33,7 @@ declare function log(message: string): void;
 declare function clearCanvas(): void;
 declare function updateCurrentStats(): void;
 declare function setInputSource(source: string): Promise<void>;
-declare function startRecording(): Promise<void>;
+declare function startRecording(meta?: unknown): Promise<void>;
 declare function stopRecording(): Promise<void>;
 
 // ---- transports ----

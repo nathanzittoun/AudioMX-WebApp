@@ -12,6 +12,9 @@ let currentSessionId = null;
 let clinicalNotes = "";
 let clinicalCurrentTest = PROTOCOL_TESTS[0];
 let clinicalConnectKind = null;
+// Exam context for the take being set up. Owned here and handed to
+// startRecording(); audio.js no longer reaches back for it.
+let activeTestMeta = null;
 
 let clinicalTimer = null;
 let clinicalTimerStart = 0;
@@ -204,7 +207,7 @@ function beginCountdownAndRecord() {
     if (clinicalPhase !== "ready") return; // cancelled during countdown
     clinicalPhase = "recording";
     setPatientRecording(true);
-    await startRecording();
+    await startRecording(activeTestMeta);
     startClinicalTimer(clinicalCurrentTest.holdSeconds);
   });
 }

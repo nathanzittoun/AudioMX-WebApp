@@ -15,6 +15,20 @@
 
 import type { VoiceFeatures } from "./features";
 
+/**
+ * What binds a take to the exam that produced it. Null for R&D takes, which
+ * have no patient. Handed to startRecording() by the clinical flow and held in
+ * capture.pendingMeta for the duration of that take.
+ */
+export interface RecordingMeta {
+  patientId: string;
+  patientName: string;
+  sessionId: string;
+  testId: string;
+  testName: string;
+  notes: string;
+}
+
 /** Which microphone is selected, and how it is attached. */
 export type SourceId = "mems" | "computer";
 /** How the MEMS device is reached. Meaningless when sourceId is "computer". */
@@ -56,6 +70,14 @@ export const capture = {
    * Wi-Fi and the computer mic.
    */
   warmupFrames: 0,
+
+  /**
+   * Exam context for the take in progress: handed in at startRecording() and
+   * consumed once on save. Scoped to a single take, unlike the shared global it
+   * replaces — nothing outside the capture path can retarget it mid-recording,
+   * and a take cannot inherit the previous patient.
+   */
+  pendingMeta: null as RecordingMeta | null,
   /**
    * When ON the cleanup chain is baked into the stored take; when OFF the raw
    * signal is stored. Legacy code still reads this as the global
@@ -64,20 +86,6 @@ export const capture = {
   noiseFilterEnabled: false,
 };
 
-/**
- * What binds a take to the exam that produced it. Null for R&D takes, which
- * have no patient. Today this is smuggled through a shared global that
- * clinical.js sets and audio.js reads; it becomes an explicit parameter to
- * saveRecording() once the recorder is extracted.
- */
-export interface RecordingMeta {
-  patientId: string;
-  patientName: string;
-  sessionId: string;
-  testId: string;
-  testName: string;
-  notes: string;
-}
 
 /** One stored take. Mirrors the IndexedDB "recordings" schema. */
 export interface Recording {

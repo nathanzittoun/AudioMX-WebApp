@@ -131,18 +131,28 @@ T("session demarree", (await ev("!!currentSessionId")));
 await ev("selectClinicalTest(PROTOCOL_TESTS[0].id)");
 // activeTestMeta is what binds a take to patient/session/test. Set it in the
 // same evaluation as startRecording so nothing in between can clear it.
-await ev(`activeTestMeta={patientId:currentPatient.id,patientName:'Test',sessionId:currentSessionId,
-          testId:PROTOCOL_TESTS[0].id,testName:PROTOCOL_TESTS[0].name,notes:''}; startRecording()`);
-T("meta armee avant capture", (await ev("activeTestMeta?.patientId")) === "PT-SMOKE");
+// La meta est desormais un argument de startRecording, plus une globale.
+await ev(`startRecording({patientId:currentPatient.id,patientName:'Test',sessionId:currentSessionId,
+          testId:PROTOCOL_TESTS[0].id,testName:PROTOCOL_TESTS[0].name,notes:''})`);
+T("meta portee par la prise en cours", (await ev("pendingTestMeta?.patientId")) === "PT-SMOKE");
 await new Promise(r => setTimeout(r, 1500));
 await ev("stopRecording()"); await new Promise(r => setTimeout(r, 1200));
 // recordings.unshift() puts the newest take first, not last.
 T("prise clinique rattachee au patient", (await ev("recordings[0]?.meta?.patientId")) === "PT-SMOKE");
 T("session retrouvee", (await ev("patientSessions('PT-SMOKE').length")) >= 1);
 
+// The property this design buys: meta is consumed on save, so the next take
+// cannot silently inherit the previous patient. On a medical device a
+// mis-attributed recording is the failure that matters most.
+T("meta consommee apres sauvegarde", (await ev("pendingTestMeta")) === null);
+await ev("setAppMode('rnd'); startRecording()"); await new Promise(r => setTimeout(r, 1200));
+await ev("stopRecording()"); await new Promise(r => setTimeout(r, 1200));
+T("prise suivante n'herite PAS du patient", (await ev("recordings[0]?.meta")) === null);
+await ev("setAppMode('clinical')");
+
 // --- 5. persistance + exports ---
 const inDb = await ev("new Promise(r=>{const q=indexedDB.open('acousticConsole');q.onsuccess=e=>{const t=e.target.result.transaction('recordings','readonly').objectStore('recordings').getAll();t.onsuccess=()=>r(t.result.length)}})");
-T("persiste dans IndexedDB", inDb === 2, inDb + " enregistrements");
+T("persiste dans IndexedDB", inDb === 3, inDb + " enregistrements");
 // buildFhirBundle is async — it must be awaited, not inspected synchronously.
 T("bundle FHIR construit", (await ev(
   "buildFhirBundle(currentPatient, recordings.filter(r=>r.meta&&r.meta.patientId==='PT-SMOKE'))" +
@@ -167,7 +177,7 @@ await ev("localStorage.removeItem('audiomx-patient')");
 
 // --- 7. reload -> restauration ---
 await go();
-T("recordings restaures apres reload", (await ev("recordings.length")) === 2);
+T("recordings restaures apres reload", (await ev("recordings.length")) === 3);
 T("patients restaures apres reload", (await ev("clinicalPatients.length")) === 1);
 T("aucune exception au reload", errs.length === 0, errs.join(" | "));
 
