@@ -5,9 +5,10 @@ import { fileURLToPath } from "node:url";
 // package.json sets "type": "module", so __dirname does not exist here.
 const rootDir = dirname(fileURLToPath(import.meta.url));
 
-// Repo is served at https://nathanzittoun.github.io/esp32-usb-mic-control/, and that
-// exact URL is the redirect URI registered with Epic. Renaming the repo breaks OAuth.
-const PAGES_BASE = "/esp32-usb-mic-control/";
+// Pages serves this project site at https://nathanzittoun.github.io/AudioMX-WebApp/.
+// This must track the repo name: it is also the OAuth redirect URI registered with
+// Epic, so renaming the repo means updating this AND the Epic app registration.
+const PAGES_BASE = "/AudioMX-WebApp/";
 
 export default defineConfig(({ command }) => ({
   base: command === "build" ? process.env.VITE_BASE ?? PAGES_BASE : "/",
