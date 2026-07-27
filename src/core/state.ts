@@ -26,13 +26,34 @@ export const device = {
   transport: "usb" as Transport,
   /** True once the transport is open and streaming is possible. */
   connected: false,
+  /**
+   * Partial serial frame carried between reads, since a USB chunk can split a
+   * frame anywhere. Belongs to the serial transport and moves into it once the
+   * device layer exists.
+   */
+  byteBuffer: [] as number[],
 };
 
-/** Live capture settings and flags. */
+/** Live capture settings, flags and buffers. */
 export const capture = {
   /** True between startRecording() and stopRecording(). */
   recording: false,
   channelMode: "stereo" as ChannelMode,
+
+  /** Blocks accumulated for the take in progress, concatenated on save. */
+  chunks: [] as Int16Array[],
+  /** Frames (sample pairs in stereo) captured so far — drives the duration. */
+  frames: 0,
+  /** Raw sample values captured so far, i.e. frames x channels. */
+  values: 0,
+  /** Rolling window feeding the live monitors, capped at MAX_LIVE_SAMPLES. */
+  live: [] as number[],
+  /**
+   * Frames to discard at the start of a take. The ESP32 resets as the USB port
+   * opens, so the first fraction of a second is a power-on thump. Zero on
+   * Wi-Fi and the computer mic.
+   */
+  warmupFrames: 0,
   /**
    * When ON the cleanup chain is baked into the stored take; when OFF the raw
    * signal is stored. Legacy code still reads this as the global

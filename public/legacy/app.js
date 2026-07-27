@@ -31,13 +31,6 @@ let computerMicReady = false;
 let computerCaptureRate = SAMPLE_RATE;
 
 
-let byteBuffer = [];
-
-let currentChunks = [];
-let currentFrameCount = 0;
-let currentValueCount = 0;
-let liveSamples = [];
-
 
 let recordings = [];
 let recordingIndex = 1;
@@ -111,10 +104,6 @@ const liveSpectrogramCtx = liveSpectrogramCanvas ? liveSpectrogramCanvas.getCont
 const analysisSpectrogramCanvas = document.getElementById("analysisSpectrogram");
 const analysisSpectrogramCtx = analysisSpectrogramCanvas ? analysisSpectrogramCanvas.getContext("2d") : null;
 
-// When recording over USB the ESP32 resets as the port opens, so the first
-// fraction of a second contains a power-on thump. Discard that many frames at
-// the start of a USB recording. Wi-Fi and the computer mic don't need it.
-let recordingWarmupFrames = 0;
 
 function log(message) {
   const line = document.createElement("div");

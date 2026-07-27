@@ -48,9 +48,15 @@ function alias<T extends object>(name: string, holder: T, key: keyof T): void {
 alias("noiseAttenuatorEnabled", capture, "noiseFilterEnabled");
 alias("isRecording", capture, "recording");
 alias("audioMode", capture, "channelMode");
+alias("currentChunks", capture, "chunks");
+alias("currentFrameCount", capture, "frames");
+alias("currentValueCount", capture, "values");
+alias("liveSamples", capture, "live");
+alias("recordingWarmupFrames", capture, "warmupFrames");
 alias("inputSource", device, "sourceId");
 alias("memsConnectionType", device, "transport");
 alias("isConnected", device, "connected");
+alias("byteBuffer", device, "byteBuffer");
 
 Object.assign(globalThis, {
   // audio.js -> analyzeRecording() jumps to the analyse view.
