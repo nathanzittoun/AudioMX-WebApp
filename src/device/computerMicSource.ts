@@ -4,6 +4,7 @@
 // the fallback the capability messages point at when USB or Wi-Fi are out.
 
 import { SAMPLE_RATE } from "../core/constants";
+import { audioContext } from "../core/audioContext";
 import { capture, device } from "../core/state";
 import { ingest } from "../core/recorder";
 import { el } from "../ui/dom";
@@ -47,11 +48,13 @@ export async function connectComputerMic(): Promise<void> {
       },
     });
 
-    try {
-      context = new AudioContext({ sampleRate: SAMPLE_RATE });
-    } catch (e) {
-      // Safari and some devices reject a forced rate outright.
-      context = new AudioContext();
+    // The one shared context — see core/audioContext.ts. Opening a second one
+    // here is what silently killed this very input on macOS.
+    context = audioContext();
+    if (!context) {
+      setStatus("Microphone unavailable", "idle");
+      log("This browser has no Web Audio support, so the microphone cannot be read.");
+      return;
     }
 
     // Never assume the rate we asked for is the rate we got. Chrome usually
@@ -133,9 +136,10 @@ export async function disconnectComputerMic(): Promise<void> {
     stream.getTracks().forEach(track => track.stop());
     stream = null;
   }
-  if (context) {
-    await context.close();
-    context = null;
-  }
+  // The context itself stays open on purpose: closing and reopening it is the
+  // device reconfiguration this whole arrangement exists to avoid, and the
+  // countdown beeps share it. Dropping the reference is enough — the graph is
+  // disconnected and the tracks are stopped, so nothing is left running.
+  context = null;
   resampler.reset();
 }

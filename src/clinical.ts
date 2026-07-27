@@ -11,6 +11,7 @@ import { SAMPLE_RATE } from "./core/constants";
 import { capture, device, library, ui, type Recording, type RecordingMeta } from "./core/state";
 import { clamp, dbfs } from "./core/dsp/levels";
 import { computeSpectrum } from "./core/dsp/spectrum";
+import { audioContext } from "./core/audioContext";
 import { on } from "./core/bus";
 import { formatFeatures, type VoiceFeatures } from "./core/features";
 import { createZip, type ZipFile } from "./core/zip";
@@ -197,30 +198,15 @@ function setCountNumber(text: string): void {
   }
 }
 
-// One long-lived context for every beep. Creating and closing an AudioContext
-// per beep made the OS reconfigure the audio device six times during a 5-second
-// countdown, the last one landing ~220 ms after the recorder had started —
-// enough to silence or puncture the capture running alongside it. Matching
-// SAMPLE_RATE keeps playback and capture on one device configuration.
-let clinicalBeepCtx: AudioContext | null = null;
-
-function clinicalBeepContext(): AudioContext | null {
-  // Safari still ships the prefixed constructor only.
-  const AC: typeof AudioContext | undefined =
-    window.AudioContext ?? (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!AC) return null;
-  if (!clinicalBeepCtx) {
-    try { clinicalBeepCtx = new AC({ sampleRate: SAMPLE_RATE }); }
-    catch { clinicalBeepCtx = new AC(); }
-  }
-  // Autoplay policy can park it; resuming is a no-op when already running.
-  if (clinicalBeepCtx.state === "suspended") void clinicalBeepCtx.resume();
-  return clinicalBeepCtx;
-}
+// The countdown beeps play through the application's single shared context —
+// the same one the microphone is captured on. They used to have their own, and
+// on macOS that second context made CoreAudio reconfigure the device mid-exam:
+// the take came out the right length and completely silent. See
+// core/audioContext.ts.
 
 function clinicalBeep(freq: number, ms: number): void {
   try {
-    const ctx = clinicalBeepContext();
+    const ctx = audioContext();
     if (!ctx) return;
     const o = ctx.createOscillator();
     const g = ctx.createGain();

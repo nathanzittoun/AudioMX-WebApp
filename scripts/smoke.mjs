@@ -37,6 +37,18 @@ await cmd("Runtime.enable"); await cmd("Page.enable"); await cmd("Network.enable
 // Log.enable replays whatever is already in the browser's log, including 404s
 // from an earlier run against a different origin. Clear before listening.
 await cmd("Log.enable"); await cmd("Log.clear");
+// Compte les AudioContext ouverts par l'app. Injecte avant tout script de la
+// page, donc valable des la premiere ligne executee. Un seul est autorise :
+// sur macOS un second fait reconfigurer le peripherique par CoreAudio, ce qui
+// coupe l'entree du premier — la prise sort a la bonne duree et vide.
+await cmd("Page.addScriptToEvaluateOnNewDocument", { source: `(() => {
+  const Real = window.AudioContext;
+  if (!Real) return;
+  window.__audioContexts = 0;
+  const Counted = function (...args) { window.__audioContexts++; return new Real(...args); };
+  Counted.prototype = Real.prototype;
+  window.AudioContext = Counted;
+})()` });
 await cmd("Network.setCacheDisabled", { cacheDisabled: true });
 
 const ev = async x => {
@@ -403,6 +415,48 @@ await ev("audiomx.app.stopRecording()"); await new Promise(r => setTimeout(r, 12
 T("prise suivante n'herite PAS du patient", (await ev("audiomx.state.library.recordings[0]?.meta")) === null);
 await ev("audiomx.app.setAppMode('clinical')");
 
+// --- 4b. examen complet par l'UI (Start -> "I'm ready" -> decompte -> End) ---
+// La section ci-dessus appelle startRecording() directement : elle ne touche ni
+// au bouton Start, ni a la barriere de consentement patient, ni au decompte, et
+// ne declenche donc aucun bip. C'est precisement ce chemin qui rendait la prise
+// silencieuse en clinique, et rien ne le parcourait.
+await ev("audiomx.app.setAppMode('clinical'); audiomx.clinical.setClinicalTab('exam')");
+await ev("document.getElementById('cConsent').checked = true");
+await ev("document.getElementById('cStartBtn').click()");
+await new Promise(r => setTimeout(r, 500));
+T("Start met l'examen en attente du patient", (await ev(
+  "document.getElementById('pReadyWrap')?.style.display")) === "block");
+
+await ev("document.getElementById('pReadyBtn').click()");
+await new Promise(r => setTimeout(r, 6500));   // 5 s de decompte + marge
+T("le decompte a lance l'enregistrement", (await ev("audiomx.state.capture.recording")) === true);
+
+await new Promise(r => setTimeout(r, 2000));
+await ev("document.getElementById('cStopBtn').click()");
+await new Promise(r => setTimeout(r, 1500));
+
+// LE test qui compte : la prise ne doit pas etre silencieuse.
+const exam = await ev(`(()=>{
+  const r = audiomx.state.library.recordings[0];
+  if (!r) return { error: 'aucune prise' };
+  let max = 0;
+  for (let i = 0; i < r.analysisSamples.length; i++) {
+    const v = Math.abs(r.analysisSamples[i]);
+    if (v > max) max = v;
+  }
+  return { max, duration: r.duration, patient: r.meta?.patientId,
+           contexts: window.__audioContexts,
+           gate: document.getElementById('cGateBox')?.style.display };
+})()`);
+T("un seul AudioContext pour toute l'app", exam?.contexts === 1,
+  exam ? exam.contexts + " ouvert(s)" : "-");
+// Sans micro reel c'est la tonalite de test de Chrome ; avec un vrai micro
+// c'est la voix. Dans les deux cas, zero partout = l'entree est morte.
+T("la prise clinique n'est PAS silencieuse", exam && exam.max > 1000,
+  exam ? "amplitude max " + exam.max : "-");
+T("prise rattachee au patient", exam?.patient === "PT-SMOKE");
+T("quality gate affiche apres l'examen", exam?.gate === "block");
+
 // --- 5. persistance + exports ---
 const inDb = await ev(`new Promise(res=>{
   const done = n => res(n);
@@ -415,7 +469,7 @@ const inDb = await ev(`new Promise(res=>{
     t.onerror = () => done(-1);
   };
 })`);
-T("persiste dans IndexedDB", inDb === 3, inDb + " enregistrements");
+T("persiste dans IndexedDB", inDb === 4, inDb + " enregistrements");
 // buildFhirBundle is async — it must be awaited, not inspected synchronously.
 T("bundle FHIR construit", (await ev(
   "audiomx.fhirExport.buildFhirBundle(audiomx.clinical.clinicalStateAccess.patient, audiomx.state.library.recordings.filter(r=>r.meta&&r.meta.patientId==='PT-SMOKE'))" +
@@ -466,7 +520,7 @@ await ev("localStorage.removeItem('audiomx-patient')");
 // --- 7. reload -> restauration ---
 await go();
 // 2, pas 3 : la prise supprimee plus haut doit rester supprimee apres reload.
-T("recordings restaures apres reload", (await ev("audiomx.state.library.recordings.length")) === 2);
+T("recordings restaures apres reload", (await ev("audiomx.state.library.recordings.length")) === 3);
 T("patients restaures apres reload", (await ev("audiomx.clinical.clinicalStateAccess.patients.length")) === 1);
 T("aucune exception au reload", errs.length === 0, errs.join(" | "));
 
