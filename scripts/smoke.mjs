@@ -24,16 +24,27 @@ ws.onmessage = e => {
     errs.push((d.exception?.description || d.text).split("\n")[0]);
   }
   if (m.method === "Log.entryAdded") {
-    const t = m.params.entry.text || "";
-    if (/404|Failed to load resource/.test(t) && !/favicon/.test(t)) net404.push(t);
+    const e = m.params.entry;
+    // The failing URL lives in entry.url, not entry.text — filtering on the
+    // text alone let /favicon.ico through and reported it as a real 404.
+    const t = (e.url || "") + " " + (e.text || "");
+    if (/404|Failed to load resource/.test(t) && !/favicon/.test(t)) net404.push(t.trim());
   }
 };
 
 await new Promise(r => ws.onopen = r);
-await cmd("Runtime.enable"); await cmd("Page.enable"); await cmd("Log.enable"); await cmd("Network.enable");
+await cmd("Runtime.enable"); await cmd("Page.enable"); await cmd("Network.enable");
+// Log.enable replays whatever is already in the browser's log, including 404s
+// from an earlier run against a different origin. Clear before listening.
+await cmd("Log.enable"); await cmd("Log.clear");
 await cmd("Network.setCacheDisabled", { cacheDisabled: true });
 
-const ev = async x => (await cmd("Runtime.evaluate", { expression: x, returnByValue: true, awaitPromise: true })).result?.value;
+const ev = async x => {
+  const r = await cmd("Runtime.evaluate", { expression: x, returnByValue: true, awaitPromise: true });
+  // A hung promise or a thrown expression comes back without `result`; report
+  // undefined so one bad probe fails its own assertion instead of the run.
+  return r?.result?.value;
+};
 const go = async () => { await cmd("Page.navigate", { url: BASE }); await new Promise(r => setTimeout(r, 4500)); };
 
 let pass = 0, fail = 0;
@@ -280,7 +291,17 @@ T("prise suivante n'herite PAS du patient", (await ev("recordings[0]?.meta")) ==
 await ev("setAppMode('clinical')");
 
 // --- 5. persistance + exports ---
-const inDb = await ev("new Promise(r=>{const q=indexedDB.open('acousticConsole');q.onsuccess=e=>{const t=e.target.result.transaction('recordings','readonly').objectStore('recordings').getAll();t.onsuccess=()=>r(t.result.length)}})");
+const inDb = await ev(`new Promise(res=>{
+  const done = n => res(n);
+  setTimeout(() => done(-1), 3000);   // blocked open would otherwise hang the run
+  const q = indexedDB.open('acousticConsole');
+  q.onerror = q.onblocked = () => done(-1);
+  q.onsuccess = e => {
+    const t = e.target.result.transaction('recordings','readonly').objectStore('recordings').getAll();
+    t.onsuccess = () => done(t.result.length);
+    t.onerror = () => done(-1);
+  };
+})`);
 T("persiste dans IndexedDB", inDb === 3, inDb + " enregistrements");
 // buildFhirBundle is async — it must be awaited, not inspected synchronously.
 T("bundle FHIR construit", (await ev(

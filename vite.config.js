@@ -10,8 +10,13 @@ const rootDir = dirname(fileURLToPath(import.meta.url));
 // Epic, so renaming the repo means updating this AND the Epic app registration.
 const PAGES_BASE = "/AudioMX-WebApp/";
 
-export default defineConfig(({ command }) => ({
-  base: command === "build" ? process.env.VITE_BASE ?? PAGES_BASE : "/",
+export default defineConfig(({ command, isPreview }) => ({
+  // `vite preview` runs with command === "serve", so testing command alone
+  // served dist at "/" while the built HTML asked for /AudioMX-WebApp/ —
+  // every request fell through to index.html and the page loaded nothing.
+  // Preview has to use the same base the build baked in, or it cannot verify
+  // the artefact that actually ships.
+  base: command === "build" || isPreview ? process.env.VITE_BASE ?? PAGES_BASE : "/",
 
   server: {
     port: 5173,
