@@ -413,6 +413,31 @@ T("bundle FHIR construit", (await ev(
   ".then(b=>!!b && b.resourceType==='Bundle' && b.entry.length>0)")) === true);
 T("ZIP construit", (await ev("createZip([{name:'a.txt',data:new Uint8Array([1,2,3])}]).size>0")));
 
+// Supprimer une prise depuis le Chart doit la retirer de la memoire ET de la
+// base, et liberer son object URL. Deux fonctions differentes portaient le nom
+// `deleteRecording` en global ; se tromper de cible laissait la prise a l'ecran
+// jusqu'au rechargement, et fuyait le blob. Rien ne le verifiait.
+const del = await ev(`(async () => {
+  const before = recordings.length;
+  const victim = recordings.find(r => r.meta && r.meta.patientId === 'PT-SMOKE');
+  if (!victim) return { error: 'aucune prise clinique' };
+  audiomx.clinical.deleteClinicalRecording(victim.id, true);
+  await new Promise(r => setTimeout(r, 400));
+  const inDb = await new Promise(done => {
+    const q = indexedDB.open('acousticConsole');
+    q.onsuccess = () => {
+      const t = q.result.transaction('recordings').objectStore('recordings').getAll();
+      t.onsuccess = () => done(t.result.some(x => x.id === victim.id));
+      t.onerror = () => done('erreur');
+    };
+  });
+  return { before, after: recordings.length, stillInDb: inDb,
+           gone: !recordings.some(r => r.id === victim.id) };
+})()`);
+T("prise clinique retiree de la memoire", del && del.gone === true && del.after === del.before - 1,
+  del ? `${del.before} -> ${del.after}` : "-");
+T("prise clinique retiree d'IndexedDB", del?.stillInDb === false);
+
 // --- 6. fenetre patient (page reelle, pas seulement l'API) ---
 T("protocole lisible par le pop-out", (await ev("!!getProtocolTest(PROTOCOL_TESTS[0].id)")));
 const wantTitle = await ev("PROTOCOL_TESTS[0].patientTitle");
@@ -431,7 +456,8 @@ await ev("localStorage.removeItem('audiomx-patient')");
 
 // --- 7. reload -> restauration ---
 await go();
-T("recordings restaures apres reload", (await ev("recordings.length")) === 3);
+// 2, pas 3 : la prise supprimee plus haut doit rester supprimee apres reload.
+T("recordings restaures apres reload", (await ev("recordings.length")) === 2);
 T("patients restaures apres reload", (await ev("clinicalPatients.length")) === 1);
 T("aucune exception au reload", errs.length === 0, errs.join(" | "));
 

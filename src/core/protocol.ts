@@ -5,6 +5,22 @@
 // Shared by both windows: the clinician view drives the exam from it, and the
 // patient pop-out renders patientTitle/patientSteps/reads from the same source.
 
+/**
+ * What the clinician window sends to the patient window.
+ *
+ * The two windows share exactly two things: this contract and the test
+ * definitions below. It lives here because both sides must agree on it and
+ * neither may import the other — the patient pop-out is its own entry point
+ * and must stay loadable on its own.
+ */
+export type PatientMessage =
+  | { kind: "test"; testId: string }
+  | { kind: "go"; on: boolean }
+  | { kind: "countdown"; seconds: number }
+  | { kind: "timerStart"; seconds: number | null }
+  | { kind: "timerStop" }
+  | { kind: "ready" };
+
 export interface ProtocolTest {
   id: string;
   name: string;

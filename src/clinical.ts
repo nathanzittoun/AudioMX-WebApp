@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Clinical section — organized like a small clinical app:
 //   • Patients tab: a searchable patient database.
 //   • Exam tab: run the protocol for the selected patient (live monitors,
@@ -7,107 +6,191 @@
 // Takes are filed under the patient/session, kept here (not the R&D Library),
 // and persisted in IndexedDB.
 
-import { PROTOCOL_TESTS } from "./core/protocol";
+import { PROTOCOL_TESTS, getProtocolTest, type PatientMessage, type ProtocolTest } from "./core/protocol";
+import { SAMPLE_RATE } from "./core/constants";
+import { capture, device, library, ui, type Recording, type RecordingMeta } from "./core/state";
+import { clamp, dbfs } from "./core/dsp/levels";
+import { computeSpectrum } from "./core/dsp/spectrum";
+import { formatFeatures, type VoiceFeatures } from "./core/features";
+import { createZip, type ZipFile } from "./core/zip";
+import { connectSerial } from "./device/serialSource";
+import { connectWifiMems } from "./device/wifiSource";
+import { connectComputerMic } from "./device/computerMicSource";
+import { downloadPatientFhir } from "./ehr/fhirExport";
+// deleteRecording comes from libraryView, NOT from storage. The two shared the
+// name `deleteRecording` as globals and bridge.ts published the libraryView one:
+// it revokes the object URL, drops the take from library.recordings, refreshes
+// the R&D views and only then removes it from IndexedDB. Importing the storage
+// function instead would delete the row and leave the take on screen until a
+// reload.
+import {
+  analyzeRecording, deleteRecording, downloadRecording, renameRecording,
+} from "./rnd/libraryView";
+import { deletePatient as deletePatientFromDb, loadPatients, savePatient } from "./storage/library";
+import type { StoredPatient } from "./storage/types";
+import { el, requireEl } from "./ui/dom";
+import { recordingBaseName, sanitizeForFilename, triggerDownload } from "./ui/download";
+import { log, setAppMode, setInputSource, setStatus, startRecording, stopRecording } from "./app";
 
-let clinicalPatients = [];
-let currentPatient = null;
-let currentSessionId = null;
+/** How the clinician attached a microphone for this exam. */
+type ConnectKind = "usb" | "wifi" | "computer";
+
+/**
+ * Where the exam is in its cycle.
+ *
+ * "waiting" is the state between pressing Start and the patient confirming
+ * "I'm ready"; the countdown ("ready") only begins after that. It was missing
+ * from the informal comment this replaces, even though three call sites test
+ * for it — writing the union down is what made that visible.
+ */
+type ClinicalPhase = "idle" | "waiting" | "ready" | "recording";
+
+/** Level/peak/clipping summary of a block of samples. */
+interface ClinicalMetrics {
+  rms: number;
+  peak: number;
+  clip: number;
+}
+
+/** One session of a patient: its takes, in order, and when it started. */
+export interface PatientSession {
+  id: string;
+  number: number;
+  takes: Recording[];
+  date: Date;
+}
+
+let clinicalPatients: StoredPatient[] = [];
+let currentPatient: StoredPatient | null = null;
+let currentSessionId: string | null = null;
 let clinicalNotes = "";
-let clinicalCurrentTest = PROTOCOL_TESTS[0];
-let clinicalConnectKind = null;
+let clinicalCurrentTest: ProtocolTest = PROTOCOL_TESTS[0];
+let clinicalConnectKind: ConnectKind | null = null;
 // Exam context for the take being set up. Owned here and handed to
-// startRecording(); audio.js no longer reaches back for it.
-let activeTestMeta = null;
+// startRecording(); the capture path no longer reaches back for it.
+let activeTestMeta: RecordingMeta | null = null;
 
-let clinicalTimer = null;
+let clinicalTimer: number | null = null;
 let clinicalTimerStart = 0;
 let clinicalTimerDuration = 0;
-let lastClinicalRecording = null;
+let lastClinicalRecording: Recording | null = null;
 
 // Seconds of "get ready" countdown shown to the patient before recording.
 const READY_SECONDS = 5;
-let clinicalPhase = "idle"; // "idle" | "ready" | "recording"
+let clinicalPhase: ClinicalPhase = "idle";
 
 // Two transports to the pop-out patient window (patient.html): BroadcastChannel
 // (same origin) and direct postMessage to the opened window (crosses origins).
 const clinicalChannel = "BroadcastChannel" in window ? new BroadcastChannel("audiomx-patient") : null;
-let patientWindowRef = null;
+let patientWindowRef: Window | null = null;
 
 // A snapshot of what the patient should be showing. Mirrored to localStorage so
 // the pop-out reads the current state the instant it loads (no handshake race).
-const patientState = { testId: PROTOCOL_TESTS[0].id, go: false, last: null };
+const patientState: { testId: string; go: boolean; last: PatientMessage | null } = {
+  testId: PROTOCOL_TESTS[0].id,
+  go: false,
+  last: null,
+};
 
-function broadcastPatient(msg) {
+/**
+ * `createdAt` is a Date on a fresh take and can be a string once it has been
+ * through storage, so every comparison and format goes through here. Passing a
+ * string to Math.max() yields NaN, which surfaces as "Invalid Date" in the
+ * chart rather than as an error.
+ */
+function timeOf(recording: Recording): number {
+  return recording.createdAt instanceof Date
+    ? recording.createdAt.getTime()
+    : new Date(recording.createdAt).getTime();
+}
+
+function broadcastPatient(msg: PatientMessage): void {
   if (msg.kind === "test") patientState.testId = msg.testId;
   if (msg.kind === "go") patientState.go = msg.on;
   patientState.last = msg;
 
   if (clinicalChannel) clinicalChannel.postMessage(msg);
   if (patientWindowRef && !patientWindowRef.closed) {
-    try { patientWindowRef.postMessage(msg, "*"); } catch (e) { /* ignore */ }
+    try { patientWindowRef.postMessage(msg, "*"); } catch { /* ignore */ }
   }
   try {
     localStorage.setItem("audiomx-patient", JSON.stringify({ ...patientState, seq: Date.now() }));
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
 }
 
 // ---- Direct control of the pop-out window (most reliable path) ----------
 // Because the pop-out is same-origin and we hold its window handle, the
 // clinician page can write straight into its DOM — no messaging needed.
 
-function patientDoc() {
+function patientDoc(): Document | null {
   try {
     if (patientWindowRef && !patientWindowRef.closed &&
         patientWindowRef.document &&
         patientWindowRef.document.getElementById("pTaskTitle")) {
       return patientWindowRef.document;
     }
-  } catch (e) { /* cross-origin or not ready */ }
+  } catch { /* cross-origin or not ready */ }
   return null;
 }
 
-function pushPromptToPopup() {
+function pushPromptToPopup(): void {
   const doc = patientDoc();
   if (!doc) return;
   const t = clinicalCurrentTest;
-  doc.getElementById("pTaskIcon").textContent = t.icon;
-  doc.getElementById("pTaskTitle").textContent = t.patientTitle;
+
+  const icon = doc.getElementById("pTaskIcon");
+  if (icon) icon.textContent = t.icon;
+  const title = doc.getElementById("pTaskTitle");
+  if (title) title.textContent = t.patientTitle;
+
   const steps = doc.getElementById("pSteps");
-  steps.innerHTML = "";
-  t.patientSteps.forEach(s => { const li = doc.createElement("li"); li.textContent = s; steps.appendChild(li); });
+  if (steps) {
+    steps.innerHTML = "";
+    t.patientSteps.forEach(s => { const li = doc.createElement("li"); li.textContent = s; steps.appendChild(li); });
+  }
+
   const reads = doc.getElementById("pReads");
+  if (!reads) return;
   reads.innerHTML = "";
   if (t.reads) {
-    t.reads.forEach(l => { const p = doc.createElement("p"); p.className = "patientReadLine"; p.textContent = l; reads.appendChild(p); });
+    t.reads.forEach(l => {
+      const p = doc.createElement("p");
+      p.className = "patientReadLine";
+      p.textContent = l;
+      reads.appendChild(p);
+    });
     reads.style.display = "block";
   } else {
     reads.style.display = "none";
   }
 }
 
-function pushGoToPopup(on) {
+function pushGoToPopup(on: boolean): void {
   const doc = patientDoc();
   if (!doc) return;
   const go = doc.getElementById("pGoBar");
+  if (!go) return;
   go.classList.toggle("go", on);
   go.textContent = on ? "● Recording — begin speaking" : "Get ready…";
 }
 
-function pushTimerToPopup(widthPct, visible) {
+function pushTimerToPopup(widthPct: number, visible: boolean): void {
   const doc = patientDoc();
   if (!doc) return;
-  doc.getElementById("pTimerWrap").style.display = visible ? "block" : "none";
-  doc.getElementById("pTimerBar").style.width = widthPct + "%";
+  const wrap = doc.getElementById("pTimerWrap");
+  if (wrap) wrap.style.display = visible ? "block" : "none";
+  const bar = doc.getElementById("pTimerBar");
+  if (bar) bar.style.width = widthPct + "%";
 }
 
 // Big countdown number on both patient screens.
-function setCountNumber(text) {
-  const el = document.getElementById("pCountNumber");
-  if (el) el.textContent = text;
+function setCountNumber(text: string): void {
+  const here = document.getElementById("pCountNumber");
+  if (here) here.textContent = text;
   const doc = patientDoc();
   if (doc) {
-    const e2 = doc.getElementById("pCountNumber");
-    if (e2) e2.textContent = text;
+    const there = doc.getElementById("pCountNumber");
+    if (there) there.textContent = text;
   }
 }
 
@@ -116,21 +199,23 @@ function setCountNumber(text) {
 // countdown, the last one landing ~220 ms after the recorder had started —
 // enough to silence or puncture the capture running alongside it. Matching
 // SAMPLE_RATE keeps playback and capture on one device configuration.
-let clinicalBeepCtx = null;
+let clinicalBeepCtx: AudioContext | null = null;
 
-function clinicalBeepContext() {
-  const AC = window.AudioContext || window.webkitAudioContext;
+function clinicalBeepContext(): AudioContext | null {
+  // Safari still ships the prefixed constructor only.
+  const AC: typeof AudioContext | undefined =
+    window.AudioContext ?? (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AC) return null;
   if (!clinicalBeepCtx) {
     try { clinicalBeepCtx = new AC({ sampleRate: SAMPLE_RATE }); }
-    catch (e) { clinicalBeepCtx = new AC(); }
+    catch { clinicalBeepCtx = new AC(); }
   }
   // Autoplay policy can park it; resuming is a no-op when already running.
-  if (clinicalBeepCtx.state === "suspended") clinicalBeepCtx.resume();
+  if (clinicalBeepCtx.state === "suspended") void clinicalBeepCtx.resume();
   return clinicalBeepCtx;
 }
 
-function clinicalBeep(freq, ms) {
+function clinicalBeep(freq: number, ms: number): void {
   try {
     const ctx = clinicalBeepContext();
     if (!ctx) return;
@@ -144,13 +229,13 @@ function clinicalBeep(freq, ms) {
     o.start();
     o.stop(ctx.currentTime + (ms || 150) / 1000);
     // Only the nodes are disposable; the context stays open for the next beep.
-    o.onended = () => { try { o.disconnect(); g.disconnect(); } catch (e) {} };
-  } catch (e) { /* ignore */ }
+    o.onended = () => { try { o.disconnect(); g.disconnect(); } catch { /* ignore */ } };
+  } catch { /* ignore */ }
 }
 
 // Read the current task aloud (browser TTS) if the toggle is on.
-function speakCurrentPrompt() {
-  const speak = document.getElementById("cSpeak");
+function speakCurrentPrompt(): void {
+  const speak = el<HTMLInputElement>("cSpeak");
   if (!speak || !speak.checked || !("speechSynthesis" in window)) return;
   try {
     window.speechSynthesis.cancel();
@@ -158,7 +243,7 @@ function speakCurrentPrompt() {
     const u = new SpeechSynthesisUtterance(t.patientTitle + ". " + t.patientSteps.join(". "));
     u.rate = 0.95;
     window.speechSynthesis.speak(u);
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
 }
 
 // ---- Patient "I'm ready" gate ------------------------------------------
@@ -168,7 +253,7 @@ function speakCurrentPrompt() {
 // the pop-out; we wire its onclick straight to onPatientReady (the reliable
 // direct-DOM path — no cross-window messaging needed).
 
-function showReadyGate(on) {
+function showReadyGate(on: boolean): void {
   // Clinician's embedded patient panel (same document).
   const embWrap = document.getElementById("pReadyWrap");
   if (embWrap) embWrap.style.display = on ? "block" : "none";
@@ -194,16 +279,16 @@ function showReadyGate(on) {
   }
 }
 
-function onPatientReady() {
+function onPatientReady(): void {
   if (clinicalPhase !== "waiting") return;
-  try { window.speechSynthesis.cancel(); } catch (e) { /* ignore */ }
+  try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
   showReadyGate(false);
   beginCountdownAndRecord();
 }
 
 // Countdown, then start recording. Auto-stops at the test's hold duration
 // (or runs until the clinician ends it, for open-ended tasks).
-function beginCountdownAndRecord() {
+function beginCountdownAndRecord(): void {
   broadcastPatient({ kind: "countdown", seconds: READY_SECONDS });
   clinicalPhase = "ready";
   runGetReady(READY_SECONDS, async () => {
@@ -216,126 +301,139 @@ function beginCountdownAndRecord() {
 }
 
 // After a good take, advance to the next protocol test automatically.
-function advanceProtocol() {
+function advanceProtocol(): void {
   const idx = PROTOCOL_TESTS.findIndex(t => t.id === clinicalCurrentTest.id);
   if (idx >= 0 && idx < PROTOCOL_TESTS.length - 1) {
     selectClinicalTest(PROTOCOL_TESTS[idx + 1].id);
   }
 }
 
-const CONNECT_LABELS = {
+const CONNECT_LABELS: Record<ConnectKind, string> = {
   usb: "Connect MEMS (USB)",
   wifi: "Connect MEMS (Wi-Fi)",
   computer: "Connect computer mic"
 };
-const CONNECT_IDS = { usb: "cConnectUsb", wifi: "cConnectWifi", computer: "cConnectComputer" };
+const CONNECT_IDS: Record<ConnectKind, string> = {
+  usb: "cConnectUsb",
+  wifi: "cConnectWifi",
+  computer: "cConnectComputer",
+};
 
-// DOM refs
-let cTestList, cStartBtn, cStopBtn, cGateBox, cTestName, cTestNote, cNotesInput;
-let cWaveCanvas, cWaveCtx, cSpecCanvas, cSpecCtx;
-let cRmsEl, cPeakEl, cClipEl, cLevelBar;
-let pTaskTitle, pTaskIcon, pSteps, pReads, pGoBar, pTimerBar, pTimerWrap;
-let cPatientTable, cPatientSearch, cExamPatient, cSessionLabel, cChartPatient, cChartFolders;
+// DOM refs, resolved once in initClinical(). Non-null because every id below
+// is static markup in index.html — absence would be a bug, not a variant, and
+// requireEl() names the missing element instead of failing later on null.
+let cTestList: HTMLElement, cStartBtn: HTMLButtonElement, cStopBtn: HTMLButtonElement;
+let cGateBox: HTMLElement, cTestName: HTMLElement, cTestNote: HTMLElement, cNotesInput: HTMLTextAreaElement;
+let cWaveCanvas: HTMLCanvasElement, cWaveCtx: CanvasRenderingContext2D | null;
+let cSpecCanvas: HTMLCanvasElement, cSpecCtx: CanvasRenderingContext2D | null;
+let cRmsEl: HTMLElement, cPeakEl: HTMLElement, cClipEl: HTMLElement, cLevelBar: HTMLElement;
+let pTaskTitle: HTMLElement, pTaskIcon: HTMLElement, pSteps: HTMLElement, pReads: HTMLElement;
+let pGoBar: HTMLElement, pTimerBar: HTMLElement, pTimerWrap: HTMLElement;
+let cPatientTable: HTMLElement, cPatientSearch: HTMLInputElement, cExamPatient: HTMLElement;
+let cSessionLabel: HTMLElement, cChartPatient: HTMLElement, cChartFolders: HTMLElement;
 
-export function initClinical() {
-  cTestList = document.getElementById("cTestList");
-  cStartBtn = document.getElementById("cStartBtn");
-  cStopBtn = document.getElementById("cStopBtn");
-  cGateBox = document.getElementById("cGateBox");
-  cTestName = document.getElementById("cTestName");
-  cTestNote = document.getElementById("cTestNote");
-  cNotesInput = document.getElementById("cNotes");
+export function initClinical(): void {
+  cTestList = requireEl("cTestList");
+  cStartBtn = requireEl<HTMLButtonElement>("cStartBtn");
+  cStopBtn = requireEl<HTMLButtonElement>("cStopBtn");
+  cGateBox = requireEl("cGateBox");
+  cTestName = requireEl("cTestName");
+  cTestNote = requireEl("cTestNote");
+  cNotesInput = requireEl<HTMLTextAreaElement>("cNotes");
 
-  cWaveCanvas = document.getElementById("cWaveform");
-  cWaveCtx = cWaveCanvas ? cWaveCanvas.getContext("2d") : null;
-  cSpecCanvas = document.getElementById("cSpectrum");
-  cSpecCtx = cSpecCanvas ? cSpecCanvas.getContext("2d") : null;
+  cWaveCanvas = requireEl<HTMLCanvasElement>("cWaveform");
+  cWaveCtx = cWaveCanvas.getContext("2d");
+  cSpecCanvas = requireEl<HTMLCanvasElement>("cSpectrum");
+  cSpecCtx = cSpecCanvas.getContext("2d");
 
-  cRmsEl = document.getElementById("cRms");
-  cPeakEl = document.getElementById("cPeak");
-  cClipEl = document.getElementById("cClip");
-  cLevelBar = document.getElementById("cLevelBar");
+  cRmsEl = requireEl("cRms");
+  cPeakEl = requireEl("cPeak");
+  cClipEl = requireEl("cClip");
+  cLevelBar = requireEl("cLevelBar");
 
-  pTaskTitle = document.getElementById("pTaskTitle");
-  pTaskIcon = document.getElementById("pTaskIcon");
-  pSteps = document.getElementById("pSteps");
-  pReads = document.getElementById("pReads");
-  pGoBar = document.getElementById("pGoBar");
-  pTimerBar = document.getElementById("pTimerBar");
-  pTimerWrap = document.getElementById("pTimerWrap");
+  pTaskTitle = requireEl("pTaskTitle");
+  pTaskIcon = requireEl("pTaskIcon");
+  pSteps = requireEl("pSteps");
+  pReads = requireEl("pReads");
+  pGoBar = requireEl("pGoBar");
+  pTimerBar = requireEl("pTimerBar");
+  pTimerWrap = requireEl("pTimerWrap");
 
-  cPatientTable = document.getElementById("cPatientTable");
-  cPatientSearch = document.getElementById("cPatientSearch");
-  cExamPatient = document.getElementById("cExamPatient");
-  cSessionLabel = document.getElementById("cSessionLabel");
-  cChartPatient = document.getElementById("cChartPatient");
-  cChartFolders = document.getElementById("cChartFolders");
+  cPatientTable = requireEl("cPatientTable");
+  cPatientSearch = requireEl<HTMLInputElement>("cPatientSearch");
+  cExamPatient = requireEl("cExamPatient");
+  cSessionLabel = requireEl("cSessionLabel");
+  cChartPatient = requireEl("cChartPatient");
+  cChartFolders = requireEl("cChartFolders");
 
   // Sub-tabs
-  document.querySelectorAll(".clinTabBtn").forEach(btn => {
-    btn.addEventListener("click", () => setClinicalTab(btn.dataset.ctab));
+  document.querySelectorAll<HTMLElement>(".clinTabBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tab = btn.dataset["ctab"];
+      if (tab) setClinicalTab(tab);
+    });
   });
 
   renderClinicalTestList();
   selectClinicalTest(PROTOCOL_TESTS[0].id);
 
-  cStartBtn.addEventListener("click", startClinicalTest);
-  cStopBtn.addEventListener("click", stopClinicalTest);
+  cStartBtn.addEventListener("click", () => void startClinicalTest());
+  cStopBtn.addEventListener("click", () => void stopClinicalTest());
   cNotesInput.addEventListener("input", () => { clinicalNotes = cNotesInput.value; });
 
-  document.getElementById("cNewPatientForm").addEventListener("submit", submitNewPatient);
-  document.getElementById("cNpClear").addEventListener("click", resetNewPatientForm);
-  document.getElementById("cNewSessionBtn").addEventListener("click", startNewSession);
+  requireEl("cNewPatientForm").addEventListener("submit", submitNewPatient);
+  requireEl("cNpClear").addEventListener("click", resetNewPatientForm);
+  requireEl("cNewSessionBtn").addEventListener("click", startNewSession);
   cPatientSearch.addEventListener("input", () => renderPatientTable());
 
-  document.getElementById("cConnectUsb").addEventListener("click", () => clinicalConnect("usb"));
-  document.getElementById("cConnectWifi").addEventListener("click", () => clinicalConnect("wifi"));
-  document.getElementById("cConnectComputer").addEventListener("click", () => clinicalConnect("computer"));
-  document.getElementById("cPopoutBtn").addEventListener("click", openPatientView);
-  document.getElementById("cExportPatientBtn").addEventListener("click", downloadPatientAll);
-  const fhirBtn = document.getElementById("cExportFhirBtn");
-  if (fhirBtn) fhirBtn.addEventListener("click", downloadPatientFhir);
+  requireEl("cConnectUsb").addEventListener("click", () => void clinicalConnect("usb"));
+  requireEl("cConnectWifi").addEventListener("click", () => void clinicalConnect("wifi"));
+  requireEl("cConnectComputer").addEventListener("click", () => void clinicalConnect("computer"));
+  requireEl("cPopoutBtn").addEventListener("click", openPatientView);
+  requireEl("cExportPatientBtn").addEventListener("click", () => void downloadPatientAll());
+  el("cExportFhirBtn")?.addEventListener("click", () => void downloadPatientFhir());
 
   // Space toggles Start/End while in the Exam tab (not while typing).
   window.addEventListener("keydown", event => {
     if (event.code !== "Space") return;
-    if (appMode !== "clinical") return;
-    if (document.getElementById("clinExam").hidden) return;
-    const tag = (event.target.tagName || "").toLowerCase();
+    if (ui.mode !== "clinical") return;
+    if (requireEl("clinExam").hidden) return;
+    const tag = ((event.target as HTMLElement | null)?.tagName ?? "").toLowerCase();
     if (tag === "input" || tag === "textarea" || tag === "select") return;
     event.preventDefault();
-    if (clinicalPhase === "idle") startClinicalTest();
+    if (clinicalPhase === "idle") void startClinicalTest();
     else if (clinicalPhase === "waiting") onPatientReady();
-    else stopClinicalTest();
+    else void stopClinicalTest();
   });
 
-  const handleReady = data => {
+  const handleReady = (data: PatientMessage | null | undefined): void => {
     if (data && data.kind === "ready") {
       broadcastPatient({ kind: "test", testId: clinicalCurrentTest.id });
-      broadcastPatient({ kind: "go", on: isRecording });
+      broadcastPatient({ kind: "go", on: capture.recording });
     }
   };
-  if (clinicalChannel) clinicalChannel.onmessage = event => handleReady(event.data);
-  window.addEventListener("message", event => handleReady(event.data));
+  if (clinicalChannel) clinicalChannel.onmessage = event => handleReady(event.data as PatientMessage);
+  window.addEventListener("message", event => handleReady(event.data as PatientMessage));
 
   clearClinicalMonitors();
   updateClinicalConnectState();
-  loadClinicalPatients();
+  void loadClinicalPatients();
   setClinicalTab("patients");
 }
 
-export function setClinicalTab(name) {
-  document.querySelectorAll(".clinTabBtn").forEach(b => b.classList.toggle("active", b.dataset.ctab === name));
-  document.getElementById("clinPatients").hidden = name !== "patients";
-  document.getElementById("clinExam").hidden = name !== "exam";
-  document.getElementById("clinChart").hidden = name !== "chart";
+export function setClinicalTab(name: string): void {
+  document.querySelectorAll<HTMLElement>(".clinTabBtn")
+    .forEach(b => b.classList.toggle("active", b.dataset["ctab"] === name));
+  requireEl("clinPatients").hidden = name !== "patients";
+  requireEl("clinExam").hidden = name !== "exam";
+  requireEl("clinChart").hidden = name !== "chart";
   if (name === "chart") renderChart();
   if (name === "exam") renderExamHeader();
 }
 
 // ---- Connection --------------------------------------------------------
 
-async function clinicalConnect(kind) {
+async function clinicalConnect(kind: ConnectKind): Promise<void> {
   clinicalConnectKind = kind;
   if (kind === "computer") {
     await setInputSource("computer");
@@ -350,16 +448,16 @@ async function clinicalConnect(kind) {
   setTimeout(updateClinicalConnectState, 800);
 }
 
-function updateClinicalConnectState() {
-  for (const k in CONNECT_IDS) {
-    const b = document.getElementById(CONNECT_IDS[k]);
+function updateClinicalConnectState(): void {
+  for (const k of Object.keys(CONNECT_IDS) as ConnectKind[]) {
+    const b = el(CONNECT_IDS[k]);
     if (!b) continue;
     b.classList.remove("primaryBtn");
     b.classList.add("secondaryBtn");
     b.textContent = CONNECT_LABELS[k];
   }
-  if (isConnected && clinicalConnectKind) {
-    const b = document.getElementById(CONNECT_IDS[clinicalConnectKind]);
+  if (device.connected && clinicalConnectKind) {
+    const b = el(CONNECT_IDS[clinicalConnectKind]);
     if (b) {
       b.classList.remove("secondaryBtn");
       b.classList.add("primaryBtn");
@@ -370,13 +468,21 @@ function updateClinicalConnectState() {
 
 // ---- Patient database --------------------------------------------------
 
-export async function loadClinicalPatients() {
-  clinicalPatients = await loadPatientsFromDb();
+export async function loadClinicalPatients(): Promise<void> {
+  clinicalPatients = await loadPatients();
   const known = new Set(clinicalPatients.map(p => p.id));
-  for (const r of recordings) {
+  for (const r of library.recordings) {
     if (r.meta && r.meta.patientId && !known.has(r.meta.patientId)) {
       known.add(r.meta.patientId);
-      clinicalPatients.push({ id: r.meta.patientId, name: r.meta.patientName || "", createdAt: r.createdAt });
+      // Recovered from a take whose patient record is gone: id and name are
+      // all the take carries, so age and sex stay blank.
+      clinicalPatients.push({
+        id: r.meta.patientId,
+        name: r.meta.patientName || "",
+        age: "",
+        sex: "",
+        createdAt: r.createdAt,
+      });
     }
   }
   renderPatientTable();
@@ -384,22 +490,22 @@ export async function loadClinicalPatients() {
   renderChart();
 }
 
-function patientRecordingCount(id) {
-  return recordings.filter(r => r.meta && r.meta.patientId === id).length;
+function patientRecordingCount(id: string): number {
+  return library.recordings.filter(r => r.meta && r.meta.patientId === id).length;
 }
 
-function patientLastDate(id) {
-  const takes = recordings.filter(r => r.meta && r.meta.patientId === id);
+function patientLastDate(id: string): Date | null {
+  const takes = library.recordings.filter(r => r.meta && r.meta.patientId === id);
   if (!takes.length) return null;
-  return new Date(Math.max(...takes.map(r => r.createdAt)));
+  return new Date(Math.max(...takes.map(timeOf)));
 }
 
-function demographicsStr(p) {
+function demographicsStr(p: StoredPatient | null): string {
   if (!p) return "";
   return [p.age ? p.age + " y" : "", p.sex || ""].filter(Boolean).join(", ");
 }
 
-export function renderPatientTable() {
+export function renderPatientTable(): void {
   if (!cPatientTable) return;
   const q = (cPatientSearch.value || "").trim().toLowerCase();
 
@@ -445,22 +551,24 @@ export function renderPatientTable() {
 
 // The form sits permanently above the patient list, so "reset" is all the
 // Clear button and a successful create both need.
-function resetNewPatientForm() {
-  const form = document.getElementById("cNewPatientForm");
+function resetNewPatientForm(): void {
+  const form = el<HTMLFormElement>("cNewPatientForm");
   if (!form) return;
   form.reset();
-  document.getElementById("cNpError").hidden = true;
+  const err = el("cNpError");
+  if (err) err.hidden = true;
 }
 
-function submitNewPatient(event) {
+function submitNewPatient(event: Event): void {
   event.preventDefault();
 
-  const err = document.getElementById("cNpError");
-  const id = document.getElementById("cNpId").value.trim();
+  const err = requireEl("cNpError");
+  const idInput = requireEl<HTMLInputElement>("cNpId");
+  const id = idInput.value.trim();
   if (!id) {
     err.textContent = "Patient ID is required.";
     err.hidden = false;
-    document.getElementById("cNpId").focus();
+    idInput.focus();
     return;
   }
 
@@ -470,13 +578,13 @@ function submitNewPatient(event) {
   if (!patient) {
     patient = {
       id,
-      name: document.getElementById("cNpName").value.trim(),
-      age: document.getElementById("cNpAge").value.trim(),
-      sex: document.getElementById("cNpSex").value,
+      name: requireEl<HTMLInputElement>("cNpName").value.trim(),
+      age: requireEl<HTMLInputElement>("cNpAge").value.trim(),
+      sex: requireEl<HTMLSelectElement>("cNpSex").value,
       createdAt: new Date()
     };
     clinicalPatients.push(patient);
-    savePatientToDb(patient);
+    void savePatient(patient);
     log("Patient created: " + id);
   } else {
     log("Patient " + id + " already exists — opening it.");
@@ -487,22 +595,23 @@ function submitNewPatient(event) {
   openPatient(id);
 }
 
-function openPatient(id) {
+function openPatient(id: string): void {
   currentPatient = clinicalPatients.find(p => p.id === id) || null;
   currentSessionId = null;
-  clinicalConnectKind = clinicalConnectKind; // keep
   renderPatientTable();
   renderExamHeader();
   renderChart();
   setClinicalTab("exam");
 }
 
-function deletePatient(id) {
+function deletePatient(id: string): void {
   const count = patientRecordingCount(id);
   if (!confirm("Delete patient " + id + " and their " + count + " recording(s)?")) return;
-  recordings.filter(r => r.meta && r.meta.patientId === id).forEach(r => deleteRecording(r.id));
+  library.recordings
+    .filter(r => r.meta && r.meta.patientId === id)
+    .forEach(r => deleteRecording(r.id));
   clinicalPatients = clinicalPatients.filter(p => p.id !== id);
-  deletePatientFromDb(id);
+  void deletePatientFromDb(id);
   if (currentPatient && currentPatient.id === id) {
     currentPatient = null;
     currentSessionId = null;
@@ -512,7 +621,7 @@ function deletePatient(id) {
   renderChart();
 }
 
-export function startNewSession() {
+export function startNewSession(): void {
   if (!currentPatient) {
     alert("Select a patient first (Patients tab).");
     setClinicalTab("patients");
@@ -523,14 +632,14 @@ export function startNewSession() {
   log("New session started for " + currentPatient.id + ".");
 }
 
-function sessionNumberOf(sessionId) {
+function sessionNumberOf(sessionId: string): number | string {
   if (!currentPatient) return "?";
   const sessions = patientSessions(currentPatient.id);
   const found = sessions.find(s => s.id === sessionId);
   return found ? found.number : sessions.length + 1;
 }
 
-export function renderExamHeader() {
+export function renderExamHeader(): void {
   if (!cExamPatient) return;
   if (!currentPatient) {
     cExamPatient.innerHTML = "<em>No patient selected.</em> Pick one in the Patients tab.";
@@ -548,22 +657,23 @@ export function renderExamHeader() {
 
 // ---- Test selection + patient prompt -----------------------------------
 
-function renderClinicalTestList() {
+function renderClinicalTestList(): void {
   cTestList.innerHTML = "";
   for (const test of PROTOCOL_TESTS) {
     const btn = document.createElement("button");
     btn.className = "clinTestBtn";
-    btn.dataset.test = test.id;
+    btn.dataset["test"] = test.id;
     btn.innerHTML = "<span class='clinTestIcon'>" + test.icon + "</span><span>" + test.name + "</span>";
     btn.addEventListener("click", () => selectClinicalTest(test.id));
     cTestList.appendChild(btn);
   }
 }
 
-export function selectClinicalTest(id) {
-  if (isRecording) return;
+export function selectClinicalTest(id: string): void {
+  if (capture.recording) return;
   clinicalCurrentTest = getProtocolTest(id) || PROTOCOL_TESTS[0];
-  document.querySelectorAll(".clinTestBtn").forEach(b => b.classList.toggle("active", b.dataset.test === clinicalCurrentTest.id));
+  document.querySelectorAll<HTMLElement>(".clinTestBtn")
+    .forEach(b => b.classList.toggle("active", b.dataset["test"] === clinicalCurrentTest.id));
   cTestName.textContent = clinicalCurrentTest.name;
   cTestNote.textContent = clinicalCurrentTest.clinicianNote;
   renderPatientPrompt(clinicalCurrentTest);
@@ -571,7 +681,7 @@ export function selectClinicalTest(id) {
   broadcastPatient({ kind: "test", testId: clinicalCurrentTest.id });
 }
 
-function renderPatientPrompt(test) {
+function renderPatientPrompt(test: ProtocolTest): void {
   pTaskIcon.textContent = test.icon;
   pTaskTitle.textContent = test.patientTitle;
   pSteps.innerHTML = "";
@@ -596,18 +706,18 @@ function renderPatientPrompt(test) {
 
 // ---- Run a test --------------------------------------------------------
 
-async function startClinicalTest() {
+async function startClinicalTest(): Promise<void> {
   if (!currentPatient) {
     alert("Select a patient first (Patients tab).");
     setClinicalTab("patients");
     return;
   }
-  if (!isConnected) {
+  if (!device.connected) {
     setStatus("Connect a microphone first", "idle");
     log("Clinical: connect a microphone before starting a test.");
     return;
   }
-  const consent = document.getElementById("cConsent");
+  const consent = el<HTMLInputElement>("cConsent");
   if (consent && !consent.checked) {
     alert("Please confirm informed consent (checkbox) before recording.");
     return;
@@ -638,12 +748,12 @@ async function startClinicalTest() {
   showReadyGate(true);
 }
 
-async function stopClinicalTest() {
+async function stopClinicalTest(): Promise<void> {
   // Cancel if we haven't started recording yet (waiting on the patient's
   // "I'm ready", or mid get-ready countdown).
   if (clinicalPhase === "waiting" || clinicalPhase === "ready") {
     clinicalPhase = "idle";
-    try { window.speechSynthesis.cancel(); } catch (e) { /* ignore */ }
+    try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
     showReadyGate(false);
     stopClinicalTimer();
     setPatientRecording(false);
@@ -663,14 +773,14 @@ async function stopClinicalTest() {
   runClinicalQualityGate();
 }
 
-export function onClinicalRecordingSaved(recording) {
+export function onClinicalRecordingSaved(recording: Recording): void {
   lastClinicalRecording = recording;
   renderExamHeader();
   renderChart();
   renderPatientTable();
 }
 
-function setPatientRecording(on) {
+function setPatientRecording(on: boolean): void {
   broadcastPatient({ kind: "go", on: on });
   pushGoToPopup(on);
   if (!pGoBar) return;
@@ -679,14 +789,14 @@ function setPatientRecording(on) {
 }
 
 // Set both timer bars (in-app + pop-out) at once.
-function setTimerBars(widthPct, visible) {
+function setTimerBars(widthPct: number, visible: boolean): void {
   if (pTimerWrap) pTimerWrap.style.display = visible ? "block" : "none";
   if (pTimerBar) pTimerBar.style.width = widthPct + "%";
   pushTimerToPopup(widthPct, visible);
 }
 
 // 5-second "get ready" countdown, driven by the clinician (updates both bars).
-function runGetReady(seconds, onDone) {
+function runGetReady(seconds: number, onDone: () => void): void {
   stopClinicalTimer();
   if (pGoBar) { pGoBar.classList.remove("go"); pGoBar.textContent = "Get ready…"; }
   pushGoToPopup(false);
@@ -694,7 +804,7 @@ function runGetReady(seconds, onDone) {
   const dur = seconds * 1000;
   setTimerBars(100, true);
   let lastSec = -1;
-  clinicalTimer = setInterval(() => {
+  clinicalTimer = window.setInterval(() => {
     const elapsed = performance.now() - start;
     const remain = Math.max(0, 1 - elapsed / dur);
     setTimerBars(remain * 100, true);
@@ -715,13 +825,13 @@ function runGetReady(seconds, onDone) {
   }, 60);
 }
 
-function startClinicalTimer(seconds) {
+function startClinicalTimer(seconds: number | null): void {
   stopClinicalTimer();
   clinicalTimerStart = performance.now();
   clinicalTimerDuration = seconds ? seconds * 1000 : 0;
   broadcastPatient({ kind: "timerStart", seconds: seconds });
   setTimerBars(100, true);
-  clinicalTimer = setInterval(() => {
+  clinicalTimer = window.setInterval(() => {
     const elapsed = performance.now() - clinicalTimerStart;
     const w = clinicalTimerDuration > 0
       ? Math.max(0, 1 - elapsed / clinicalTimerDuration) * 100
@@ -730,12 +840,12 @@ function startClinicalTimer(seconds) {
 
     // Auto-stop when a fixed-duration task reaches its target.
     if (clinicalTimerDuration > 0 && elapsed >= clinicalTimerDuration && clinicalPhase === "recording") {
-      stopClinicalTest();
+      void stopClinicalTest();
     }
   }, 100);
 }
 
-function stopClinicalTimer() {
+function stopClinicalTimer(): void {
   if (clinicalTimer) { clearInterval(clinicalTimer); clinicalTimer = null; }
   broadcastPatient({ kind: "timerStop" });
   setTimerBars(100, true);
@@ -743,10 +853,10 @@ function stopClinicalTimer() {
 
 // ---- Quality gate ------------------------------------------------------
 
-function runClinicalQualityGate() {
+function runClinicalQualityGate(): void {
   if (!lastClinicalRecording || !lastClinicalRecording.analysisSamples) return;
   const m = clinicalMetricsOf(lastClinicalRecording.analysisSamples);
-  const problems = [];
+  const problems: string[] = [];
   if (m.clip > 0.5) problems.push("Clipping (" + m.clip.toFixed(1) + "%) — lower gain (raise PCM_SHIFT).");
   if (m.peak > -1) problems.push("Level too hot (peak " + m.peak.toFixed(1) + " dBFS).");
   if (m.rms < -55) problems.push("Very quiet (RMS " + m.rms.toFixed(1) + " dBFS) — move closer or check the mic.");
@@ -757,7 +867,7 @@ function runClinicalQualityGate() {
   }
 }
 
-function showClinicalGate(ok, headline, problems) {
+function showClinicalGate(ok: boolean, headline: string, problems: string[]): void {
   cGateBox.style.display = "block";
   cGateBox.className = "clinGate " + (ok ? "gateOk" : "gateWarn");
   let html = "<div class='gateHead'>" + headline + "</div>";
@@ -765,33 +875,45 @@ function showClinicalGate(ok, headline, problems) {
   html += "<div class='gateBtns'><button id='gateContinue' class='smallBtn'>Continue</button>" +
     "<button id='gateRedo' class='smallBtn deleteBtn'>Record again</button></div>";
   cGateBox.innerHTML = html;
-  document.getElementById("gateContinue").addEventListener("click", () => {
+
+  // Queried through cGateBox, not by id: these two buttons are created by the
+  // innerHTML above and replaced every time the gate is shown, so the cached
+  // lookups in ui/dom would hand back a detached node from the previous take.
+  cGateBox.querySelector("#gateContinue")?.addEventListener("click", () => {
     hideClinicalGate();
     if (ok) advanceProtocol(); // good take → move to the next test
   });
-  document.getElementById("gateRedo").addEventListener("click", () => {
+  cGateBox.querySelector("#gateRedo")?.addEventListener("click", () => {
     if (lastClinicalRecording) { deleteClinicalRecording(lastClinicalRecording.id, true); lastClinicalRecording = null; }
     hideClinicalGate();
   });
 }
 
-function hideClinicalGate() {
+function hideClinicalGate(): void {
   if (cGateBox) { cGateBox.style.display = "none"; cGateBox.innerHTML = ""; }
 }
 
 // ---- Patient chart: sessions as folders --------------------------------
 
-export function patientSessions(patientId) {
-  const takes = recordings.filter(r => r.meta && r.meta.patientId === patientId);
-  const map = {};
-  for (const t of takes) (map[t.meta.sessionId] = map[t.meta.sessionId] || []).push(t);
-  const ids = Object.keys(map).sort((a, b) =>
-    Math.min(...map[a].map(x => x.createdAt)) - Math.min(...map[b].map(x => x.createdAt)));
+export function patientSessions(patientId: string): PatientSession[] {
+  const takes = library.recordings.filter(r => r.meta && r.meta.patientId === patientId);
+
+  const map = new Map<string, Recording[]>();
+  for (const t of takes) {
+    const sessionId = t.meta?.sessionId ?? "";
+    const bucket = map.get(sessionId);
+    if (bucket) bucket.push(t);
+    else map.set(sessionId, [t]);
+  }
+
+  const startOf = (id: string): number => Math.min(...(map.get(id) ?? []).map(timeOf));
+  const ids = [...map.keys()].sort((a, b) => startOf(a) - startOf(b));
+
   return ids.map((id, i) => ({
     id,
     number: i + 1,
-    takes: map[id].sort((a, b) => a.createdAt - b.createdAt),
-    date: new Date(Math.min(...map[id].map(x => x.createdAt)))
+    takes: (map.get(id) ?? []).sort((a, b) => timeOf(a) - timeOf(b)),
+    date: new Date(startOf(id))
   }));
 }
 
@@ -799,23 +921,43 @@ export function patientSessions(patientId) {
 // For each acoustic measure, average the voiced takes within a session and
 // plot one point per session so a clinician can see change over time.
 
-const TREND_METRICS = [
+/** Numeric fields of a voiced VoiceFeatures — what a trend can be drawn from. */
+type TrendKey = "f0" | "hnrDb" | "jitterPct" | "shimmerPct";
+
+interface TrendMetric {
+  key: TrendKey;
+  label: string;
+  unit: string;
+  digits: number;
+  /** true when higher is healthier, false when lower is, null when neither. */
+  betterUp: boolean | null;
+}
+
+const TREND_METRICS: TrendMetric[] = [
   { key: "f0", label: "F0 (pitch)", unit: "Hz", digits: 0, betterUp: null },
   { key: "hnrDb", label: "HNR", unit: "dB", digits: 1, betterUp: true },
   { key: "jitterPct", label: "Jitter", unit: "%", digits: 2, betterUp: false },
   { key: "shimmerPct", label: "Shimmer", unit: "%", digits: 1, betterUp: false }
 ];
 
-function sessionFeatureMean(session, key) {
-  const vals = session.takes
-    .filter(t => t.features && t.features.voiced && isFinite(t.features[key]))
-    .map(t => t.features[key]);
+/** One session's value for one metric, as plotted. */
+interface TrendPoint {
+  n: number;
+  v: number;
+}
+
+function sessionFeatureMean(session: PatientSession, key: TrendKey): number | null {
+  const vals: number[] = [];
+  for (const t of session.takes) {
+    const f: VoiceFeatures | null = t.features;
+    if (f && f.voiced && isFinite(f[key])) vals.push(f[key]);
+  }
   if (!vals.length) return null;
   return vals.reduce((s, x) => s + x, 0) / vals.length;
 }
 
 // Tiny inline SVG line chart from a list of {n, v} points.
-function trendSparkline(points, betterUp) {
+function trendSparkline(points: TrendPoint[], betterUp: boolean | null): string {
   const W = 240, H = 64, padX = 6, padY = 10;
   if (points.length === 0) return "<svg width='" + W + "' height='" + H + "'></svg>";
 
@@ -824,10 +966,10 @@ function trendSparkline(points, betterUp) {
   if (min === max) { min -= 1; max += 1; }
   const span = max - min;
 
-  const x = i => points.length === 1
+  const x = (i: number): number => points.length === 1
     ? W / 2
     : padX + (i / (points.length - 1)) * (W - 2 * padX);
-  const y = v => H - padY - ((v - min) / span) * (H - 2 * padY);
+  const y = (v: number): number => H - padY - ((v - min) / span) * (H - 2 * padY);
 
   let path = "";
   points.forEach((p, i) => { path += (i === 0 ? "M" : "L") + x(i).toFixed(1) + " " + y(p.v).toFixed(1) + " "; });
@@ -851,8 +993,8 @@ function trendSparkline(points, betterUp) {
     dots + "</svg>";
 }
 
-function renderPatientTrends() {
-  const box = document.getElementById("cChartTrends");
+function renderPatientTrends(): void {
+  const box = el("cChartTrends");
   if (!box) return;
   if (!currentPatient) { box.innerHTML = ""; return; }
 
@@ -866,7 +1008,7 @@ function renderPatientTrends() {
     "<span class='featureTag'>preview</span></div><div class='trendGrid'>";
 
   for (const metric of TREND_METRICS) {
-    const points = [];
+    const points: TrendPoint[] = [];
     sessions.forEach(s => {
       const v = sessionFeatureMean(s, metric.key);
       if (v != null) points.push({ n: s.number, v: v });
@@ -896,7 +1038,7 @@ function renderPatientTrends() {
   box.innerHTML = html;
 }
 
-export function renderChart() {
+export function renderChart(): void {
   if (!cChartFolders) return;
   if (!currentPatient) {
     if (cChartPatient) cChartPatient.textContent = "No patient selected.";
@@ -914,7 +1056,13 @@ export function renderChart() {
 
   // Show the active-but-empty session as a folder too.
   if (currentSessionId && !sessions.find(s => s.id === currentSessionId)) {
-    sessions.unshift({ id: currentSessionId, number: sessionNumberOf(currentSessionId), takes: [], date: new Date() });
+    const number = sessionNumberOf(currentSessionId);
+    sessions.unshift({
+      id: currentSessionId,
+      number: typeof number === "number" ? number : sessions.length + 1,
+      takes: [],
+      date: new Date(),
+    });
   }
 
   if (sessions.length === 0) {
@@ -943,7 +1091,7 @@ export function renderChart() {
       const exportBtn = document.createElement("button");
       exportBtn.className = "smallBtn";
       exportBtn.textContent = "Download session (ZIP)";
-      exportBtn.onclick = () => downloadClinicalSession(s.id);
+      exportBtn.onclick = () => void downloadClinicalSession(s.id);
       folder.appendChild(exportBtn);
 
       for (const r of s.takes) {
@@ -954,12 +1102,12 @@ export function renderChart() {
   }
 }
 
-function renderChartTake(r) {
+function renderChartTake(r: Recording): HTMLElement {
   const row = document.createElement("div");
   row.className = "chartRow";
   const title = document.createElement("div");
   title.className = "chartRowTitle";
-  title.textContent = (r.name || r.meta.testName) + " · " + r.duration.toFixed(2) + " s" +
+  title.textContent = (r.name || r.meta?.testName || "take") + " · " + r.duration.toFixed(2) + " s" +
     (r.filtered ? " · 🧹 filtered" : "");
   const audio = document.createElement("audio");
   audio.controls = true;
@@ -1002,8 +1150,12 @@ function renderChartTake(r) {
   return row;
 }
 
-function deleteClinicalRecording(id, skipConfirm) {
-  const r = recordings.find(x => x.id === id);
+/**
+ * Remove one take from the patient's chart. Exported so the smoke suite can
+ * drive it; every in-app caller is below.
+ */
+export function deleteClinicalRecording(id: number, skipConfirm = false): void {
+  const r = library.recordings.find(x => x.id === id);
   if (!r) return;
   if (!skipConfirm && !confirm("Delete this recording?")) return;
   deleteRecording(id);
@@ -1014,7 +1166,7 @@ function deleteClinicalRecording(id, skipConfirm) {
 
 // ---- Session export (WAVs + manifest.csv as one ZIP) -------------------
 
-function clinicalMetricsOf(samples) {
+function clinicalMetricsOf(samples: ArrayLike<number> | null): ClinicalMetrics {
   if (!samples || !samples.length) return { rms: -120, peak: -120, clip: 0 };
   let sumSq = 0, peak = 0, clipped = 0;
   for (let i = 0; i < samples.length; i++) {
@@ -1026,7 +1178,9 @@ function clinicalMetricsOf(samples) {
   return { rms: dbfs(Math.sqrt(sumSq / samples.length)), peak: dbfs(peak), clip: (clipped / samples.length) * 100 };
 }
 
-function csvCell(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+function csvCell(v: unknown): string {
+  return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+}
 
 const MANIFEST_HEADER = [
   "patient_id", "patient_name", "age", "sex", "session_id", "test_id", "test_name",
@@ -1035,10 +1189,12 @@ const MANIFEST_HEADER = [
   "rms_dbfs", "peak_dbfs", "clipping_pct", "channels", "sample_rate_hz", "notes", "timestamp"
 ];
 
-function num(v, d) { return v == null || isNaN(v) ? "" : v.toFixed(d); }
+function num(v: number | null | undefined, d: number): string {
+  return v == null || isNaN(v) ? "" : v.toFixed(d);
+}
 
-async function exportRecordingsZip(items, zipName) {
-  const files = [];
+async function exportRecordingsZip(items: Recording[], zipName: string): Promise<void> {
+  const files: ZipFile[] = [];
   const rows = [MANIFEST_HEADER.map(csvCell).join(",")];
 
   for (const r of items) {
@@ -1046,17 +1202,19 @@ async function exportRecordingsZip(items, zipName) {
     files.push({ name: fname, data: new Uint8Array(await r.blob.arrayBuffer()) });
 
     const m = clinicalMetricsOf(r.analysisSamples);
-    const f = r.features || {};
-    const patient = clinicalPatients.find(p => r.meta && p.id === r.meta.patientId) || {};
+    // Only a voiced take carries measurements; an unvoiced one leaves the
+    // acoustic columns blank rather than writing zeros that read as data.
+    const f = r.features?.voiced ? r.features : null;
+    const patient = clinicalPatients.find(p => r.meta && p.id === r.meta.patientId);
 
     rows.push([
-      r.meta.patientId, r.meta.patientName || "", patient.age || "", patient.sex || "",
-      r.meta.sessionId, r.meta.testId, r.meta.testName, fname, r.name || "",
+      r.meta?.patientId ?? "", r.meta?.patientName || "", patient?.age || "", patient?.sex || "",
+      r.meta?.sessionId ?? "", r.meta?.testId ?? "", r.meta?.testName ?? "", fname, r.name || "",
       r.filtered ? "yes" : "no", r.duration.toFixed(3),
-      num(f.f0, 1), num(f.jitterPct, 3), num(f.shimmerPct, 2), num(f.hnrDb, 1),
-      f.f1 || "", f.f2 || "",
+      num(f?.f0, 1), num(f?.jitterPct, 3), num(f?.shimmerPct, 2), num(f?.hnrDb, 1),
+      f?.f1 || "", f?.f2 || "",
       m.rms.toFixed(1), m.peak.toFixed(1), m.clip.toFixed(2), r.channels, SAMPLE_RATE,
-      r.meta.notes || "", r.createdAt.toISOString()
+      r.meta?.notes || "", new Date(timeOf(r)).toISOString()
     ].map(csvCell).join(","));
   }
 
@@ -1067,31 +1225,32 @@ async function exportRecordingsZip(items, zipName) {
   URL.revokeObjectURL(url);
 }
 
-async function downloadClinicalSession(sessionId) {
-  const items = recordings.filter(r => r.meta && r.meta.sessionId === sessionId);
+async function downloadClinicalSession(sessionId: string): Promise<void> {
+  const items = library.recordings.filter(r => r.meta && r.meta.sessionId === sessionId);
   if (items.length === 0) { alert("No recordings in this session."); return; }
   await exportRecordingsZip(items, "AudioMX_" + sanitizeForFilename(sessionId) + ".zip");
   log("Session exported: " + items.length + " take(s) + manifest.csv.");
 }
 
-async function downloadPatientAll() {
+async function downloadPatientAll(): Promise<void> {
   if (!currentPatient) { alert("Open a patient first."); return; }
-  const items = recordings.filter(r => r.meta && r.meta.patientId === currentPatient.id);
+  const patient = currentPatient;
+  const items = library.recordings.filter(r => r.meta && r.meta.patientId === patient.id);
   if (items.length === 0) { alert("No recordings for this patient."); return; }
-  await exportRecordingsZip(items, "AudioMX_patient_" + sanitizeForFilename(currentPatient.id) + ".zip");
+  await exportRecordingsZip(items, "AudioMX_patient_" + sanitizeForFilename(patient.id) + ".zip");
   log("Patient export: " + items.length + " take(s) across all sessions.");
 }
 
 // ---- Pop-out patient window --------------------------------------------
 
-function openPatientView() {
+function openPatientView(): void {
   // ?v= busts the browser cache so the window always loads the newest code.
   patientWindowRef = window.open("patient.html?v=" + Date.now(), "audiomxPatient", "width=1024,height=768");
 
   // Directly write the current prompt into the pop-out as soon as it is ready.
   // Poll for a couple of seconds since onload timing varies.
   let tries = 0;
-  const push = () => {
+  const push = (): void => {
     if (tries++ > 30) return;
     if (patientDoc()) {
       pushPromptToPopup();
@@ -1107,7 +1266,7 @@ function openPatientView() {
 
 // ---- Clinician live monitors -------------------------------------------
 
-export function clearClinicalMonitors() {
+export function clearClinicalMonitors(): void {
   if (cWaveCtx) {
     cWaveCtx.fillStyle = "#f0f0f2";
     cWaveCtx.fillRect(0, 0, cWaveCanvas.width, cWaveCanvas.height);
@@ -1123,14 +1282,15 @@ export function clearClinicalMonitors() {
   }
 }
 
-export function drawClinicalMonitors() {
+export function drawClinicalMonitors(): void {
   drawClinicalWaveform();
   drawClinicalSpectrum();
-  updateClinicalMetrics(liveSamples);
+  updateClinicalMetrics(capture.live);
 }
 
-function drawClinicalWaveform() {
+function drawClinicalWaveform(): void {
   if (!cWaveCtx) return;
+  const live = capture.live;
   const w = cWaveCanvas.width, h = cWaveCanvas.height;
   cWaveCtx.fillStyle = "#f0f0f2";
   cWaveCtx.fillRect(0, 0, w, h);
@@ -1142,14 +1302,14 @@ function drawClinicalWaveform() {
     cWaveCtx.lineTo(w, y);
     cWaveCtx.stroke();
   }
-  if (liveSamples.length < 2) return;
+  if (live.length < 2) return;
   cWaveCtx.strokeStyle = "#3b6fb0";
   cWaveCtx.lineWidth = 2;
   cWaveCtx.beginPath();
-  const step = Math.max(1, Math.floor(liveSamples.length / w));
+  const step = Math.max(1, Math.floor(live.length / w));
   let x = 0;
-  for (let i = 0; i < liveSamples.length; i += step) {
-    const y = h / 2 - (liveSamples[i] / 32768) * h * 0.42;
+  for (let i = 0; i < live.length; i += step) {
+    const y = h / 2 - (live[i] / 32768) * h * 0.42;
     if (x === 0) cWaveCtx.moveTo(x, y); else cWaveCtx.lineTo(x, y);
     x++;
     if (x >= w) break;
@@ -1157,14 +1317,15 @@ function drawClinicalWaveform() {
   cWaveCtx.stroke();
 }
 
-function drawClinicalSpectrum() {
+function drawClinicalSpectrum(): void {
   if (!cSpecCtx) return;
+  const live = capture.live;
   const w = cSpecCanvas.width, h = cSpecCanvas.height;
   cSpecCtx.fillStyle = "#f0f0f2";
   cSpecCtx.fillRect(0, 0, w, h);
-  const n = Math.min(liveSamples.length, 4096);
+  const n = Math.min(live.length, 4096);
   if (n < 512) return;
-  const spectrum = computeSpectrum(Int16Array.from(liveSamples.slice(liveSamples.length - n)));
+  const spectrum = computeSpectrum(Int16Array.from(live.slice(live.length - n)));
   if (!spectrum) return;
   const maxFreq = SAMPLE_RATE / 2, minDb = -100, maxDb = 0;
   cSpecCtx.fillStyle = "#9aa4b3";
@@ -1198,7 +1359,7 @@ function drawClinicalSpectrum() {
   cSpecCtx.stroke();
 }
 
-function updateClinicalMetrics(samples) {
+function updateClinicalMetrics(samples: ArrayLike<number> | null): void {
   if (!samples || samples.length === 0 || !cRmsEl) return;
   const m = clinicalMetricsOf(Int16Array.from(samples));
   cRmsEl.textContent = m.rms.toFixed(1) + " dBFS";
@@ -1208,16 +1369,15 @@ function updateClinicalMetrics(samples) {
 }
 
 /**
- * Compatibility accessors for converted modules and the browser smoke suite.
- * These disappear once the remaining callers import the clinical state
- * directly; keeping them here preserves the exact mutable state semantics of
- * the former classic script during that last step.
+ * Read access to the clinical state for the browser smoke suite, which drives
+ * the app over the DevTools Protocol and has no other handle on module scope.
+ * Exposed through devtools.ts, not as globals.
  */
 export const clinicalStateAccess = {
-  get patients() { return clinicalPatients; },
-  set patients(value) { clinicalPatients = value; },
-  get patient() { return currentPatient; },
-  set patient(value) { currentPatient = value; },
-  get sessionId() { return currentSessionId; },
-  set sessionId(value) { currentSessionId = value; },
+  get patients(): StoredPatient[] { return clinicalPatients; },
+  set patients(value: StoredPatient[]) { clinicalPatients = value; },
+  get patient(): StoredPatient | null { return currentPatient; },
+  set patient(value: StoredPatient | null) { currentPatient = value; },
+  get sessionId(): string | null { return currentSessionId; },
+  set sessionId(value: string | null) { currentSessionId = value; },
 };

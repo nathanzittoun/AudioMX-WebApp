@@ -5,15 +5,7 @@
 // Its own Vite entry, separate from index.html: this window shares nothing with
 // the clinician app except the protocol definition and these messages.
 
-import { getProtocolTest } from "./core/protocol";
-
-type PatientMessage =
-  | { kind: "test"; testId: string }
-  | { kind: "go"; on: boolean }
-  | { kind: "countdown"; seconds: number }
-  | { kind: "timerStart"; seconds: number | null }
-  | { kind: "timerStop" }
-  | { kind: "ready" };
+import { getProtocolTest, type PatientMessage } from "./core/protocol";
 
 interface PatientSnapshot {
   testId?: string;
