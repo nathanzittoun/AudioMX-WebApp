@@ -242,6 +242,10 @@ function drawLiveSpectrum() {
 const LIVE_SG_MIN_DB = -95;
 const LIVE_SG_MAX_DB = -20;
 
+// Scroll speed of the live spectrogram, in pixels per second of audio. Purely
+// a rendering choice, so it stays here rather than in core/constants.
+const SG_PIXELS_PER_SEC = 120;
+
 // Map a normalized value 0..1 to an [r,g,b] on a dark→purple→red→yellow→white
 // ramp (readable in both light and dark surroundings).
 function clearLiveSpectrogram() {
