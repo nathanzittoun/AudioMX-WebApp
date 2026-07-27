@@ -15,7 +15,6 @@ let writer;
 // Metadata attached to the next saved recording (set by the clinical flow).
 let activeTestMeta = null;
 
-
 let wifiSocket = null;
 let wifiConnected = false;
 
@@ -27,70 +26,6 @@ let computerMicReady = false;
 // The rate the browser actually gave us, which is not always the one we asked
 // for. computerMic.js resamples to SAMPLE_RATE when they differ.
 let computerCaptureRate = SAMPLE_RATE;
-
-
-
-
-const connectBtn = document.getElementById("connectBtn");
-const startBtn = document.getElementById("startBtn");
-const stopBtn = document.getElementById("stopBtn");
-const calibrateNoiseBtn = document.getElementById("calibrateNoiseBtn");
-const plotSpectrumBtn = document.getElementById("plotSpectrumBtn");
-const resetZoomBtn = document.getElementById("resetZoomBtn");
-const downloadFftBtn = document.getElementById("downloadFftBtn");
-const modeSelector = document.getElementById("modeSelector");
-const analysisWaveformCanvas = document.getElementById("analysisWaveformCanvas");
-const analysisWaveformCtx = analysisWaveformCanvas.getContext("2d");
-const selectedRangeLabel = document.getElementById("selectedRangeLabel");
-const connectWifiBtn = document.getElementById("connectWifiBtn");
-
-const statusDiv = document.getElementById("status");
-const statusDot = document.getElementById("statusDot");
-
-const durationBox = document.getElementById("durationBox");
-const sampleBox = document.getElementById("sampleBox");
-const recordingStateBox = document.getElementById("recordingStateBox");
-
-const rmsDbEl = document.getElementById("rmsDb");
-const peakDbEl = document.getElementById("peakDb");
-const clipPercentEl = document.getElementById("clipPercent");
-const hum60El = document.getElementById("hum60");
-const hum120El = document.getElementById("hum120");
-const noiseFloorEl = document.getElementById("noiseFloor");
-const noiseCommentEl = document.getElementById("noiseComment");
-const noiseAttenuatorBtn = document.getElementById("noiseAttenuatorBtn");
-
-const rmsBar = document.getElementById("rmsBar");
-const peakBar = document.getElementById("peakBar");
-const clipBar = document.getElementById("clipBar");
-const hum60Bar = document.getElementById("hum60Bar");
-const hum120Bar = document.getElementById("hum120Bar");
-
-const spectrumCanvas = document.getElementById("spectrumCanvas");
-const spectrumCtx = spectrumCanvas.getContext("2d");
-const dominantFrequenciesEl = document.getElementById("dominantFrequencies");
-const fftInterpretationEl = document.getElementById("fftInterpretation");
-const fftRangeLabel = document.getElementById("fftRangeLabel");
-const fftMinFreqInput = document.getElementById("fftMinFreqInput");
-const fftMaxFreqInput = document.getElementById("fftMaxFreqInput");
-const analysisSourceSelect = document.getElementById("analysisSourceSelect");
-
-const recordingList = document.getElementById("recordingList");
-const recordingCount = document.getElementById("recordingCount");
-const logDiv = document.getElementById("log");
-
-const canvas = document.getElementById("waveform");
-const ctx = canvas.getContext("2d");
-
-const liveSpectrumCanvas = document.getElementById("liveSpectrum");
-const liveSpectrumCtx = liveSpectrumCanvas ? liveSpectrumCanvas.getContext("2d") : null;
-
-const liveSpectrogramCanvas = document.getElementById("liveSpectrogram");
-const liveSpectrogramCtx = liveSpectrogramCanvas ? liveSpectrogramCanvas.getContext("2d") : null;
-
-const analysisSpectrogramCanvas = document.getElementById("analysisSpectrogram");
-const analysisSpectrogramCtx = analysisSpectrogramCanvas ? analysisSpectrogramCanvas.getContext("2d") : null;
-
 
 function log(message) {
   const line = document.createElement("div");

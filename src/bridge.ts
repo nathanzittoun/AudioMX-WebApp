@@ -16,6 +16,7 @@
 // is empty.
 
 import { showTab } from "./ui/tabs";
+import { ctx2d, el } from "./ui/dom";
 import { extractVoiceFeatures, formatFeatures } from "./core/features";
 import { createZip } from "./core/zip";
 import { PROTOCOL_TESTS, getProtocolTest } from "./core/protocol";
@@ -66,6 +67,73 @@ alias("analysisSelectionStart", analysis, "selectionStart");
 alias("analysisSelectionEnd", analysis, "selectionEnd");
 alias("analysisDragMode", analysis, "dragMode");
 alias("calibratedNoiseFloorDb", analysis, "calibratedNoiseFloorDb");
+
+
+// The ~45 element references app.js used to capture at load time. Installed as
+// lazy getters so nothing is resolved before the DOM is ready and so a page
+// without a given element simply reports null instead of throwing on load.
+const LEGACY_ELEMENTS: Record<string, string> = {
+  connectBtn: "connectBtn",
+  startBtn: "startBtn",
+  stopBtn: "stopBtn",
+  calibrateNoiseBtn: "calibrateNoiseBtn",
+  plotSpectrumBtn: "plotSpectrumBtn",
+  resetZoomBtn: "resetZoomBtn",
+  downloadFftBtn: "downloadFftBtn",
+  modeSelector: "modeSelector",
+  analysisWaveformCanvas: "analysisWaveformCanvas",
+  selectedRangeLabel: "selectedRangeLabel",
+  connectWifiBtn: "connectWifiBtn",
+  statusDiv: "status",
+  statusDot: "statusDot",
+  durationBox: "durationBox",
+  sampleBox: "sampleBox",
+  recordingStateBox: "recordingStateBox",
+  rmsDbEl: "rmsDb",
+  peakDbEl: "peakDb",
+  clipPercentEl: "clipPercent",
+  hum60El: "hum60",
+  hum120El: "hum120",
+  noiseFloorEl: "noiseFloor",
+  noiseCommentEl: "noiseComment",
+  noiseAttenuatorBtn: "noiseAttenuatorBtn",
+  rmsBar: "rmsBar",
+  peakBar: "peakBar",
+  clipBar: "clipBar",
+  hum60Bar: "hum60Bar",
+  hum120Bar: "hum120Bar",
+  spectrumCanvas: "spectrumCanvas",
+  dominantFrequenciesEl: "dominantFrequencies",
+  fftInterpretationEl: "fftInterpretation",
+  fftRangeLabel: "fftRangeLabel",
+  fftMinFreqInput: "fftMinFreqInput",
+  fftMaxFreqInput: "fftMaxFreqInput",
+  analysisSourceSelect: "analysisSourceSelect",
+  recordingList: "recordingList",
+  recordingCount: "recordingCount",
+  logDiv: "log",
+  canvas: "waveform",
+  liveSpectrumCanvas: "liveSpectrum",
+  liveSpectrogramCanvas: "liveSpectrogram",
+  analysisSpectrogramCanvas: "analysisSpectrogram",
+};
+
+// Canvas contexts, keyed by the canvas element id they derive from.
+const LEGACY_CONTEXTS: Record<string, string> = {
+  analysisWaveformCtx: "analysisWaveformCanvas",
+  spectrumCtx: "spectrumCanvas",
+  ctx: "waveform",
+  liveSpectrumCtx: "liveSpectrum",
+  liveSpectrogramCtx: "liveSpectrogram",
+  analysisSpectrogramCtx: "analysisSpectrogram",
+};
+
+for (const [name, id] of Object.entries(LEGACY_ELEMENTS)) {
+  Object.defineProperty(globalThis, name, { get: () => el(id), configurable: true });
+}
+for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
+  Object.defineProperty(globalThis, name, { get: () => ctx2d(canvasId), configurable: true });
+}
 
 Object.assign(globalThis, {
   // audio.js -> analyzeRecording() jumps to the analyse view.
