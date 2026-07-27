@@ -481,17 +481,10 @@
     <div id="log" class="logBox"></div>
   </div>
 
-  <!-- Migration seam. Module scripts and deferred classic scripts all run after
-       parsing, in document order, so this sequence is guaranteed:
-         bridge.ts  ->  every legacy file  ->  main.ts
-       bridge.ts publishes already-converted modules as globals before any
-       legacy code runs; main.ts boots the app once everything is defined.
-       The legacy block shrinks to nothing as files move into src/. -->
-  <script type="module" src="/src/bridge.ts"></script>
-
-  <!-- Not yet converted to ES modules, so Vite copies these verbatim from
-       public/legacy/. Load order is load-bearing: every file shares one global
-       scope and app.js must define the shared state before anything reads it. -->
+  <!-- The whole application, as one module graph. There used to be a second
+       script here (bridge.ts) publishing ~100 names on window so that the
+       remaining classic scripts could find the converted code; both it and
+       they are gone. main.ts boots on DOMContentLoaded. -->
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

@@ -5,12 +5,11 @@
 // drives the app over the Chrome DevTools Protocol and can only reach it
 // through globals.
 //
-// It exists to keep bridge.ts honest. Everything bridge.ts publishes is there
-// because a *legacy* file needs it under that exact name, and each conversion
-// should shorten that list — but the smoke suite was also reading those
-// globals, so pruning one would have broken the tests for no real reason and
-// the two purposes would have stayed tangled. Now the seam shrinks on its own
-// schedule and the tests hold on to this instead.
+// It replaced bridge.ts as the tests' handle on the app. bridge.ts published a
+// hundred names on globalThis for the legacy scripts; the smoke suite read the
+// same names, so the two purposes were tangled and neither could shrink. This
+// namespace is the deliberate one, and it is the only thing the app puts on
+// the global object.
 //
 // Not stripped from the production build, on purpose: the smoke suite runs
 // against the built output precisely so that what ships is what was tested. A
@@ -43,15 +42,29 @@ import * as riskModel from "./storage/riskModel";
 import * as download from "./ui/download";
 import * as spectrogram from "./ui/canvas/spectrogram";
 import * as clinical from "./clinical";
+import * as app from "./app";
+import * as computerMicSource from "./device/computerMicSource";
+import * as serialSource from "./device/serialSource";
+import * as wifiSource from "./device/wifiSource";
+import * as reflectSupport from "./device/reflectSupport";
+import * as ehrConfig from "./ehr/config";
+import * as ehrPanel from "./ehr/ehrPanel";
+import * as noiseToggle from "./rnd/noiseToggle";
+import * as dom from "./ui/dom";
+import * as tabs from "./ui/tabs";
+import * as logger from "./ui/log";
+import * as status from "./ui/status";
+import * as captureStats from "./ui/captureStats";
 
 const api = {
+  app, clinical,
   bus, constants, features, protocol, recorder, state, wav, zip,
   fft, levels, noiseFilter, spectrum,
-  framing, support,
-  fhirExport, smart,
-  analysisSelection, fftView, libraryView, liveSpectrum, meters,
+  framing, support, computerMicSource, serialSource, wifiSource, reflectSupport,
+  ehrConfig, ehrPanel, fhirExport, smart,
+  analysisSelection, fftView, libraryView, liveSpectrum, meters, noiseToggle,
   storage, riskModel,
-  download, spectrogram, clinical,
+  captureStats, dom, download, logger, spectrogram, status, tabs,
 };
 
 declare global {
