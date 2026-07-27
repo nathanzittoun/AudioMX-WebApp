@@ -85,6 +85,37 @@ T("axe frequentiel jusqu'a Nyquist", dsp && Math.abs(dsp.nyquist - 8000) < 10, d
 T("dbfs / clamp / goertzel publies", (await ev(
   "Math.round(dbfs(32768))===0 && clamp(5,0,1)===1 && typeof goertzelMagnitude==='function'")) === true);
 
+// --- 1a0d. indicateurs de qualite du signal (banc R&D) ---
+// Ils n'existent que branches a un micro : ici on injecte un signal connu et
+// on relit ce que le clinicien voit a l'ecran.
+const met = await ev(`(()=>{
+  const n = 16000, s = new Int16Array(n);
+  for (let i = 0; i < n; i++) s[i] = Math.round(20000 * Math.sin(2*Math.PI*1000*i/16000));
+  const txt = id => document.getElementById(id).textContent;
+  const bar = id => document.getElementById(id).style.width;
+
+  updateNoiseIndicators(s);
+  // Releve avant tout autre appel : chaque appel ecrase l'affichage.
+  const clean = { rms: parseFloat(txt('rmsDb')), peak: parseFloat(txt('peakDb')), rmsBar: bar('rmsBar') };
+
+  // Bruit de fond a ~ -60 dBFS, une seconde.
+  liveSamples.length = 0;
+  for (let i = 0; i < 16000; i++) liveSamples.push(Math.round(33 * Math.sin(i)));
+  calibrateNoiseFloor();
+  const floor = txt('noiseFloor');
+
+  // Sature : la remarque doit basculer sur le clipping.
+  updateNoiseIndicators(new Int16Array(1000).fill(32700));
+
+  return { ...clean, floor, comment: txt('noiseComment') };
+})()`);
+// Un sinus 20000/32768 : crete -4.3 dBFS, RMS 3 dB plus bas.
+T("crete affichee juste", met && Math.abs(met.peak + 4.3) < 0.3, met ? met.peak + " dBFS" : "-");
+T("RMS affiche juste (crete - 3 dB)", met && Math.abs(met.rms + 7.3) < 0.3, met ? met.rms + " dBFS" : "-");
+T("barre de niveau remplie", met && /%$/.test(met.rmsBar || "") && parseFloat(met.rmsBar) > 50, met?.rmsBar);
+T("plancher de bruit calibre", met && /dBFS baseline/.test(met.floor), met?.floor);
+T("saturation signalee a l'operateur", met && /Clipping detected/.test(met.comment), met?.comment?.slice(0, 40));
+
 // --- 1a1. spectrogrammes : on lit les pixels, pas le code ---
 // Ces fonctions ne renvoient rien et ne tournent qu'avec un micro branche :
 // une constante disparue y a vecu 4 commits en jetant une ReferenceError par

@@ -56,6 +56,8 @@ import { spectrogramColor } from "./ui/canvas/spectrogramColor";
 import {
   clearLiveSpectrogram, pushLiveSpectrogramColumn, renderStaticSpectrogram,
 } from "./ui/canvas/spectrogram";
+import { calibrateNoiseFloor, updateNoiseIndicators } from "./rnd/meters";
+import { drawLiveSpectrum } from "./rnd/liveSpectrum";
 import { ctx2d, el } from "./ui/dom";
 import { extractVoiceFeatures, formatFeatures } from "./core/features";
 import { createZip } from "./core/zip";
@@ -224,9 +226,12 @@ Object.assign(globalThis, {
   nextPowerOfTwo, hannWindow, fftRadix2, accumulateFftFrame,
   computeSpectrum, findDominantFrequencies, interpretSpectrum,
   spectrogramColor,
-  // Spectrogram drawing: app.js clears it per take, analysis.js feeds the live
-  // one and asks for the static one when the FFT is replotted.
+  // Spectrogram drawing: app.js clears it per take, analysis.js asks for the
+  // static one when the FFT is replotted.
   clearLiveSpectrogram, pushLiveSpectrogramColumn, renderStaticSpectrogram,
+  // app.js -> renderLiveMonitors() refreshes the meters and the live FFT on
+  // every render tick.
+  updateNoiseIndicators, calibrateNoiseFloor, drawLiveSpectrum,
   // audio.js -> analyzeRecording() jumps to the analyse view.
   showTab,
   // audio.js stamps features onto a take; clinical.js renders them in the chart.

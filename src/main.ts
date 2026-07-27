@@ -22,6 +22,8 @@ import { initEhr } from "./ehr/ehrPanel";
 import { clearAllData, restoreRecordings } from "./storage/library";
 import { renderRecordings, setAudioMode, updateAnalysisSourceSelect } from "./rnd/libraryView";
 import { clearLiveSpectrogram } from "./ui/canvas/spectrogram";
+import { calibrateNoiseFloor } from "./rnd/meters";
+import { drawLiveSpectrum } from "./rnd/liveSpectrum";
 
 function boot(): void {
   // ---- navigation ----
