@@ -4,17 +4,20 @@
 
 import { capture } from "../core/state";
 import { resetNoiseAttenuator } from "../core/dsp/noiseFilter";
+import { log } from "../ui/log";
+import { el } from "../ui/dom";
 
 export function toggleNoiseAttenuator(): void {
   capture.noiseFilterEnabled = !capture.noiseFilterEnabled;
 
-  noiseAttenuatorBtn.classList.toggle("noiseOn", capture.noiseFilterEnabled);
+  const button = el("noiseAttenuatorBtn");
+  button?.classList.toggle("noiseOn", capture.noiseFilterEnabled);
 
   if (capture.noiseFilterEnabled) {
-    noiseAttenuatorBtn.textContent = "Noise filter ON";
+    if (button) button.textContent = "Noise filter ON";
     log("Noise filter ON: recordings are cleaned (high-pass + notches + low-pass + gate). Turn OFF for the raw signal.");
   } else {
-    noiseAttenuatorBtn.textContent = "Noise filter OFF";
+    if (button) button.textContent = "Noise filter OFF";
     log("Noise filter OFF: recordings are raw.");
   }
 

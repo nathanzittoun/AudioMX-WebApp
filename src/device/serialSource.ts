@@ -15,6 +15,8 @@ import { el } from "../ui/dom";
 import { createFrameParser } from "./framing";
 import { serialSupport } from "./support";
 import { connectComputerMic } from "./computerMicSource";
+import { log } from "../ui/log";
+import { setStatus } from "../ui/status";
 
 const parser = createFrameParser();
 

@@ -11,6 +11,8 @@ import { device } from "../core/state";
 import { ingestMemsFrame } from "../core/recorder";
 import { el } from "../ui/dom";
 import { wifiSupport } from "./support";
+import { log } from "../ui/log";
+import { setStatus } from "../ui/status";
 
 export const DEFAULT_WIFI_URL = "ws://192.168.4.1:81";
 const CONNECT_TIMEOUT_MS = 6000;

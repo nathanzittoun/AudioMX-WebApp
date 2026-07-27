@@ -8,6 +8,7 @@ import { library, type Recording } from "../core/state";
 import { storage } from "./index";
 import { emit } from "../core/bus";
 import type { StoredPatient, StoredRecording } from "./types";
+import { log } from "../ui/log";
 
 export async function savePatient(patient: StoredPatient): Promise<void> {
   await storage.patients.put({

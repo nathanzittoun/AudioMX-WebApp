@@ -3,6 +3,7 @@
 // raw signal is stored when it is OFF.
 
 import { BiquadFilter } from "./biquad";
+import { SAMPLE_RATE } from "../constants";
 import { capture } from "../state";
 
 /** Mutable per-channel gate state. */

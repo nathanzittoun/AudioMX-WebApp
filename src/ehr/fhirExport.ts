@@ -30,6 +30,7 @@ import type { Recording } from "../core/state";
 import type { StoredPatient } from "../storage/types";
 import { library } from "../core/state";
 import { sanitizeForFilename, triggerDownload } from "../ui/download";
+import { log } from "../ui/log";
 
 // Local code system for the acoustic measures. There are no standard LOINC
 // codes for jitter/shimmer/HNR/F0 today, so we bind them to a project system

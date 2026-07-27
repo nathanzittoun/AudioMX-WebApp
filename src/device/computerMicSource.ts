@@ -9,6 +9,8 @@ import { ingest } from "../core/recorder";
 import { el } from "../ui/dom";
 import { computerMicSupport } from "./support";
 import { createResampler } from "./resample";
+import { log } from "../ui/log";
+import { setStatus } from "../ui/status";
 
 const resampler = createResampler();
 

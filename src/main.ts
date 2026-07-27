@@ -35,9 +35,12 @@ import {
   downloadFftCsv, drawSpectrumBackground, plotNoiseSpectrum, resetFftZoom,
 } from "./rnd/fftView";
 import {
-  clearCanvas, setAppMode, setInputSource, setStatus, startRecording,
+  clearCanvas, setAppMode, setInputSource, startRecording,
   stopRecording, updateCurrentStats,
 } from "./app";
+import { setStatus } from "./ui/status";
+import { el, requireEl } from "./ui/dom";
+import { toggleNoiseAttenuator } from "./rnd/noiseToggle";
 import { initClinical } from "./clinical";
 
 function boot(): void {
@@ -59,14 +62,14 @@ function boot(): void {
 
   // ---- device + capture ----
 
-  connectBtn.addEventListener("click", connectSerial);
-  connectWifiBtn.addEventListener("click", connectWifiMems);
+  requireEl("connectBtn").addEventListener("click", connectSerial);
+  requireEl("connectWifiBtn").addEventListener("click", connectWifiMems);
   // Wrapped: a bare reference would hand the click Event to startRecording()
   // as the take metadata.
-  startBtn.addEventListener("click", () => void startRecording());
-  stopBtn.addEventListener("click", stopRecording);
-  calibrateNoiseBtn.addEventListener("click", calibrateNoiseFloor);
-  noiseAttenuatorBtn.addEventListener("click", toggleNoiseAttenuator);
+  requireEl("startBtn").addEventListener("click", () => void startRecording());
+  requireEl("stopBtn").addEventListener("click", () => void stopRecording());
+  requireEl("calibrateNoiseBtn").addEventListener("click", calibrateNoiseFloor);
+  requireEl("noiseAttenuatorBtn").addEventListener("click", toggleNoiseAttenuator);
 
   document.querySelectorAll<HTMLElement>(".sourceBtn").forEach(btn => {
     btn.addEventListener("click", async () => {
@@ -84,29 +87,32 @@ function boot(): void {
 
   // ---- analysis ----
 
-  plotSpectrumBtn.addEventListener("click", plotNoiseSpectrum);
-  resetZoomBtn.addEventListener("click", resetFftZoom);
-  downloadFftBtn.addEventListener("click", downloadFftCsv);
+  const fftMin = requireEl<HTMLInputElement>("fftMinFreqInput");
+  const fftMax = requireEl<HTMLInputElement>("fftMaxFreqInput");
 
-  fftMinFreqInput.addEventListener("change", plotNoiseSpectrum);
-  fftMaxFreqInput.addEventListener("change", plotNoiseSpectrum);
+  requireEl("plotSpectrumBtn").addEventListener("click", plotNoiseSpectrum);
+  requireEl("resetZoomBtn").addEventListener("click", resetFftZoom);
+  requireEl("downloadFftBtn").addEventListener("click", downloadFftCsv);
 
-  analysisSourceSelect.addEventListener("change", () => {
+  fftMin.addEventListener("change", plotNoiseSpectrum);
+  fftMax.addEventListener("change", plotNoiseSpectrum);
+
+  requireEl("analysisSourceSelect").addEventListener("change", () => {
     resetAnalysisSelection();
     plotNoiseSpectrum();
   });
 
   document.querySelectorAll<HTMLElement>(".zoomPresetBtn").forEach(btn => {
     btn.addEventListener("click", () => {
-      fftMinFreqInput.value = btn.dataset["min"] ?? "";
-      fftMaxFreqInput.value = btn.dataset["max"] ?? "";
+      fftMin.value = btn.dataset["min"] ?? "";
+      fftMax.value = btn.dataset["max"] ?? "";
       plotNoiseSpectrum();
     });
   });
 
   // ---- data ----
 
-  document.getElementById("clearAllBtn")?.addEventListener("click", () => {
+  el("clearAllBtn")?.addEventListener("click", () => {
     // Asking belongs to the control, not to the storage layer.
     if (confirm("Delete ALL patients and ALL recordings from this browser? This cannot be undone.")) {
       void clearAllData();

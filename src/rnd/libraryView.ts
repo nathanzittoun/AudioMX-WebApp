@@ -14,6 +14,7 @@ import { showTab } from "../ui/tabs";
 import { on } from "../core/bus";
 import { resetAnalysisSelection } from "./analysisSelection";
 import { plotNoiseSpectrum } from "./fftView";
+import { log } from "../ui/log";
 
 export function setAudioMode(mode: "stereo" | "left" | "right"): void {
   if (capture.recording) {

@@ -9,6 +9,7 @@ import { SAMPLE_RATE } from "../core/constants";
 import { analysis, capture } from "../core/state";
 import { clamp, dbfs, dbToBar, goertzelMagnitude } from "../core/dsp/levels";
 import { el } from "../ui/dom";
+import { log } from "../ui/log";
 
 /** Sample value above which a 16-bit sample counts as clipped. */
 const CLIP_THRESHOLD = 32000;

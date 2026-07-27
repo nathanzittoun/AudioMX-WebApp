@@ -9,6 +9,7 @@
 import { el } from "../ui/dom";
 import { redirectUri } from "./config";
 import { handleRedirect, launch, listObservations, loadPatient } from "./smart";
+import { log } from "../ui/log";
 
 /** The slice of a FHIR Patient this panel displays. */
 interface FhirPatient {

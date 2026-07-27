@@ -14,6 +14,7 @@ import { ctx2d, el } from "../ui/dom";
 import { renderStaticSpectrogram } from "../ui/canvas/spectrogram";
 import { triggerDownload } from "../ui/download";
 import { drawAnalysisWaveform, getAnalysisSamples } from "./analysisSelection";
+import { log } from "../ui/log";
 
 /** Plot range in dB. Wider than the live strip because takes can be quiet. */
 const PLOT_MIN_DB = -110;

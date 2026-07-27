@@ -12,18 +12,8 @@ import { drawLiveSpectrum } from "./rnd/liveSpectrum";
 import { updateNoiseIndicators } from "./rnd/meters";
 import { clearLiveSpectrogram } from "./ui/canvas/spectrogram";
 import { ctx2d, el } from "./ui/dom";
-
-type StatusKind = "idle" | "connected" | "recording";
-
-export function log(message: string): void {
-  const container = el("log");
-  if (!container) return;
-  const line = document.createElement("div");
-  const time = new Date().toLocaleTimeString();
-  line.textContent = "[" + time + "] " + message;
-  container.appendChild(line);
-  container.scrollTop = container.scrollHeight;
-}
+import { log } from "./ui/log";
+import { setStatus } from "./ui/status";
 
 export function setAppMode(mode: "rnd" | "clinical"): void {
   ui.mode = mode;
@@ -60,16 +50,6 @@ function clearActiveMonitors(): void {
   clearCanvas();
   clearLiveSpectrogram();
   if (typeof clearClinicalMonitors === "function") clearClinicalMonitors();
-}
-
-export function setStatus(message: string, state: StatusKind = "idle"): void {
-  const status = el("status");
-  const dot = el("statusDot");
-  if (status) status.textContent = message;
-  if (!dot) return;
-  dot.className = "statusDot";
-  if (state === "connected") dot.classList.add("connected");
-  if (state === "recording") dot.classList.add("recording");
 }
 
 export function updateCurrentStats(): void {

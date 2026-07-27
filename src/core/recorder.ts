@@ -14,6 +14,7 @@ import { saveRecording } from "../storage/library";
 import { emit } from "./bus";
 import { capture, device, library, type Recording } from "./state";
 import { processNoiseAttenuator } from "./dsp/noiseFilter";
+import { log } from "../ui/log";
 
 /**
  * Take one block of interleaved samples into the recording in progress.

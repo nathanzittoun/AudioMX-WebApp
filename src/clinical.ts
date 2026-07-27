@@ -30,7 +30,9 @@ import { deletePatient as deletePatientFromDb, loadPatients, savePatient } from 
 import type { StoredPatient } from "./storage/types";
 import { el, requireEl } from "./ui/dom";
 import { recordingBaseName, sanitizeForFilename, triggerDownload } from "./ui/download";
-import { log, setAppMode, setInputSource, setStatus, startRecording, stopRecording } from "./app";
+import { setAppMode, setInputSource, startRecording, stopRecording } from "./app";
+import { log } from "./ui/log";
+import { setStatus } from "./ui/status";
 
 /** How the clinician attached a microphone for this exam. */
 type ConnectKind = "usb" | "wifi" | "computer";

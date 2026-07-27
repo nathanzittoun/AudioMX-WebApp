@@ -70,9 +70,11 @@ import {
 } from "./core/dsp/noiseFilter";
 import { toggleNoiseAttenuator } from "./rnd/noiseToggle";
 import {
-  clearCanvas, log, renderLiveMonitors, setAppMode, setInputSource, setStatus,
+  clearCanvas, renderLiveMonitors, setAppMode, setInputSource,
   startRecording, stopRecording, updateCurrentStats,
 } from "./app";
+import { log } from "./ui/log";
+import { setStatus } from "./ui/status";
 import {
   clearClinicalMonitors, clinicalStateAccess, drawClinicalMonitors, initClinical,
   loadClinicalPatients, onClinicalRecordingSaved, renderChart, renderExamHeader,
