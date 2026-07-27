@@ -16,6 +16,12 @@
 // is empty.
 
 import { showTab } from "./ui/tabs";
+import { extractVoiceFeatures, formatFeatures } from "./core/features";
 
-// audio.js -> analyzeRecording() calls showTab() to jump to the analyse view.
-Object.assign(globalThis, { showTab });
+Object.assign(globalThis, {
+  // audio.js -> analyzeRecording() jumps to the analyse view.
+  showTab,
+  // audio.js stamps features onto a take; clinical.js renders them in the chart.
+  extractVoiceFeatures,
+  formatFeatures,
+});

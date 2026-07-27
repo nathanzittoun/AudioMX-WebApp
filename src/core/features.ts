@@ -6,7 +6,38 @@
 // estimate. True Praat-grade jitter/shimmer need glottal-cycle marking; these
 // are close enough to visualize the pipeline and drive an AI hook.
 
-function fx_autocorrPeak(frame, minLag, maxLag) {
+/** Signal container: Int16Array from a take, Float64Array from a scratch frame. */
+type Samples = ArrayLike<number>;
+
+/**
+ * A take with no usable pitch still reports how much of it was voiced, so the
+ * quality gate can tell "too quiet" apart from "measured, and abnormal". The
+ * union makes that distinction unskippable at the call site.
+ */
+export type VoiceFeatures =
+  | { voiced: false; voicedFraction: number }
+  | {
+      voiced: true;
+      voicedFraction: number;
+      f0: number;
+      f0sd: number;
+      jitterPct: number;
+      shimmerPct: number;
+      hnrDb: number;
+      f1: number | null;
+      f2: number | null;
+    };
+
+export interface Formants {
+  f1: number | null;
+  f2: number | null;
+}
+
+export function fx_autocorrPeak(
+  frame: Samples,
+  minLag: number,
+  maxLag: number
+): { lag: number; r: number } {
   const n = frame.length;
   let bestLag = -1, bestR = 0;
   for (let lag = minLag; lag <= maxLag; lag++) {
@@ -23,7 +54,7 @@ function fx_autocorrPeak(frame, minLag, maxLag) {
   return { lag: bestLag, r: bestR };
 }
 
-function fx_autocorr(x, order) {
+export function fx_autocorr(x: Samples, order: number): Float64Array {
   const R = new Float64Array(order + 1);
   for (let k = 0; k <= order; k++) {
     let s = 0;
@@ -33,7 +64,7 @@ function fx_autocorr(x, order) {
   return R;
 }
 
-function fx_levinson(R, order) {
+export function fx_levinson(R: Float64Array, order: number): Float64Array | null {
   if (R[0] === 0) return null;
   const a = new Float64Array(order + 1);
   a[0] = 1;
@@ -51,8 +82,8 @@ function fx_levinson(R, order) {
   return a;
 }
 
-// Approximate F1/F2 from the LPC spectral envelope peaks.
-function fx_formants(samples, sampleRate) {
+/** Approximate F1/F2 from the LPC spectral envelope peaks. */
+export function fx_formants(samples: Samples, sampleRate: number): Formants {
   const winLen = Math.min(samples.length, Math.round(0.03 * sampleRate));
   if (winLen < 128) return { f1: null, f2: null };
   const startIdx = Math.floor((samples.length - winLen) / 2);
@@ -89,7 +120,7 @@ function fx_formants(samples, sampleRate) {
     mags[s] = 1 / Math.sqrt(re * re + im * im + 1e-12);
   }
 
-  const peaks = [];
+  const peaks: Array<{ f: number; mag: number }> = [];
   for (let s = 1; s < steps - 1; s++) {
     if (mags[s] > mags[s - 1] && mags[s] > mags[s + 1]) {
       peaks.push({ f: (s / steps) * maxFreq, mag: mags[s] });
@@ -103,7 +134,10 @@ function fx_formants(samples, sampleRate) {
   };
 }
 
-function extractVoiceFeatures(samples, sampleRate) {
+export function extractVoiceFeatures(
+  samples: Samples | null | undefined,
+  sampleRate: number
+): VoiceFeatures | null {
   if (!samples || samples.length < sampleRate * 0.15) return null;
 
   const N = samples.length;
@@ -114,7 +148,7 @@ function extractVoiceFeatures(samples, sampleRate) {
   const maxLag = Math.ceil(sampleRate / minF0);
   const voicedThresh = 0.35;
 
-  const f0s = [], periods = [], amps = [], hnrs = [];
+  const f0s: number[] = [], periods: number[] = [], amps: number[] = [], hnrs: number[] = [];
   let voicedFrames = 0, totalFrames = 0;
 
   for (let start = 0; start + frameLen <= N; start += hop) {
@@ -150,7 +184,7 @@ function extractVoiceFeatures(samples, sampleRate) {
     return { voiced: false, voicedFraction: voicedFraction };
   }
 
-  const mean = arr => arr.reduce((s, x) => s + x, 0) / arr.length;
+  const mean = (arr: number[]): number => arr.reduce((s, x) => s + x, 0) / arr.length;
   const meanF0 = mean(f0s);
   const f0sd = Math.sqrt(mean(f0s.map(x => (x - meanF0) * (x - meanF0))));
 
@@ -177,8 +211,8 @@ function extractVoiceFeatures(samples, sampleRate) {
   };
 }
 
-// Compact one-line summary for a chart row.
-function formatFeatures(f) {
+/** Compact one-line summary for a chart row. */
+export function formatFeatures(f: VoiceFeatures | null | undefined): string {
   if (!f) return "—";
   if (!f.voiced) return "unvoiced / no clear pitch (" + Math.round(f.voicedFraction * 100) + "% voiced)";
   return "F0 " + f.f0.toFixed(0) + " Hz · jitter " + f.jitterPct.toFixed(2) +
