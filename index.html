@@ -305,10 +305,9 @@
             <h2>Patients</h2>
             <p>Your patient database. Open one to run an exam.</p>
           </div>
-          <button id="cNewPatientBtn" class="primaryBtn">+ New patient</button>
         </div>
 
-        <form id="cNewPatientForm" class="newPatientForm" hidden>
+        <form id="cNewPatientForm" class="newPatientForm">
           <div class="newPatientFields">
             <div class="fieldGroup">
               <label for="cNpId">Patient ID *</label>
@@ -335,7 +334,7 @@
           <p id="cNpError" class="newPatientError" hidden></p>
           <div class="newPatientActions">
             <button type="submit" class="primaryBtn">Create patient</button>
-            <button type="button" id="cNpCancel" class="secondaryBtn">Cancel</button>
+            <button type="button" id="cNpClear" class="secondaryBtn">Clear</button>
           </div>
         </form>
 
@@ -344,7 +343,7 @@
           <input id="cPatientSearch" type="text" placeholder="Search by ID or name" />
         </div>
         <div id="cPatientTable" class="patientTable">
-          <div class="empty">No patients yet. Click “New patient”.</div>
+          <div class="empty">No patients yet. Fill in a patient ID above to create one.</div>
         </div>
       </section>
 

@@ -259,9 +259,8 @@ function initClinical() {
   cStopBtn.addEventListener("click", stopClinicalTest);
   cNotesInput.addEventListener("input", () => { clinicalNotes = cNotesInput.value; });
 
-  document.getElementById("cNewPatientBtn").addEventListener("click", openNewPatientForm);
   document.getElementById("cNewPatientForm").addEventListener("submit", submitNewPatient);
-  document.getElementById("cNpCancel").addEventListener("click", closeNewPatientForm);
+  document.getElementById("cNpClear").addEventListener("click", resetNewPatientForm);
   document.getElementById("cNewSessionBtn").addEventListener("click", startNewSession);
   cPatientSearch.addEventListener("input", () => renderPatientTable());
 
@@ -420,23 +419,13 @@ function renderPatientTable() {
   }
 }
 
-// Show/hide the inline creation form. Kept separate from submission so the
-// Cancel button and a successful create can share the same reset.
-function openNewPatientForm() {
-  const form = document.getElementById("cNewPatientForm");
-  if (!form) return;
-  form.hidden = false;
-  document.getElementById("cNewPatientBtn").hidden = true;
-  document.getElementById("cNpId").focus();
-}
-
-function closeNewPatientForm() {
+// The form sits permanently above the patient list, so "reset" is all the
+// Clear button and a successful create both need.
+function resetNewPatientForm() {
   const form = document.getElementById("cNewPatientForm");
   if (!form) return;
   form.reset();
-  form.hidden = true;
   document.getElementById("cNpError").hidden = true;
-  document.getElementById("cNewPatientBtn").hidden = false;
 }
 
 function submitNewPatient(event) {
@@ -469,7 +458,7 @@ function submitNewPatient(event) {
     log("Patient " + id + " already exists — opening it.");
   }
 
-  closeNewPatientForm();
+  resetNewPatientForm();
   renderPatientTable();
   openPatient(id);
 }
