@@ -16,6 +16,10 @@
 // is empty.
 
 import { showTab } from "./ui/tabs";
+import {
+  clearAllData, deletePatient, deleteRecording as deleteRecordingFromDb,
+  loadPatients, restoreRecordings, saveRecording, savePatient,
+} from "./storage/library";
 import { computerMicSupport, serialSupport, wifiSupport } from "./device/support";
 import { BAUD_RATE, FFT_SIZE, MAX_LIVE_SAMPLES, SAMPLE_RATE } from "./core/constants";
 import { clamp, dbfs, dbToBar, goertzelMagnitude } from "./core/dsp/levels";
@@ -142,6 +146,14 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // Storage, under the names db.js used to export.
+  savePatientToDb: savePatient,
+  deletePatientFromDb: deletePatient,
+  loadPatientsFromDb: loadPatients,
+  saveRecordingToDb: saveRecording,
+  deleteRecordingFromDb,
+  restoreRecordings,
+  clearAllData,
   // serial.js / computerMic.js / wifi.js report the real reason instead of
   // a generic alert or a silent failure.
   serialSupport, computerMicSupport, wifiSupport,

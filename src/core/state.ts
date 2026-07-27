@@ -92,8 +92,12 @@ export interface Recording {
   createdAt: Date | string;
   /** Mono, de-interleaved copy used for FFT and feature extraction. */
   analysisSamples: Int16Array;
+  /** Interleaved capture, dropped on reload to save memory. */
+  samples: Int16Array | null;
   blob: Blob;
-  filtered: Int16Array | null;
+  /** Object URL for the <audio> player and the download link. */
+  url: string;
+  filtered: boolean;
   features: VoiceFeatures | null;
   meta: RecordingMeta | null;
   name?: string;

@@ -7,6 +7,7 @@
 
 import { showTab } from "./ui/tabs";
 import { reflectDeviceSupport, watchWifiUrl } from "./device/reflectSupport";
+import { clearAllData, restoreRecordings } from "./storage/library";
 
 // ---- navigation ----
 
@@ -71,7 +72,12 @@ document.querySelectorAll<HTMLElement>(".zoomPresetBtn").forEach(btn => {
 
 // ---- data ----
 
-document.getElementById("clearAllBtn")?.addEventListener("click", clearAllData);
+document.getElementById("clearAllBtn")?.addEventListener("click", () => {
+  // Asking belongs to the control, not to the storage layer.
+  if (confirm("Delete ALL patients and ALL recordings from this browser? This cannot be undone.")) {
+    void clearAllData();
+  }
+});
 
 // ---- initial paint ----
 
@@ -95,4 +101,4 @@ initEhr();
 setAppMode("rnd");
 
 // Restore recordings persisted in this browser from earlier sessions.
-restoreRecordings();
+void restoreRecordings();

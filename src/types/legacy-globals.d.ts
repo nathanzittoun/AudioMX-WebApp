@@ -61,9 +61,18 @@ declare function initAnalysisWaveformSelection(): void;
 declare function toggleNoiseAttenuator(): void;
 
 // ---- storage (db.js) ----
-declare function clearAllData(): void;
-declare function restoreRecordings(): void;
+
 
 // ---- clinical + EHR ----
+// Declared as `let`, not `const`: clearAllData() resets them. Module code can
+// assign these because a classic script's top-level `let` lives in the global
+// lexical environment, which module scope also chains to.
+declare let clinicalPatients: unknown[];
+declare let currentPatient: { id: string } | null;
+declare let currentSessionId: string | null;
+declare function loadClinicalPatients(): void;
+declare function renderPatientTable(): void;
+declare function renderExamHeader(): void;
+declare function renderChart(): void;
 declare function initClinical(): void;
 declare function initEhr(): Promise<void>;
