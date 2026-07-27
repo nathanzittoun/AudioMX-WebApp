@@ -16,6 +16,11 @@
 // is empty.
 
 import { showTab } from "./ui/tabs";
+import {
+  handleRedirect, isConnected as smartIsConnected, launch,
+  listObservations, loadPatient, writeDocumentReference,
+} from "./ehr/smart";
+import { redirectUri } from "./ehr/config";
 import { ingest, ingestMemsFrame, saveCurrentRecording } from "./core/recorder";
 import { encodeWav, makeAnalysisSamples, mergeChunks } from "./core/wav";
 import { recordingBaseName, sanitizeForFilename, triggerDownload } from "./ui/download";
@@ -166,6 +171,14 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // SMART on FHIR, under the names ehr.js uses.
+  smartLaunch: launch,
+  smartHandleRedirect: handleRedirect,
+  smartIsConnected,
+  smartLoadPatient: loadPatient,
+  smartListObservations: listObservations,
+  smartWriteDocumentReference: writeDocumentReference,
+  smartRedirectUri: redirectUri,
   // Wi-Fi transport.
   connectWifiMems, disconnectWifi, sendWifiCommand, getWifiUrl, reconnectDelayMs,
   // USB serial transport.

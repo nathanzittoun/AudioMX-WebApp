@@ -37,7 +37,7 @@ function renderEhrHint() {
       "URL cannot be an OAuth redirect target.";
   } else {
     hint.className = "clinEhrHint";
-    hint.textContent = "Sign-in returns to " + SMART.redirectUri +
+    hint.textContent = "Sign-in returns to " + smartRedirectUri() +
       " — this exact URL must be registered on Epic.";
   }
 }
