@@ -74,6 +74,41 @@ T("axe frequentiel jusqu'a Nyquist", dsp && Math.abs(dsp.nyquist - 8000) < 10, d
 T("dbfs / clamp / goertzel publies", (await ev(
   "Math.round(dbfs(32768))===0 && clamp(5,0,1)===1 && typeof goertzelMagnitude==='function'")) === true);
 
+// --- 1a1. chemin MEMS, sans materiel ---
+// serial.js et wifi.js partagent addSamples(). Rien d'autre dans ce test ne
+// l'exerce, donc une regression y serait passee inapercue.
+const mems = await ev(`(()=>{
+  const frames = 4;
+  const buf = new Uint8Array(frames * 4);
+  const dv = new DataView(buf.buffer);
+  for (let i = 0; i < frames; i++) { dv.setInt16(i*4, 1000, true); dv.setInt16(i*4+2, -2000, true); }
+
+  isConnected = true; inputSource = "mems"; memsConnectionType = "wifi"; audioMode = "stereo";
+  startRecording();
+  addSamples(buf);
+  const stereo = { frames: currentFrameCount, first4: Array.from(currentChunks[0] || []).slice(0,4) };
+
+  // "left" garde le second int16 de chaque paire.
+  isRecording = false; currentChunks = []; currentFrameCount = 0; currentValueCount = 0;
+  audioMode = "left"; startRecording(); addSamples(buf);
+  const left = { frames: currentFrameCount, first2: Array.from(currentChunks[0] || []).slice(0,2) };
+
+  // Le warm-up USB doit avaler les premieres trames.
+  isRecording = false; currentChunks = []; currentFrameCount = 0; currentValueCount = 0;
+  audioMode = "stereo"; memsConnectionType = "usb"; startRecording(); addSamples(buf);
+  const warm = { frames: currentFrameCount };
+
+  isRecording = false; currentChunks = []; currentFrameCount = 0; currentValueCount = 0;
+  liveSamples = []; isConnected = false; memsConnectionType = "usb";
+  return { stereo, left, warm };
+})()`);
+T("MEMS stereo: 4 trames decodees", mems?.stereo.frames === 4, JSON.stringify(mems?.stereo.first4));
+T("MEMS stereo: ordre droite/gauche conserve",
+  JSON.stringify(mems?.stereo.first4) === JSON.stringify([1000, -2000, 1000, -2000]));
+T("MEMS mode 'left' garde le canal gauche",
+  mems?.left.frames === 4 && JSON.stringify(mems?.left.first2) === JSON.stringify([-2000, -2000]));
+T("warm-up USB avale le transitoire de mise sous tension", mems?.warm.frames === 0);
+
 // --- 1a2. detection de capacites (le chemin iOS) ---
 T("micro ordi supporte sur localhost", (await ev("computerMicSupport().ok")) === true);
 T("serialSupport renvoie un verdict", (await ev("typeof serialSupport().ok")) === "boolean");

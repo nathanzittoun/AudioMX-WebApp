@@ -143,26 +143,4 @@ function stopComputerMicCapture() {
   log("Computer mic recording stopped.");
 }
 
-function addComputerMicSamples(samples) {
-  if (!isRecording || inputSource !== "computer") {
-    return;
-  }
-
-  // Bake the filter into the stored audio when ON; store raw when OFF.
-  const stored = noiseAttenuatorEnabled ? processNoiseAttenuator(samples, 1) : samples;
-
-  currentChunks.push(stored);
-  currentFrameCount += stored.length;
-  currentValueCount += stored.length;
-
-  for (let i = 0; i < stored.length; i++) {
-    liveSamples.push(stored[i]);
-  }
-
-  if (liveSamples.length > MAX_LIVE_SAMPLES) {
-    liveSamples = liveSamples.slice(liveSamples.length - MAX_LIVE_SAMPLES);
-  }
-
-  updateCurrentStats();
-  renderLiveMonitors();
-}
+// addComputerMicSamples moved to src/core/recorder.ts as ingest().

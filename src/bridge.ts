@@ -16,6 +16,7 @@
 // is empty.
 
 import { showTab } from "./ui/tabs";
+import { ingest, ingestMemsFrame } from "./core/recorder";
 import {
   clearAllData, deletePatient, deleteRecording as deleteRecordingFromDb,
   loadPatients, restoreRecordings, saveRecording, savePatient,
@@ -147,6 +148,9 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // One ingest path for every transport, under the two names they used.
+  addSamples: ingestMemsFrame,
+  addComputerMicSamples: (s: Int16Array) => ingest(s, 1),
   // Storage, under the names db.js used to export.
   savePatientToDb: savePatient,
   deletePatientFromDb: deletePatient,

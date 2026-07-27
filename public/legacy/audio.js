@@ -14,77 +14,7 @@ function setAudioMode(mode) {
   log("Mode selected: " + mode + ".");
 }
 
-function addSamples(payloadBytes) {
-  if (!isRecording) {
-    return;
-  }
-
-  const view = new DataView(
-    payloadBytes.buffer,
-    payloadBytes.byteOffset,
-    payloadBytes.byteLength
-  );
-
-  const frameCount = payloadBytes.byteLength / 4;
-
-  // Skip the USB power-on transient at the very start of a recording.
-  if (recordingWarmupFrames > 0) {
-    recordingWarmupFrames -= frameCount;
-    return;
-  }
-
-  let outputSamples;
-
-  if (audioMode === "stereo") {
-    outputSamples = new Int16Array(frameCount * 2);
-  } else {
-    outputSamples = new Int16Array(frameCount);
-  }
-
-  for (let i = 0; i < frameCount; i++) {
-    const right = view.getInt16(i * 4, true);
-    const left = view.getInt16(i * 4 + 2, true);
-
-    if (audioMode === "stereo") {
-      outputSamples[i * 2] = right;
-      outputSamples[i * 2 + 1] = left;
-    } else if (audioMode === "left") {
-      outputSamples[i] = left;
-    } else if (audioMode === "right") {
-      outputSamples[i] = right;
-    }
-  }
-
-  const channelCount = audioMode === "stereo" ? 2 : 1;
-
-  // If the Noise filter is ON, bake it into the stored audio (one file). If
-  // OFF, store the raw capture. Record with it OFF for the raw signal used in
-  // biomarker analysis; ON for a cleaned take.
-  const stored = noiseAttenuatorEnabled
-    ? processNoiseAttenuator(outputSamples, channelCount)
-    : outputSamples;
-
-  for (let i = 0; i < frameCount; i++) {
-    if (audioMode === "stereo") {
-      const right = stored[i * 2];
-      const left = stored[i * 2 + 1];
-      liveSamples.push(Math.round((right + left) / 2));
-    } else {
-      liveSamples.push(stored[i]);
-    }
-  }
-
-  currentChunks.push(stored);
-  currentFrameCount += frameCount;
-  currentValueCount += stored.length;
-
-  if (liveSamples.length > MAX_LIVE_SAMPLES) {
-    liveSamples = liveSamples.slice(liveSamples.length - MAX_LIVE_SAMPLES);
-  }
-
-  updateCurrentStats();
-  renderLiveMonitors();
-}
+// addSamples moved to src/core/recorder.ts as ingestMemsFrame().
 
 function makeAnalysisSamples(samples, mode) {
   if (mode !== "stereo") {
