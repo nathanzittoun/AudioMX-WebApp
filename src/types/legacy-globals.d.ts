@@ -44,6 +44,7 @@ declare function connectWifiMems(): void;
 // ---- capture + library (audio.js) ----
 declare function setAudioMode(mode: string): void;
 declare function renderRecordings(): void;
+declare function onClinicalRecordingSaved(recording: unknown): void;
 declare function updateAnalysisSourceSelect(): void;
 
 // ---- analysis (analysis.js) ----

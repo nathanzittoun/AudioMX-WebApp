@@ -9,7 +9,7 @@
 // Deliberately narrow. Anything specific to IndexedDB — transactions, key
 // paths, structured clone — stays inside the adapter.
 
-import type { ChannelMode, RecordingMeta } from "../core/state";
+import type { RecordedMode, RecordingMeta } from "../core/state";
 import type { VoiceFeatures } from "../core/features";
 
 /**
@@ -31,7 +31,7 @@ export interface StoredRecording {
   values: number;
   duration: number;
   channels: number;
-  mode: ChannelMode;
+  mode: RecordedMode;
   source: string;
   createdAt: Date | string;
   analysisSamples: Int16Array;

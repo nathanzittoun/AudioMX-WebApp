@@ -7,8 +7,11 @@
 // warm-up skip — silently misses the other. There is one now, and each source
 // only has to hand it samples.
 
-import { MAX_LIVE_SAMPLES } from "./constants";
-import { capture, type ChannelMode } from "./state";
+import { MAX_LIVE_SAMPLES, SAMPLE_RATE } from "./constants";
+import { encodeWav, makeAnalysisSamples, mergeChunks } from "./wav";
+import { extractVoiceFeatures, type VoiceFeatures } from "./features";
+import { saveRecording } from "../storage/library";
+import { capture, device, library, type ChannelMode, type Recording } from "./state";
 import { processNoiseAttenuator } from "./dsp/noiseFilter";
 
 /**
@@ -89,4 +92,70 @@ export function ingestMemsFrame(payloadBytes: Uint8Array): void {
   }
 
   ingest(out, stereo ? 2 : 1);
+}
+
+/**
+ * Close out the take in progress: flatten it, encode a WAV, extract features,
+ * file it in the library and persist it.
+ *
+ * The WAV is written at SAMPLE_RATE, which is the rate every source is
+ * normalised to — computerMic.js resamples when the browser hands it another.
+ * A mismatch here is what made takes play back in slow motion.
+ */
+export function saveCurrentRecording(): void {
+  const stereo = capture.channelMode === "stereo" && device.sourceId === "mems";
+  const numChannels = stereo ? 2 : 1;
+
+  const samples = mergeChunks(capture.chunks, capture.values);
+  const analysisSamples = makeAnalysisSamples(samples, stereo ? "stereo" : "left");
+  const blob = new Blob([encodeWav(samples, SAMPLE_RATE, numChannels)], { type: "audio/wav" });
+  const sourceLabel = device.sourceId === "mems" ? "MEMS" : "Computer mic";
+
+  // Feature extraction is a research preview and must never cost a take: a
+  // failure here would otherwise lose audio that cannot be recorded again.
+  let features: VoiceFeatures | null = null;
+  try {
+    features = extractVoiceFeatures(analysisSamples, SAMPLE_RATE);
+  } catch (e) {
+    console.warn("Feature extraction failed:", e);
+  }
+
+  const recording: Recording = {
+    id: Date.now(),
+    number: library.nextIndex++,
+    frames: capture.frames,
+    values: capture.values,
+    duration: capture.frames / SAMPLE_RATE,
+    channels: numChannels,
+    mode: device.sourceId === "mems" ? capture.channelMode : "computer",
+    source: sourceLabel,
+    samples,
+    analysisSamples,
+    blob,
+    url: URL.createObjectURL(blob),
+    // One audio per take: already filtered if the noise filter was ON during
+    // capture, raw if it was OFF. No duplicate copy.
+    filtered: capture.noiseFilterEnabled,
+    features,
+    meta: capture.pendingMeta,
+    createdAt: new Date(),
+  };
+
+  // Consumed: the next take must not inherit this one's patient.
+  capture.pendingMeta = null;
+
+  library.recordings.unshift(recording);
+
+  renderRecordings();
+  updateAnalysisSourceSelect();
+
+  // Best-effort and non-blocking: the take is already in memory and on screen.
+  void saveRecording(recording);
+
+  // Let the clinical view refresh its session review if this was an exam take.
+  if (recording.meta && typeof onClinicalRecordingSaved === "function") {
+    onClinicalRecordingSaved(recording);
+  }
+
+  log("Recording " + recording.number + " saved from " + sourceLabel + ".");
 }

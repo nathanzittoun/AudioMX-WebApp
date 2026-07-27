@@ -35,6 +35,13 @@ export type SourceId = "mems" | "computer";
 export type Transport = "usb" | "wifi";
 /** Which of the two MEMS channels ends up in the stored take. */
 export type ChannelMode = "stereo" | "left" | "right";
+/**
+ * What a stored take records in its `mode` field. It conflates two things: the
+ * MEMS channel selection, or the literal "computer" when the take came from the
+ * computer microphone. Kept as-is because it is written into IndexedDB and into
+ * the exported CSV manifest, so changing it would break existing data.
+ */
+export type RecordedMode = ChannelMode | "computer";
 
 /** The selected input and its connection status. */
 export const device = {
@@ -95,7 +102,7 @@ export interface Recording {
   values: number;
   duration: number;
   channels: number;
-  mode: ChannelMode;
+  mode: RecordedMode;
   source: string;
   createdAt: Date | string;
   /** Mono, de-interleaved copy used for FFT and feature extraction. */

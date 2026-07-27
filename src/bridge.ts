@@ -16,7 +16,7 @@
 // is empty.
 
 import { showTab } from "./ui/tabs";
-import { ingest, ingestMemsFrame } from "./core/recorder";
+import { ingest, ingestMemsFrame, saveCurrentRecording } from "./core/recorder";
 import { encodeWav, makeAnalysisSamples, mergeChunks } from "./core/wav";
 import { recordingBaseName, sanitizeForFilename, triggerDownload } from "./ui/download";
 import {
@@ -156,6 +156,7 @@ Object.assign(globalThis, {
   encodeWav, makeAnalysisSamples, mergeChunks,
   // One ingest path for every transport, under the two names they used.
   addSamples: ingestMemsFrame,
+  saveCurrentRecording,
   addComputerMicSamples: (s: Int16Array) => ingest(s, 1),
   // Storage, under the names db.js used to export.
   savePatientToDb: savePatient,
