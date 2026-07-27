@@ -29,6 +29,11 @@ import {
 } from "./storage/library";
 import { computerMicSupport, serialSupport, wifiSupport } from "./device/support";
 import {
+  closeSerialPort, connectSerial, handleSerialDisconnected,
+  openSerialPort, sendCommand, setIntentionalClose,
+} from "./device/serialSource";
+import { createFrameParser } from "./device/framing";
+import {
   connectComputerMic, disconnectComputerMic,
   startComputerMicCapture, stopComputerMicCapture,
 } from "./device/computerMicSource";
@@ -79,7 +84,6 @@ alias("pendingTestMeta", capture, "pendingMeta");
 alias("inputSource", device, "sourceId");
 alias("memsConnectionType", device, "transport");
 alias("isConnected", device, "connected");
-alias("byteBuffer", device, "byteBuffer");
 alias("recordings", library, "recordings");
 alias("recordingIndex", library, "nextIndex");
 alias("appMode", ui, "mode");
@@ -158,6 +162,9 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // USB serial transport.
+  connectSerial, openSerialPort, closeSerialPort, sendCommand, createFrameParser,
+  handleSerialDisconnected, setIntentionalClose,
   // Computer microphone transport.
   connectComputerMic, disconnectComputerMic,
   startComputerMicCapture, stopComputerMicCapture,

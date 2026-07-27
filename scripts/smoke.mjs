@@ -110,6 +110,44 @@ T("nom R&D sans patient", (await ev(`
     createdAt:new Date('2026-07-27T10:00:00Z'), meta:null }).startsWith('audiomx_recording_7_computer_mic_stereo')`)) === true);
 T("caracteres dangereux neutralises", (await ev("sanitizeForFilename('  a/b:c*d  ')")) === 'a-b-c-d');
 
+// --- 1a0c. decodeur de trames USB ---
+// Une lecture USB rend les octets arrives, pas des trames : une trame peut
+// etre coupee n'importe ou. C'est la que ce genre de code casse en silence.
+const fr = await ev(`(()=>{
+  const frame = (payload) => {
+    const b = new Uint8Array(4 + payload.length);
+    b[0]=0xAA; b[1]=0x55; b[2]=payload.length & 0xFF; b[3]=(payload.length>>8)&0xFF;
+    b.set(payload, 4); return b;
+  };
+  const p1 = createFrameParser();
+  const whole = p1.push(frame(Uint8Array.from([1,2,3,4]))).map(f=>Array.from(f));
+
+  // Coupee en plein milieu : rien ne sort avant que le reste arrive.
+  const p2 = createFrameParser();
+  const f = frame(Uint8Array.from([9,8,7,6]));
+  const firstHalf = p2.push(f.slice(0,5)).length;
+  const pendingMid = p2.pending;
+  const secondHalf = p2.push(f.slice(5)).map(x=>Array.from(x));
+
+  // Deux trames dans une seule lecture.
+  const p3 = createFrameParser();
+  const both = new Uint8Array([...frame(Uint8Array.from([1])), ...frame(Uint8Array.from([2,3]))]);
+  const two = p3.push(both).map(x=>Array.from(x));
+
+  // Resynchronisation apres des octets parasites.
+  const p4 = createFrameParser();
+  const noisy = new Uint8Array([0x00,0xFF,0x12, ...frame(Uint8Array.from([5,5]))]);
+  const after = p4.push(noisy).map(x=>Array.from(x));
+
+  return { whole, firstHalf, pendingMid, secondHalf, two, after };
+})()`);
+T("trame complete decodee", JSON.stringify(fr?.whole) === JSON.stringify([[1,2,3,4]]));
+T("trame coupee: rien avant d'avoir tout recu", fr?.firstHalf === 0 && fr?.pendingMid === 5);
+T("trame coupee: reassemblee a l'arrivee du reste",
+  JSON.stringify(fr?.secondHalf) === JSON.stringify([[9,8,7,6]]));
+T("deux trames dans une seule lecture", JSON.stringify(fr?.two) === JSON.stringify([[1],[2,3]]));
+T("resynchronisation apres octets parasites", JSON.stringify(fr?.after) === JSON.stringify([[5,5]]));
+
 // --- 1a1. chemin MEMS, sans materiel ---
 // serial.js et wifi.js partagent addSamples(). Rien d'autre dans ce test ne
 // l'exerce, donc une regression y serait passee inapercue.

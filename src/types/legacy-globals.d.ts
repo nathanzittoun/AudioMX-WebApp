@@ -38,7 +38,8 @@ declare function startRecording(meta?: unknown): Promise<void>;
 declare function stopRecording(): Promise<void>;
 
 // ---- transports ----
-declare function connectSerial(): Promise<void>;
+declare function closeSerialPort(): Promise<void>;
+declare function disconnectWifi(): void;
 declare function disconnectComputerMic(): Promise<void>;
 declare function connectWifiMems(): void;
 

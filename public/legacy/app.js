@@ -1,10 +1,6 @@
 // SAMPLE_RATE, BAUD_RATE, MAX_LIVE_SAMPLES and FFT_SIZE now live in
 // src/core/constants.ts and are published by bridge.ts.
 
-let port;
-let reader;
-let writer;
-
 // Device and capture state now live in src/core/state.ts; bridge.ts installs
 // globalThis accessors for inputSource, memsConnectionType, isConnected,
 // isRecording, audioMode and noiseAttenuatorEnabled. A `let` here would shadow
@@ -290,37 +286,9 @@ async function setInputSource(source) {
 }
 
 async function disconnectCurrentSource() {
-  // This path is always a deliberate teardown, so suppress the serial/Wi-Fi
-  // auto-reconnect logic that only fires on unexpected drops.
-  serialIntentionalClose = true;
-
-  try {
-    if (reader) {
-      await reader.cancel();
-      reader.releaseLock();
-      reader = null;
-    }
-  } catch (error) {
-    console.warn("Reader disconnect issue:", error);
-  }
-
-  try {
-    if (writer) {
-      writer.releaseLock();
-      writer = null;
-    }
-  } catch (error) {
-    console.warn("Writer disconnect issue:", error);
-  }
-
-  try {
-    if (port) {
-      await port.close();
-      port = null;
-    }
-  } catch (error) {
-    console.warn("Serial port close issue:", error);
-  }
+  // A deliberate teardown. Each transport owns its own cleanup now, so this
+  // only decides who to ask; suppressing auto-reconnect is closeSerialPort's job.
+  await closeSerialPort();
 
   try {
     await disconnectComputerMic();

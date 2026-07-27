@@ -7,6 +7,7 @@
 
 import { showTab } from "./ui/tabs";
 import { reflectDeviceSupport, watchWifiUrl } from "./device/reflectSupport";
+import { connectSerial, initSerial } from "./device/serialSource";
 import { clearAllData, restoreRecordings } from "./storage/library";
 import { renderRecordings, setAudioMode, updateAnalysisSourceSelect } from "./rnd/libraryView";
 
@@ -98,6 +99,8 @@ setStatus("Not connected", "idle");
 // Mark unusable inputs before the clinician can reach for them.
 reflectDeviceSupport();
 watchWifiUrl();
+// Was a load-time side effect of serial.js; an explicit step now.
+initSerial();
 
 initClinical();
 initEhr();

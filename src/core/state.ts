@@ -49,12 +49,6 @@ export const device = {
   transport: "usb" as Transport,
   /** True once the transport is open and streaming is possible. */
   connected: false,
-  /**
-   * Partial serial frame carried between reads, since a USB chunk can split a
-   * frame anywhere. Belongs to the serial transport and moves into it once the
-   * device layer exists.
-   */
-  byteBuffer: [] as number[],
 };
 
 /** Live capture settings, flags and buffers. */
