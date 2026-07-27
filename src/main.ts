@@ -38,6 +38,7 @@ import {
   clearCanvas, setAppMode, setInputSource, setStatus, startRecording,
   stopRecording, updateCurrentStats,
 } from "./app";
+import { initClinical } from "./clinical";
 
 function boot(): void {
   // ---- navigation ----

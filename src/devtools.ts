@@ -42,6 +42,7 @@ import * as storage from "./storage/library";
 import * as riskModel from "./storage/riskModel";
 import * as download from "./ui/download";
 import * as spectrogram from "./ui/canvas/spectrogram";
+import * as clinical from "./clinical";
 
 const api = {
   bus, constants, features, protocol, recorder, state, wav, zip,
@@ -50,7 +51,7 @@ const api = {
   fhirExport, smart,
   analysisSelection, fftView, libraryView, liveSpectrum, meters,
   storage, riskModel,
-  download, spectrogram,
+  download, spectrogram, clinical,
 };
 
 declare global {

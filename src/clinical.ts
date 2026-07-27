@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Clinical section — organized like a small clinical app:
 //   • Patients tab: a searchable patient database.
 //   • Exam tab: run the protocol for the selected patient (live monitors,
@@ -5,6 +6,8 @@
 //   • Chart tab: the patient's sessions as collapsible folders of takes.
 // Takes are filed under the patient/session, kept here (not the R&D Library),
 // and persisted in IndexedDB.
+
+import { PROTOCOL_TESTS } from "./core/protocol";
 
 let clinicalPatients = [];
 let currentPatient = null;
@@ -234,7 +237,7 @@ let cRmsEl, cPeakEl, cClipEl, cLevelBar;
 let pTaskTitle, pTaskIcon, pSteps, pReads, pGoBar, pTimerBar, pTimerWrap;
 let cPatientTable, cPatientSearch, cExamPatient, cSessionLabel, cChartPatient, cChartFolders;
 
-function initClinical() {
+export function initClinical() {
   cTestList = document.getElementById("cTestList");
   cStartBtn = document.getElementById("cStartBtn");
   cStopBtn = document.getElementById("cStopBtn");
@@ -321,7 +324,7 @@ function initClinical() {
   setClinicalTab("patients");
 }
 
-function setClinicalTab(name) {
+export function setClinicalTab(name) {
   document.querySelectorAll(".clinTabBtn").forEach(b => b.classList.toggle("active", b.dataset.ctab === name));
   document.getElementById("clinPatients").hidden = name !== "patients";
   document.getElementById("clinExam").hidden = name !== "exam";
@@ -367,7 +370,7 @@ function updateClinicalConnectState() {
 
 // ---- Patient database --------------------------------------------------
 
-async function loadClinicalPatients() {
+export async function loadClinicalPatients() {
   clinicalPatients = await loadPatientsFromDb();
   const known = new Set(clinicalPatients.map(p => p.id));
   for (const r of recordings) {
@@ -396,7 +399,7 @@ function demographicsStr(p) {
   return [p.age ? p.age + " y" : "", p.sex || ""].filter(Boolean).join(", ");
 }
 
-function renderPatientTable() {
+export function renderPatientTable() {
   if (!cPatientTable) return;
   const q = (cPatientSearch.value || "").trim().toLowerCase();
 
@@ -509,7 +512,7 @@ function deletePatient(id) {
   renderChart();
 }
 
-function startNewSession() {
+export function startNewSession() {
   if (!currentPatient) {
     alert("Select a patient first (Patients tab).");
     setClinicalTab("patients");
@@ -527,7 +530,7 @@ function sessionNumberOf(sessionId) {
   return found ? found.number : sessions.length + 1;
 }
 
-function renderExamHeader() {
+export function renderExamHeader() {
   if (!cExamPatient) return;
   if (!currentPatient) {
     cExamPatient.innerHTML = "<em>No patient selected.</em> Pick one in the Patients tab.";
@@ -557,7 +560,7 @@ function renderClinicalTestList() {
   }
 }
 
-function selectClinicalTest(id) {
+export function selectClinicalTest(id) {
   if (isRecording) return;
   clinicalCurrentTest = getProtocolTest(id) || PROTOCOL_TESTS[0];
   document.querySelectorAll(".clinTestBtn").forEach(b => b.classList.toggle("active", b.dataset.test === clinicalCurrentTest.id));
@@ -660,7 +663,7 @@ async function stopClinicalTest() {
   runClinicalQualityGate();
 }
 
-function onClinicalRecordingSaved(recording) {
+export function onClinicalRecordingSaved(recording) {
   lastClinicalRecording = recording;
   renderExamHeader();
   renderChart();
@@ -778,7 +781,7 @@ function hideClinicalGate() {
 
 // ---- Patient chart: sessions as folders --------------------------------
 
-function patientSessions(patientId) {
+export function patientSessions(patientId) {
   const takes = recordings.filter(r => r.meta && r.meta.patientId === patientId);
   const map = {};
   for (const t of takes) (map[t.meta.sessionId] = map[t.meta.sessionId] || []).push(t);
@@ -893,7 +896,7 @@ function renderPatientTrends() {
   box.innerHTML = html;
 }
 
-function renderChart() {
+export function renderChart() {
   if (!cChartFolders) return;
   if (!currentPatient) {
     if (cChartPatient) cChartPatient.textContent = "No patient selected.";
@@ -1104,7 +1107,7 @@ function openPatientView() {
 
 // ---- Clinician live monitors -------------------------------------------
 
-function clearClinicalMonitors() {
+export function clearClinicalMonitors() {
   if (cWaveCtx) {
     cWaveCtx.fillStyle = "#f0f0f2";
     cWaveCtx.fillRect(0, 0, cWaveCanvas.width, cWaveCanvas.height);
@@ -1120,7 +1123,7 @@ function clearClinicalMonitors() {
   }
 }
 
-function drawClinicalMonitors() {
+export function drawClinicalMonitors() {
   drawClinicalWaveform();
   drawClinicalSpectrum();
   updateClinicalMetrics(liveSamples);
@@ -1203,3 +1206,18 @@ function updateClinicalMetrics(samples) {
   cClipEl.textContent = m.clip.toFixed(2) + "%";
   cLevelBar.style.width = clamp(((m.rms + 80) / 80) * 100, 0, 100) + "%";
 }
+
+/**
+ * Compatibility accessors for converted modules and the browser smoke suite.
+ * These disappear once the remaining callers import the clinical state
+ * directly; keeping them here preserves the exact mutable state semantics of
+ * the former classic script during that last step.
+ */
+export const clinicalStateAccess = {
+  get patients() { return clinicalPatients; },
+  set patients(value) { clinicalPatients = value; },
+  get patient() { return currentPatient; },
+  set patient(value) { currentPatient = value; },
+  get sessionId() { return currentSessionId; },
+  set sessionId(value) { currentSessionId = value; },
+};

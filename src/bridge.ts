@@ -73,6 +73,12 @@ import {
   clearCanvas, log, renderLiveMonitors, setAppMode, setInputSource, setStatus,
   startRecording, stopRecording, updateCurrentStats,
 } from "./app";
+import {
+  clearClinicalMonitors, clinicalStateAccess, drawClinicalMonitors, initClinical,
+  loadClinicalPatients, onClinicalRecordingSaved, renderChart, renderExamHeader,
+  renderPatientTable, patientSessions, selectClinicalTest, setClinicalTab,
+  startNewSession,
+} from "./clinical";
 
 // `noiseAttenuatorEnabled` is state, not a function, and app.js/audio.js/
 // computerMic.js both read AND write it. An accessor keeps the single source of
@@ -113,6 +119,24 @@ alias("analysisSelectionStart", analysis, "selectionStart");
 alias("analysisSelectionEnd", analysis, "selectionEnd");
 alias("analysisDragMode", analysis, "dragMode");
 alias("calibratedNoiseFloorDb", analysis, "calibratedNoiseFloorDb");
+
+Object.defineProperties(globalThis, {
+  clinicalPatients: {
+    get: () => clinicalStateAccess.patients,
+    set: value => { clinicalStateAccess.patients = value; },
+    configurable: true,
+  },
+  currentPatient: {
+    get: () => clinicalStateAccess.patient,
+    set: value => { clinicalStateAccess.patient = value; },
+    configurable: true,
+  },
+  currentSessionId: {
+    get: () => clinicalStateAccess.sessionId,
+    set: value => { clinicalStateAccess.sessionId = value; },
+    configurable: true,
+  },
+});
 
 
 // The ~45 element references app.js used to capture at load time. Installed as
@@ -182,6 +206,11 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // Clinical view callbacks used by converted storage, recorder and EHR code.
+  clearClinicalMonitors, drawClinicalMonitors, initClinical,
+  loadClinicalPatients, onClinicalRecordingSaved, renderChart, renderExamHeader,
+  renderPatientTable, patientSessions, selectClinicalTest, setClinicalTab,
+  startNewSession,
   // Application shell. clinical.js still calls these by their legacy names.
   clearCanvas, log, renderLiveMonitors, setAppMode, setInputSource, setStatus,
   startRecording, stopRecording, updateCurrentStats,
