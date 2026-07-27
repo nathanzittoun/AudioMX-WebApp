@@ -57,6 +57,23 @@ for (const g of ["SAMPLE_RATE", "PROTOCOL_TESTS", "extractVoiceFeatures", "creat
 }
 T("6 tests de protocole rendus", (await ev("document.getElementById('cTestList')?.children.length")) === 6);
 
+// --- 1a. DSP numerique, deterministe (independant du micro) ---
+const dsp = await ev(`(()=>{
+  const n = 8192, s = new Int16Array(n);
+  for (let i = 0; i < n; i++) s[i] = Math.round(20000 * Math.sin(2*Math.PI*1000*i/SAMPLE_RATE));
+  const sp = computeSpectrum(s);
+  if (!sp) return null;
+  const peaks = findDominantFrequencies(sp, 20, 8000);
+  const nyquist = sp.frequencies[sp.frequencies.length-1];
+  return { peak: peaks[0] ? peaks[0].freq : null, db: peaks[0] ? peaks[0].db : null,
+           bins: sp.magnitudes.length, nyquist, rate: sp.sampleRate };
+})()`);
+T("FFT retrouve un sinus 1000 Hz", dsp && Math.abs(dsp.peak - 1000) < 10, dsp ? dsp.peak.toFixed(1) + " Hz" : "null");
+T("amplitude calibree (~-4 dBFS a 20000/32768)", dsp && Math.abs(dsp.db + 4.3) < 1.5, dsp ? dsp.db.toFixed(1) + " dBFS" : "-");
+T("axe frequentiel jusqu'a Nyquist", dsp && Math.abs(dsp.nyquist - 8000) < 10, dsp ? Math.round(dsp.nyquist) + " Hz" : "-");
+T("dbfs / clamp / goertzel publies", (await ev(
+  "Math.round(dbfs(32768))===0 && clamp(5,0,1)===1 && typeof goertzelMagnitude==='function'")) === true);
+
 // --- 1b. bridge accessor: legacy global <-> state.ts, both directions ---
 T("filtre OFF au demarrage", (await ev("noiseAttenuatorEnabled")) === false);
 await ev("toggleNoiseAttenuator()");

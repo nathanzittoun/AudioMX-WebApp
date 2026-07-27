@@ -101,8 +101,8 @@ export interface Recording {
 
 /** Result of an averaged FFT over a selected region. */
 export interface Spectrum {
-  frequencies: Float64Array;
-  magnitudes: Float64Array;
+  frequencies: Float32Array;
+  magnitudes: Float32Array;
   fftSize: number;
   sampleRate: number;
   averagedFrames: number;

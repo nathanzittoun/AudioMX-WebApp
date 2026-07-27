@@ -1,7 +1,5 @@
-const SAMPLE_RATE = 16000;
-const BAUD_RATE = 921600;
-const MAX_LIVE_SAMPLES = 16000;
-const FFT_SIZE = 4096;
+// SAMPLE_RATE, BAUD_RATE, MAX_LIVE_SAMPLES and FFT_SIZE now live in
+// src/core/constants.ts and are published by bridge.ts.
 
 let port;
 let reader;

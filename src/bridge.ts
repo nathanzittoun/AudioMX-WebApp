@@ -16,6 +16,11 @@
 // is empty.
 
 import { showTab } from "./ui/tabs";
+import { BAUD_RATE, FFT_SIZE, MAX_LIVE_SAMPLES, SAMPLE_RATE } from "./core/constants";
+import { clamp, dbfs, dbToBar, goertzelMagnitude } from "./core/dsp/levels";
+import { accumulateFftFrame, fftRadix2, hannWindow, nextPowerOfTwo } from "./core/dsp/fft";
+import { computeSpectrum, findDominantFrequencies, interpretSpectrum } from "./core/dsp/spectrum";
+import { spectrogramColor } from "./ui/canvas/spectrogramColor";
 import { ctx2d, el } from "./ui/dom";
 import { extractVoiceFeatures, formatFeatures } from "./core/features";
 import { createZip } from "./core/zip";
@@ -136,6 +141,13 @@ for (const [name, canvasId] of Object.entries(LEGACY_CONTEXTS)) {
 }
 
 Object.assign(globalThis, {
+  // Acquisition constants, read all over the legacy files.
+  SAMPLE_RATE, BAUD_RATE, MAX_LIVE_SAMPLES, FFT_SIZE,
+  // Pure DSP extracted out of analysis.js, which now only draws.
+  dbfs, clamp, dbToBar, goertzelMagnitude,
+  nextPowerOfTwo, hannWindow, fftRadix2, accumulateFftFrame,
+  computeSpectrum, findDominantFrequencies, interpretSpectrum,
+  spectrogramColor,
   // audio.js -> analyzeRecording() jumps to the analyse view.
   showTab,
   // audio.js stamps features onto a take; clinical.js renders them in the chart.
