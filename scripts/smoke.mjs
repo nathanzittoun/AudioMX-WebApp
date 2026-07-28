@@ -586,6 +586,56 @@ T("recordings restaures apres reload", (await ev("audiomx.state.library.recordin
 T("patients restaures apres reload", (await ev("audiomx.clinical.clinicalStateAccess.patients.length")) === 1);
 T("aucune exception au reload", errs.length === 0, errs.join(" | "));
 
+// --- 8. PWA : installable, puis reellement hors ligne ---
+// Place en dernier : la coupure reseau plus bas fait remonter des erreurs
+// console legitimes, qui fausseraient l'assertion d'exceptions ci-dessus.
+const pwa = await ev(`(async () => {
+  const link = document.querySelector('link[rel=manifest]');
+  if (!link) return { error: 'pas de <link rel=manifest>' };
+  const res = await fetch(link.href);
+  if (!res.ok) return { error: 'manifest HTTP ' + res.status };
+  const m = await res.json();
+  // Les URL du manifeste sont relatives — c'est ce qui le fait marcher a la
+  // fois sur "/" en dev et sur "/AudioMX-WebApp/" en prod, sans substitution
+  // (Vite ne touche pas aux fichiers de public/). On resout comme le navigateur.
+  const abs = p => new URL(p, link.href).href;
+  return {
+    start: abs(m.start_url),
+    scope: abs(m.scope),
+    display: m.display,
+    maskable: m.icons.some(i => i.purpose === 'maskable'),
+    iconCodes: await Promise.all(m.icons.map(i => fetch(abs(i.src)).then(r => r.status))),
+    // Opaque obligatoire : iOS aplatit une apple-touch-icon transparente sur du noir.
+    appleOpaque: await new Promise(done => {
+      const el = document.querySelector('link[rel="apple-touch-icon"]');
+      if (!el) return done(0);
+      const img = new Image();
+      img.onload = () => {
+        const cv = document.createElement('canvas');
+        cv.width = img.width; cv.height = img.height;
+        cv.getContext('2d').drawImage(img, 0, 0);
+        const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+        for (let i = 3; i < d.length; i += 4) if (d[i] !== 255) return done(false);
+        done(img.width);
+      };
+      img.onerror = () => done(0);
+      img.src = el.href;
+    }),
+    viewport: document.querySelector('meta[name=viewport]')?.content || '',
+  };
+})()`);
+T("manifest servi et valide", !pwa?.error, pwa?.error || "");
+T("start_url = base de l'app", pwa?.start === BASE, pwa?.start);
+T("scope = base de l'app", pwa?.scope === BASE, pwa?.scope);
+T("display standalone", pwa?.display === "standalone", pwa?.display);
+T("icones du manifeste servies", pwa?.iconCodes?.length === 3 && pwa.iconCodes.every(c => c === 200),
+  String(pwa?.iconCodes));
+T("une icone maskable declaree", pwa?.maskable === true);
+T("apple-touch-icon 180px et opaque", pwa?.appleOpaque === 180, String(pwa?.appleOpaque));
+// Sans ce meta, iOS met en page a 980px : les breakpoints de style.css ne se
+// declenchent jamais et le CSS responsive existant est du code mort.
+T("meta viewport presente", /width=device-width/.test(pwa?.viewport || ""), pwa?.viewport);
+
 await ev("new Promise(r=>{const q=indexedDB.deleteDatabase('acousticConsole');q.onsuccess=q.onerror=q.onblocked=()=>r(1)})");
 console.log(`\n  ${fail === 0 ? "✅ TOUT PASSE" : "❌ " + fail + " ECHEC(S)"} — ${pass} ok, ${fail} ko\n`);
 process.exit(fail === 0 ? 0 : 1);
