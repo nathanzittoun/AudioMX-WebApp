@@ -710,6 +710,45 @@ T("bundle FHIR construit", (await ev(
   ".then(b=>!!b && b.resourceType==='Bundle' && b.entry.length>0)")) === true);
 T("ZIP construit", (await ev("audiomx.zip.createZip([{name:'a.txt',data:new Uint8Array([1,2,3])}]).size>0")));
 
+// --- 4b. emplacement du modele de risque ---
+// storage/riskModel.ts definissait la couture depuis la migration et personne
+// ne lui demandait rien : le chart imprimait "pending model" en dur. Un
+// litteral est pire qu'un emplacement vide, parce qu'il reste credible le jour
+// ou un vrai modele repond — l'app afficherait "pending" par-dessus un score.
+await ev("audiomx.clinical.setClinicalTab('chart')");
+await new Promise(r => setTimeout(r, 500));
+const noModel = await ev(`(()=>{
+  const s = document.querySelector('#clinChart .riskSlot');
+  if (!s) return 'aucun emplacement';
+  return s.querySelector('.riskBadge')?.textContent + '|' + s.textContent;
+})()`);
+T("sans modele : dit non connecte", /^not connected\|/.test(noModel || ""), (noModel || "").slice(0, 40));
+// Le vrai danger, c'est un chiffre affiche a cote d'un patient sans modele
+// derriere. Aucun chiffre ne doit sortir de cet emplacement.
+T("sans modele : aucun chiffre affiche",
+  !/\d+\.\d+/.test((noModel || "").split("|")[1] || ""));
+
+// Un faux modele installe par la couture prevue. Prouve que l'emplacement
+// rend un vrai resultat, ce qu'un texte en dur ne ferait jamais.
+await ev(`audiomx.riskModel.setRiskModel({
+  id: 'smoke-model', version: '1.2',
+  isAvailable: async () => true,
+  score: async () => ({ modelId: 'smoke-model', modelVersion: '1.2',
+    computedAt: new Date().toISOString(),
+    scores: [{ label: 'Dysphonia', value: 0.42, ci: [0.31, 0.55] }] }),
+})`);
+await ev("audiomx.clinical.setClinicalTab('patients'); audiomx.clinical.setClinicalTab('chart')");
+await new Promise(r => setTimeout(r, 500));
+T("avec modele : propose de scorer", (await ev(
+  "document.querySelector('#clinChart .riskSlot .smallBtn')?.textContent")) === "Score this take");
+await ev("document.querySelector('#clinChart .riskSlot .smallBtn').click()");
+await new Promise(r => setTimeout(r, 500));
+const scored = await ev("document.querySelector('#clinChart .riskSlot')?.textContent || ''");
+T("avec modele : le score rendu vient du modele",
+  scored.includes("Dysphonia") && scored.includes("0.42") && scored.includes("smoke-model"),
+  scored.slice(0, 60));
+await ev("audiomx.riskModel.setRiskModel(audiomx.riskModel.nullRiskModel)");
+
 // Supprimer une prise depuis le Chart doit la retirer de la memoire ET de la
 // base, et liberer son object URL. Deux fonctions differentes portaient le nom
 // `deleteRecording` en global ; se tromper de cible laissait la prise a l'ecran

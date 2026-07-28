@@ -32,9 +32,10 @@ import { deletePatient as deletePatientFromDb, loadPatients, savePatient } from 
 import type { StoredPatient } from "./storage/types";
 import { el, requireEl } from "./ui/dom";
 import { reflectNav } from "./ui/nav";
+import { riskSlot } from "./ui/riskPanel";
 import { PLOT } from "./ui/theme";
 import { recordingBaseName, sanitizeForFilename, triggerDownload } from "./ui/download";
-import { setAppMode, setInputSource, startRecording, stopRecording } from "./app";
+import { setInputSource, startRecording, stopRecording } from "./app";
 import { log } from "./ui/log";
 import { setStatus } from "./ui/status";
 
@@ -1122,15 +1123,17 @@ function renderChartTake(r: Recording): HTMLElement {
   analysis.className = "featureCard";
   analysis.innerHTML =
     "<div class='featureHead'>Acoustic features <span class='featureTag'>preview</span></div>" +
-    "<div class='featureBody'>" + (r.features ? formatFeatures(r.features) : "—") + "</div>" +
-    "<div class='aiScore'>AI risk score: <strong>pending model</strong> — features above feed the model.</div>";
+    "<div class='featureBody'>" + (r.features ? formatFeatures(r.features) : "—") + "</div>";
+  // Was the literal string "AI risk score: pending model". It asks the model
+  // now, so it stops being a claim the app makes on its own behalf.
+  analysis.appendChild(riskSlot(r));
 
   const btns = document.createElement("div");
   btns.className = "cardButtons";
   const analyzeBtn = document.createElement("button");
   analyzeBtn.className = "smallBtn analyzeBtn";
   analyzeBtn.textContent = "Analyze";
-  analyzeBtn.onclick = () => { setAppMode("rnd"); analyzeRecording(r.id); };
+  analyzeBtn.onclick = () => analyzeRecording(r.id);
   const renameBtn = document.createElement("button");
   renameBtn.className = "smallBtn";
   renameBtn.textContent = "Rename";

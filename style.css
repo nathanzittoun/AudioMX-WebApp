@@ -1734,3 +1734,89 @@ audio {
 .wifiPointer {
   margin: 0 0 var(--sp-4);
 }
+
+/* ---------------------------------------------------------------------------
+   Risk model slot
+
+   Two states and only two: no model connected, or a model that answered. There
+   is deliberately no third state that looks like a score.
+   --------------------------------------------------------------------------- */
+
+.riskSlot {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--brand-tint);
+  border: 1px solid #dde7f2;
+  border-radius: var(--radius-sm);
+}
+
+.riskHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.riskLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand-deep);
+}
+
+.riskBadge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.riskBadge.pending {
+  background: #f3edff;
+  color: var(--purple);
+}
+
+.riskBadge.ok {
+  background: #e6f2eb;
+  color: var(--green);
+}
+
+.riskBadge.no {
+  background: #f7e9e9;
+  color: var(--rec);
+}
+
+.riskNote {
+  margin: var(--sp-2) 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #4a5b6d;
+}
+
+.riskScores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0 0;
+}
+
+.riskScores dt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.riskScores dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand-deep);
+}
+
+.riskSlot .smallBtn {
+  margin-top: var(--sp-2);
+}
