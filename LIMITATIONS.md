@@ -15,7 +15,7 @@ consequences of being a static site with no backend.
 | 3 | Wi-Fi microphone unusable from the published site | Wireless capture outside localhost | Firmware + backend |
 | 4 | USB is Chrome/Edge on a computer only | USB capture on iPad or Safari | Nothing — it is a platform fact |
 | 5 | iOS runs a reduced app | Full parity on iPad | Partly nothing, partly backend |
-| 6 | Epic is sandbox-only; standalone patient context unconfirmed | Real charts | Epic go-live; maybe EHR launch |
+| 6 | Epic is sandbox-only, not a real organisation | Real charts | Epic go-live |
 | 7 | No risk model connected | Every clinical claim the product makes | Dr Rameau's model + backend |
 | 8 | Capture assumptions are not enforced | Cross-device comparability | Calibration work |
 
@@ -125,7 +125,7 @@ not equivalent to a laptop.
   rate instead. Handled: [src/core/audioContext.ts](src/core/audioContext.ts)
   falls back and the capture path resamples, so this is a note, not a defect.
 
-## 6. Epic is a sandbox, and the launch flow is unconfirmed
+## 6. Epic is a sandbox, not a real organisation
 
 **What.** The Epic connection reaches Epic's public R4 **sandbox**, not a real
 organisation. The app registration is "AudioMX Clinician", audience **Clinicians
@@ -135,16 +135,15 @@ or Administrative Users**, still in **Draft/Test** state.
 organisation, not a code task. Until then only the Non-Production Client ID
 works; the production ID exists but authenticates against nothing.
 
-**The open question.** This app uses a **standalone** launch. In an EHR launch
-from Hyperspace the patient comes from the chart already open; standalone, Epic
-has to be asked for patient context via `launch/patient`. Whether Epic prompts
-a clinician to pick a patient in that flow is **not yet confirmed against the
-sandbox** — and Epic's own standalone-launch documentation describes patient
-context as an EHR-launch property without documenting a picker for standalone
-provider apps, which is a signal but not proof. If there is no picker, the
-token comes back with no patient, `loadPatient()` has nothing to fetch, and
-supporting EHR launch (reading the `launch` parameter and passing it through)
-becomes necessary.
+**Settled, 2026-07-27: the standalone launch does establish patient context.**
+This was an open question, because Epic's standalone-launch documentation
+describes patient context as an EHR-launch property and does not mention a
+picker for provider apps. Tested against the sandbox: after the clinician logs
+in, Epic presents its own "Search for a Patient" dialog (name/MRN, SSN, birth
+date, plus a Recent Patients tab) and the chosen patient comes back in the
+token. `launch/patient` is doing its job. **Supporting EHR launch is therefore
+not required**, and the absence of a picker in the docs was not evidence of its
+absence in the product.
 
 **Note on testing any Epic change.** Epic documents **up to one hour** for a
 saved change to reach the sandbox. Probe the authorize endpoint by HTTP status,
