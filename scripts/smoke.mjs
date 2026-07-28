@@ -636,6 +636,40 @@ T("apple-touch-icon 180px et opaque", pwa?.appleOpaque === 180, String(pwa?.appl
 // declenchent jamais et le CSS responsive existant est du code mort.
 T("meta viewport presente", /width=device-width/.test(pwa?.viewport || ""), pwa?.viewport);
 
+if (process.argv[2] === "preview") {
+  // Ardoise propre, sinon on teste le worker laisse par le run precedent.
+  await ev(`(async () => {
+    for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+    for (const k of await caches.keys()) await caches.delete(k);
+    return true;
+  })()`);
+  await go();   // install + claim ; la page a deja fini ses fetch, cache vide
+  await ev("navigator.serviceWorker.ready.then(() => true)");
+  await go();   // 2e chargement : tout passe par le worker, le cache se remplit
+  T("worker controle la page", (await ev("!!navigator.serviceWorker.controller")) === true);
+  T("scope du worker = base de l'app",
+    (await ev("navigator.serviceWorker.controller?.scriptURL")) === BASE + "sw.js");
+
+  await cmd("Network.emulateNetworkConditions",
+    { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 });
+  await go();
+  // La vraie question n'est pas "le worker est-il enregistre" mais "l'app
+  // demarre-t-elle sans reseau" : un handler fetch casse passe la premiere et
+  // echoue la seconde.
+  T("l'app demarre hors ligne", (await ev("typeof audiomx?.constants?.SAMPLE_RATE")) === "number");
+  T("protocole rendu hors ligne", (await ev("document.getElementById('cTestList')?.children.length")) === 6);
+  T("CSS servi hors ligne", (await ev(
+    "getComputedStyle(document.querySelector('.appShell')).maxWidth")) === "1240px");
+  await cmd("Network.emulateNetworkConditions",
+    { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+  await go();
+} else {
+  // Le garde import.meta.env.PROD : un worker en dev servirait les modules
+  // d'hier par-dessus le hot reload.
+  T("aucun service worker en dev",
+    (await ev("navigator.serviceWorker.getRegistrations().then(r => r.length)")) === 0);
+}
+
 await ev("new Promise(r=>{const q=indexedDB.deleteDatabase('acousticConsole');q.onsuccess=q.onerror=q.onblocked=()=>r(1)})");
 console.log(`\n  ${fail === 0 ? "✅ TOUT PASSE" : "❌ " + fail + " ECHEC(S)"} — ${pass} ok, ${fail} ko\n`);
 process.exit(fail === 0 ? 0 : 1);

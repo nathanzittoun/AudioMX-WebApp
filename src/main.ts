@@ -43,6 +43,7 @@ import { setStatus } from "./ui/status";
 import { el, requireEl } from "./ui/dom";
 import { toggleNoiseAttenuator } from "./rnd/noiseToggle";
 import { initClinical } from "./clinical";
+import { registerServiceWorker } from "./pwa";
 
 function boot(): void {
   // ---- navigation ----
@@ -145,6 +146,9 @@ function boot(): void {
 
   // Restore recordings persisted in this browser from earlier sessions.
   void restoreRecordings();
+
+  // Last: offline caching is the least important thing on this page.
+  registerServiceWorker();
 }
 
 // The test is "complete", not "loading". A module script is deferred, and the
