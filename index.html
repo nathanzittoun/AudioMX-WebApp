@@ -51,6 +51,7 @@
          "mode" meant, or who each half was for. -->
     <nav class="mainNav" aria-label="Sections">
       <button class="navBtn" data-nav="home">Overview</button>
+      <button class="navBtn" data-nav="device">Device</button>
 
       <span class="navGroup">
         <span class="navGroupLabel">Clinical</span>
@@ -205,6 +206,53 @@
       </section>
     </div><!-- /#homeMode -->
 
+    <!-- DEVICE -->
+    <!-- Describes the hardware and reports, in words, whether this browser can
+         reach each input. It deliberately has no Connect button of its own:
+         connecting belongs where a capture is about to happen, and a third set
+         of connect buttons would be the duplication this page exists to end.
+         Both blocks below are filled by src/ui/devicePanel.ts. -->
+    <div id="deviceMode" hidden>
+      <section class="card">
+        <div class="sectionHeader">
+          <div>
+            <h2>Device</h2>
+            <p>What AudioMX captures with.</p>
+          </div>
+          <div class="deviceStatus">
+            <div class="statusDot" data-status-dot></div>
+            <div>
+              <div class="statusText" data-status-text>Not connected</div>
+              <div class="statusSubtext">Current connection</div>
+            </div>
+          </div>
+        </div>
+        <dl id="deviceSpecs" class="specGrid"></dl>
+      </section>
+
+      <section class="card deviceInputs">
+        <div class="sectionHeader">
+          <div>
+            <h2>Inputs</h2>
+            <p>Checked against this browser and this page — asked of the API, never guessed from the browser's name.</p>
+          </div>
+        </div>
+
+        <div id="transportList" class="transportList"></div>
+
+        <!-- Moved here from the Record view. It is a setting, not a capture
+             control, and both modes read it: a clinician on Wi-Fi had to open
+             the R&D bench to change the device address. -->
+        <div class="wifiAddressRow">
+          <div class="fieldGroup">
+            <label for="wifiUrlInput">Wi-Fi address</label>
+            <input id="wifiUrlInput" type="text" value="ws://192.168.4.1:81" spellcheck="false" />
+          </div>
+          <small class="fieldHint">Default is the ESP32 access point. Change it if the device is on your network.</small>
+        </div>
+      </section>
+    </div><!-- /#deviceMode -->
+
     <div id="rndMode" hidden>
     <main>
       <!-- RECORD VIEW -->
@@ -239,13 +287,10 @@
               <button id="noiseAttenuatorBtn" class="secondaryBtn" disabled title="When ON, the recording is cleaned (baked in). When OFF, the recording is raw.">Noise filter OFF</button>
             </div>
 
-            <div class="wifiAddressRow">
-              <div class="fieldGroup">
-                <label for="wifiUrlInput">Wi-Fi address</label>
-                <input id="wifiUrlInput" type="text" value="ws://192.168.4.1:81" spellcheck="false" />
-              </div>
-              <small class="fieldHint">Default is the ESP32 access point. Change it if the device is on your network.</small>
-            </div>
+            <p class="fieldHint wifiPointer">
+              The Wi-Fi address is set on the
+              <button type="button" class="inlineNavLink" data-nav="device">Device page</button>.
+            </p>
 
             <div id="modeSelector" class="modeSelector">
               <button class="modeBtn active" data-mode="stereo">

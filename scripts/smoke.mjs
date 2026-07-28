@@ -177,11 +177,85 @@ T("plus aucune ancienne barre dans le DOM",
 
 // L'etat de connexion s'affiche a deux endroits pour une seule ecriture.
 await ev("audiomx.status.setStatus('Smoke check', 'connected')");
-T("l'etat de connexion est mirroite sur l'apercu",
-  (await ev("[...document.querySelectorAll('[data-status-text]')].length >= 2 && " +
-            "[...document.querySelectorAll('[data-status-text]')].every(n=>n.textContent==='Smoke check')")) === true &&
-  (await ev("document.querySelectorAll('[data-status-dot].connected').length")) === 2);
+// Compte volontairement "tous", pas un nombre : ajouter un troisieme affichage
+// ne doit pas demander de retoucher l'assertion, mais en oublier un doit la
+// faire tomber.
+T("l'etat de connexion est mirroite partout ou il est affiche",
+  (await ev("(()=>{const t=[...document.querySelectorAll('[data-status-text]')];" +
+            "const d=[...document.querySelectorAll('[data-status-dot]')];" +
+            "return t.length >= 3 && d.length === t.length &&" +
+            " t.every(n=>n.textContent==='Smoke check') &&" +
+            " d.every(n=>n.classList.contains('connected'))})()")) === true,
+  (await ev("document.querySelectorAll('[data-status-text]').length")) + " affichages");
 await ev("audiomx.status.setStatus('Not connected', 'idle')");
+
+// --- 1d. page Device ---
+// Les verdicts de support existaient deja et n'annotaient que les boutons, via
+// un attribut `title` : invisible sur ecran tactile, a deviner ailleurs. La page
+// les rend en toutes lettres. Le risque, c'est que les deux rendus divergent —
+// d'ou l'assertion croisee plus bas plutot qu'un simple "il y a 3 cartes".
+await navClick("device");
+T("nav -> Device", (await visible("deviceMode")) === true && (await navActive()) === "device");
+T("caracteristiques rendues depuis les constantes",
+  (await ev("document.querySelectorAll('#deviceSpecs > div').length")) === 5 &&
+  (await ev("document.getElementById('deviceSpecs').textContent")).includes(
+    String(await ev("audiomx.constants.SAMPLE_RATE / 1000")) + " kHz"));
+T("trois entrees decrites", (await ev("document.querySelectorAll('.transportCard').length")) === 3);
+
+// Le meme support, rendu deux fois : badge de la carte et classe du bouton
+// clinique. S'ils se contredisent, l'un des deux ment au clinicien.
+const verdicts = await ev(`(()=>{
+  const card = [...document.querySelectorAll('.transportCard')].map(c =>
+    c.querySelector('.transportBadge').classList.contains('ok'));
+  const btn = ['cConnectUsb','cConnectWifi','cConnectComputer'].map(id =>
+    !document.getElementById(id).classList.contains('unsupported'));
+  return JSON.stringify(card) + '|' + JSON.stringify(btn);
+})()`);
+T("cartes et boutons donnent le meme verdict",
+  verdicts && verdicts.split("|")[0] === verdicts.split("|")[1], verdicts);
+
+// Ici les trois entrees sont disponibles, donc les deux assertions ci-dessus
+// seraient vraies meme si la page ne rendait jamais d'indisponibilite. On
+// simule le seul cas qui compte vraiment — Safari et iPad n'ont pas Web Serial
+// et n'en auront jamais — en retirant navigator.serial, puis on redemande le
+// rendu. La raison de serialSupport() est ecrite pour ce cas precis.
+await ev(`(()=>{
+  const proto = Object.getPrototypeOf(navigator);
+  window.__serialDescriptor = Object.getOwnPropertyDescriptor(proto, 'serial');
+  delete proto.serial;
+})()`);
+await ev("audiomx.reflectSupport.reflectDeviceSupport()");
+await new Promise(r => setTimeout(r, 150));
+
+const degraded = await ev(`(()=>{
+  const bad = [...document.querySelectorAll('.transportCard.unavailable')];
+  const withReason = bad.filter(c => (c.querySelector('.transportReason')?.textContent||'').length > 30);
+  const card = [...document.querySelectorAll('.transportCard')].map(c =>
+    c.querySelector('.transportBadge').classList.contains('ok'));
+  const btn = ['cConnectUsb','cConnectWifi','cConnectComputer'].map(id =>
+    !document.getElementById(id).classList.contains('unsupported'));
+  return JSON.stringify({ bad: bad.length, withReason: withReason.length,
+    agree: JSON.stringify(card) === JSON.stringify(btn), card });
+})()`);
+const d = degraded ? JSON.parse(degraded) : null;
+T("sans Web Serial, l'entree USB passe indisponible", d?.bad === 1 && d?.card?.[0] === false, degraded);
+T("et elle affiche sa raison en toutes lettres", d?.withReason === 1);
+T("cartes et boutons restent d'accord en mode degrade", d?.agree === true);
+
+await ev(`(()=>{
+  if (window.__serialDescriptor)
+    Object.defineProperty(Object.getPrototypeOf(navigator), 'serial', window.__serialDescriptor);
+})()`);
+await ev("audiomx.reflectSupport.reflectDeviceSupport()");
+T("navigator.serial restaure",
+  (await ev("document.querySelectorAll('.transportCard.unavailable').length")) === 0);
+
+// Le champ d'adresse Wi-Fi a demenage du banc R&D vers cette page ; le
+// transport doit toujours le lire.
+T("l'adresse Wi-Fi vit sur la page Device",
+  (await ev("!!document.getElementById('deviceMode').querySelector('#wifiUrlInput')")) === true &&
+  (await ev("audiomx.wifiSource.getWifiUrl()")) === "ws://192.168.4.1:81");
+
 await navClick("home");
 
 // --- 1b. config Epic ---

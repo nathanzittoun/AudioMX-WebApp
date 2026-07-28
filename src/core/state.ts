@@ -136,11 +136,12 @@ export const library = {
   nextIndex: 1,
 };
 
-/** Top-level area: "home" (overview), "rnd" (Record/Analyze/Recordings) or
- *  "clinical". Every read of this asks "is this clinical?", so the third
- *  value needed no other call site to change. */
+/** Top-level area: "home" (overview), "device", "rnd" (Record/Analyze/
+ *  Recordings) or "clinical". Every read of this asks "is this clinical?" or
+ *  "is this rnd?", so the pages that show no live monitor needed no other call
+ *  site to change. */
 export const ui = {
-  mode: "home" as "rnd" | "clinical" | "home",
+  mode: "home" as "rnd" | "clinical" | "home" | "device",
 };
 
 /** R&D analysis view state. Not used by the clinical mode. */

@@ -21,16 +21,19 @@ import { setStatus } from "./ui/status";
 import { updateCurrentStats } from "./ui/captureStats";
 import { emit, on } from "./core/bus";
 
-// "home" is the overview page: a third top-level container, and the one the app
-// opens on. It is a valid value of ui.mode rather than a special case outside
-// it, because every existing test on ui.mode asks "is this clinical?" — so a
-// third value answers no, exactly as it should, everywhere it is read.
-export function setAppMode(mode: "rnd" | "clinical" | "home"): void {
+// Four top-level containers now: the overview the app opens on, the device
+// page, and the two original modes. "home" and "device" are values of ui.mode
+// rather than special cases outside it, because every existing read asks "is
+// this clinical?" or "is this rnd?" — so a page with no live monitor answers no
+// to both, correctly, at every call site without one of them changing.
+export function setAppMode(mode: "rnd" | "clinical" | "home" | "device"): void {
   ui.mode = mode;
   const home = el("homeMode");
+  const deviceView = el("deviceMode");
   const rnd = el("rndMode");
   const clinical = el("clinicalMode");
   if (home) home.hidden = mode !== "home";
+  if (deviceView) deviceView.hidden = mode !== "device";
   if (rnd) rnd.hidden = mode !== "rnd";
   if (clinical) clinical.hidden = mode !== "clinical";
   reflectNav();

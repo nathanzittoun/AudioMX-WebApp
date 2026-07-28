@@ -17,7 +17,7 @@
 // are injected once from main.ts instead.
 
 export interface NavHandlers {
-  setAppMode(mode: "rnd" | "clinical" | "home"): void;
+  setAppMode(mode: "rnd" | "clinical" | "home" | "device"): void;
   showTab(tabId: string): void;
   setClinicalTab(name: string): void;
 }
@@ -25,6 +25,7 @@ export interface NavHandlers {
 /** What each nav button stands for, in terms of the calls that already exist. */
 const SECTIONS = {
   home: { mode: "home" },
+  device: { mode: "device" },
   patients: { mode: "clinical", ctab: "patients" },
   exam: { mode: "clinical", ctab: "exam" },
   chart: { mode: "clinical", ctab: "chart" },
@@ -46,11 +47,14 @@ let handlers: NavHandlers | null = null;
  *  not have to carry the bar's styling to work. */
 export function initNav(bound: NavHandlers): void {
   handlers = bound;
-  document.querySelectorAll<HTMLElement>("[data-nav]").forEach(node => {
-    node.addEventListener("click", () => {
-      const section = node.dataset["nav"];
-      if (section && isNavSection(section)) goto(section);
-    });
+  // Delegated rather than one listener per element: the Device page builds its
+  // cards after boot, and a link created then has to work exactly like one
+  // written into index.html.
+  document.addEventListener("click", event => {
+    const node = (event.target as Element | null)?.closest<HTMLElement>("[data-nav]");
+    if (!node) return;
+    const section = node.dataset["nav"];
+    if (section && isNavSection(section)) goto(section);
   });
 }
 
@@ -86,6 +90,7 @@ function shown(id: string): boolean {
 
 function currentSection(): NavSection {
   if (shown("homeMode")) return "home";
+  if (shown("deviceMode")) return "device";
   if (shown("clinicalMode")) {
     if (shown("clinExam")) return "exam";
     if (shown("clinChart")) return "chart";

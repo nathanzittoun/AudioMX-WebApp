@@ -169,8 +169,8 @@ body {
 }
 
 /* [hidden] loses to any rule that sets display, and this file sets display on a
-   lot of things. Three top-level containers are switched by the hidden property
-   alone, so make it win. */
+   lot of things. The four top-level containers are switched by the hidden
+   property alone, so make it win. */
 [hidden] {
   display: none !important;
 }
@@ -1584,4 +1584,153 @@ audio {
     padding-top: var(--sp-2);
     width: 100%;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Device page
+
+   Describes the hardware and reports whether each input is reachable from this
+   browser, in words. The reasons in device/support.ts were already written for
+   a clinician; until now they lived only in a `title` attribute, which does not
+   exist on a touch screen and has to be guessed at on a desktop.
+   --------------------------------------------------------------------------- */
+
+.specGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--sp-2);
+  margin: 0;
+}
+
+.specGrid > div {
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--card-solid);
+  border: 1px solid var(--soft-line);
+  border-radius: var(--radius-sm);
+}
+
+.specGrid dt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.specGrid dd {
+  margin: var(--sp-1) 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.deviceInputs {
+  margin-top: var(--sp-4);
+}
+
+.transportList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.transportCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  background: var(--card-solid);
+  border: 1px solid var(--soft-line);
+  border-radius: var(--radius-md);
+}
+
+/* Unavailable is stated, not hidden: the reason below is the useful part, and
+   a card that disappears teaches the clinician nothing. */
+.transportCard.unavailable {
+  background: #fbfbfc;
+  border-style: dashed;
+}
+
+.transportHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.transportHead h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--brand-deep);
+}
+
+.transportBadge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.transportBadge.ok {
+  background: #e6f2eb;
+  color: var(--green);
+}
+
+.transportBadge.no {
+  background: #f7e9e9;
+  color: var(--rec);
+}
+
+.transportDetail {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.transportReason {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  background: #fdf6f6;
+  border-left: 3px solid var(--rec);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6d4646;
+}
+
+/* Text that navigates. Not a call to action — the action lives on the page it
+   points at. */
+.transportLink,
+.inlineNavLink {
+  align-self: flex-start;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand);
+  cursor: pointer;
+}
+
+.transportLink:hover,
+.inlineNavLink:hover {
+  transform: none;
+  box-shadow: none;
+  text-decoration: underline;
+}
+
+.inlineNavLink {
+  font-size: inherit;
+  font-weight: 600;
+}
+
+.wifiPointer {
+  margin: 0 0 var(--sp-4);
 }

@@ -5,6 +5,7 @@
 // and Wi-Fi over https failed silently with no message at all.
 
 import { el } from "../ui/dom";
+import { renderDevicePanel } from "../ui/devicePanel";
 import { computerMicSupport, serialSupport, wifiSupport, type Support } from "./support";
 
 /** Default endpoint, mirrored from the Wi-Fi input's initial value. */
@@ -54,6 +55,10 @@ export function reflectDeviceSupport(): void {
   apply("cConnectUsb", serial, true);
   apply("cConnectWifi", wifi, true);
   apply("cConnectComputer", mic, true);
+
+  // The Device page shows the same three verdicts as readable text. Drawn from
+  // here rather than on its own so it cannot disagree with the buttons.
+  renderDevicePanel(currentWifiUrl());
 }
 
 /** Wire the Wi-Fi address field so support follows what the user types. */
