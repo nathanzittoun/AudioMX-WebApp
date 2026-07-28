@@ -124,6 +124,25 @@ T("6 tests de protocole rendus", (await ev("document.getElementById('cTestList')
 T("favicon servie", (await ev(
   "fetch(document.querySelector('link[rel=icon]').href).then(r => r.status)")) === 200);
 
+// --- 1b. config Epic ---
+// Rien ici ne leve d'exception quand c'est faux : Epic repond "error=4" a
+// l'autre bout, des minutes plus tard, sans rien dire de la cause. Ces valeurs
+// partent dans l'URL de login, donc c'est ici qu'on les verifie.
+const epic = await ev(`({
+  clientId: audiomx.ehrConfig.SMART.clientId,
+  scope: audiomx.ehrConfig.SMART.scope,
+  redirect: audiomx.ehrConfig.redirectUri(),
+})`);
+// Doit etre enregistree telle quelle chez Epic, sinon error=4.
+T("redirect_uri = base de l'app", epic?.redirect === BASE, epic?.redirect);
+T("client id = app Clinician (non-prod)",
+  epic?.clientId === "09a25bf9-07e2-4e13-b27d-486d885d5bde", epic?.clientId);
+// Une app d'audience Clinicians agit au nom du clinicien : des scopes patient/
+// seraient un retour a l'ancienne inscription, et Epic les refuserait.
+T("scopes en user/ et non patient/",
+  /user\//.test(epic?.scope || "") && !/patient\//.test(epic?.scope || ""), epic?.scope);
+T("Patient.read demande", /user\/Patient\.read/.test(epic?.scope || ""));
+
 // --- 1a. DSP numerique, deterministe (independant du micro) ---
 const dsp = await ev(`(()=>{
   const n = 8192, s = new Int16Array(n);

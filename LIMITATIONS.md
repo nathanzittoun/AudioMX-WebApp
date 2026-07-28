@@ -15,7 +15,7 @@ consequences of being a static site with no backend.
 | 3 | Wi-Fi microphone unusable from the published site | Wireless capture outside localhost | Firmware + backend |
 | 4 | USB is Chrome/Edge on a computer only | USB capture on iPad or Safari | Nothing — it is a platform fact |
 | 5 | iOS runs a reduced app | Full parity on iPad | Partly nothing, partly backend |
-| 6 | Epic is a sandbox, patient-facing app | Real charts, clinician workflow | New Epic registration + go-live |
+| 6 | Epic is sandbox-only; standalone patient context unconfirmed | Real charts | Epic go-live; maybe EHR launch |
 | 7 | No risk model connected | Every clinical claim the product makes | Dr Rameau's model + backend |
 | 8 | Capture assumptions are not enforced | Cross-device comparability | Calibration work |
 
@@ -125,15 +125,23 @@ not equivalent to a laptop.
   rate instead. Handled: [src/core/audioContext.ts](src/core/audioContext.ts)
   falls back and the capture path resamples, so this is a note, not a defect.
 
-## 6. Epic is a sandbox, patient-facing registration
+## 6. Epic is a sandbox, and the launch flow is unconfirmed
 
 **What.** The Epic connection reaches Epic's public R4 **sandbox**, not a real
-organisation, and the registered app has the **Patients** audience rather than
-Clinicians.
+organisation. The app registration is "AudioMX Clinician", audience **Clinicians
+or Administrative Users**, still in **Draft/Test** state.
 
-**Why.** That is what was registered. An Epic app's audience cannot be edited
-after the fact, so switching to a clinician-facing app means registering a new
-one, which issues a new Client ID.
+**Why.** Going beyond the sandbox is an Epic go-live process with a real
+organisation, not a code task. Until then only the Non-Production Client ID
+works; the production ID exists but authenticates against nothing.
+
+**The open question.** This app uses a **standalone** launch. In an EHR launch
+from Hyperspace the patient comes from the chart already open; standalone, Epic
+has to be asked for patient context via `launch/patient`. Whether Epic prompts
+a clinician to pick a patient in that flow is **not yet confirmed against the
+sandbox**. If it does not, the token comes back with no patient, `loadPatient()`
+has nothing to fetch, and supporting EHR launch (reading the `launch` parameter
+and passing it through) becomes necessary.
 
 **Also true today:**
 
@@ -146,10 +154,10 @@ one, which issues a new Client ID.
   round trip. `PAGES_BASE` in [vite.config.js](vite.config.js) and the Epic
   registration have to move together.
 
-**Removed by.** Registering a Clinicians app and swapping the Client ID and
-scopes — both are environment-overridable in
-[src/ehr/config.ts](src/ehr/config.ts), so it is a value change, not a code
-change. Going beyond the sandbox is an Epic go-live process, not a code task.
+**Removed by.** An Epic go-live with a real organisation, plus confirming the
+launch flow above. The Client ID and scopes are environment-overridable in
+[src/ehr/config.ts](src/ehr/config.ts), so moving between registrations is a
+value change rather than a code change.
 
 ## 7. No risk model is connected
 

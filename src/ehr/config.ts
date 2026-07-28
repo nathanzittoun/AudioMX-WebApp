@@ -14,23 +14,42 @@ const env = import.meta.env;
 
 export const SMART = {
   /**
-   * Epic non-production Client ID. Public, not a secret — it travels in the
-   * login URL. Swap for the production ID when leaving the sandbox.
+   * Epic Client ID for "AudioMX Clinician". Public, not a secret — it travels
+   * in the login URL.
+   *
+   * This is the **Non-Production** ID, which is the one the sandbox `iss`
+   * below accepts. The production ID for the same app is
+   * 0c78ad31-e03e-424d-89e2-fca2af500835; it only starts working after go-live
+   * with a real organisation, so pointing at it now would fail with an opaque
+   * error rather than anything useful.
+   *
+   * Replaces the earlier "AudioMX Patient" registration
+   * (05b94f6d-d653-4db8-abc2-5a750eea6df6). An Epic app's audience cannot be
+   * edited, so moving from Patients to Clinicians meant a second registration.
    */
-  clientId: env.VITE_SMART_CLIENT_ID ?? "05b94f6d-d653-4db8-abc2-5a750eea6df6",
+  clientId: env.VITE_SMART_CLIENT_ID ?? "09a25bf9-07e2-4e13-b27d-486d885d5bde",
 
   /** Epic's public R4 sandbox FHIR base (the "aud"/"iss"). */
   iss: env.VITE_SMART_ISS ?? "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4",
 
   /**
-   * What we ask permission to do. Must line up with the scopes registered on
-   * Epic. Reading Patient + Observation is the proof of connection;
-   * DocumentReference is the supported write path, because Epic rejects custom
-   * Observations.
+   * What we ask permission to do. Must line up with the APIs registered on
+   * Epic, which are the real gate — asking for something unregistered gets it
+   * denied, and registering something we never ask for is dead weight.
+   *
+   * `user/` rather than `patient/`: a Clinicians-audience app acts as the
+   * logged-in clinician across the patients they may see, where a
+   * Patients-audience app was scoped to the one person logging in.
+   *
+   * `launch/patient` asks Epic to establish patient context. In an EHR launch
+   * from Hyperspace that context comes from the chart already open. In the
+   * standalone launch this app uses, Epic is expected to prompt for patient
+   * selection — that is the part to confirm against the sandbox, because
+   * without a patient in the token, loadPatient() has nothing to fetch.
    */
   scope: env.VITE_SMART_SCOPE ??
-    "openid fhirUser launch/patient patient/Patient.read patient/Observation.read " +
-    "patient/DocumentReference.read patient/DocumentReference.write",
+    "openid fhirUser launch/patient user/Patient.read user/Observation.read " +
+    "user/DocumentReference.read user/DocumentReference.write",
 };
 
 /**
