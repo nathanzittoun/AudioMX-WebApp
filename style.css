@@ -658,9 +658,15 @@ audio {
   padding: 12px 14px;
   height: 95px;
   overflow-y: auto;
-  font-family: "SF Mono", Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--muted);
+}
+
+/* Nothing logged yet, so there is nothing to show. It sits at shell level and
+   was drawing an empty 95px card under every page, including the overview. */
+.logBox:empty {
+  display: none;
 }
 
 .sourceSelector {
