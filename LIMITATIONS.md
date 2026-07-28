@@ -139,9 +139,18 @@ works; the production ID exists but authenticates against nothing.
 from Hyperspace the patient comes from the chart already open; standalone, Epic
 has to be asked for patient context via `launch/patient`. Whether Epic prompts
 a clinician to pick a patient in that flow is **not yet confirmed against the
-sandbox**. If it does not, the token comes back with no patient, `loadPatient()`
-has nothing to fetch, and supporting EHR launch (reading the `launch` parameter
-and passing it through) becomes necessary.
+sandbox** — and Epic's own standalone-launch documentation describes patient
+context as an EHR-launch property without documenting a picker for standalone
+provider apps, which is a signal but not proof. If there is no picker, the
+token comes back with no patient, `loadPatient()` has nothing to fetch, and
+supporting EHR launch (reading the `launch` parameter and passing it through)
+becomes necessary.
+
+**Note on testing any Epic change.** Epic documents **up to one hour** for a
+saved change to reach the sandbox. Probe the authorize endpoint by HTTP status,
+not by page content: a working config answers 302 to a login URL, a rejected
+one answers 200 with an "OAuth2 Error" page carrying no error code. Judging on
+the page alone reads success as failure.
 
 **Also true today:**
 
