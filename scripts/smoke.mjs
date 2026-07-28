@@ -112,6 +112,10 @@ for (const path of ["constants.SAMPLE_RATE", "protocol.PROTOCOL_TESTS", "feature
   T(`audiomx.${path}`, (await ev(`typeof audiomx.${path}`)) !== "undefined");
 }
 T("6 tests de protocole rendus", (await ev("document.getElementById('cTestList')?.children.length")) === 6);
+// Le filtre 404 ci-dessus exempte favicon ; cette assertion verifie l'inverse,
+// que l'icone existe vraiment et que %BASE_URL% a bien ete substitue.
+T("favicon servie", (await ev(
+  "fetch(document.querySelector('link[rel=icon]').href).then(r => r.status)")) === 200);
 
 // --- 1a. DSP numerique, deterministe (independant du micro) ---
 const dsp = await ev(`(()=>{
