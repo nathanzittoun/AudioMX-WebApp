@@ -98,6 +98,35 @@ const traced = async (canvasId, [r, g, b]) => ev(`(()=>{
 // cours, les erreurs et les suppressions, donc il ne doit plus apparaitre ici.
 const TRACE = [47, 90, 140];     // = PLOT.trace (#2f5a8c)
 
+// Un seul releve tombe parfois entre un effacement et un trace : les moniteurs
+// live redessinent sur rAF (relaye en setTimeout ici) et l'instant du releve
+// n'est synchronise avec rien. On echantillonne en continu et on garde le
+// maximum — l'assertion reste "il a bien dessine pendant la capture", elle
+// cesse juste de dependre du moment ou on regarde.
+//
+// L'echantillonnage EST l'attente, il ne s'y ajoute pas. Le faire apres coup
+// prolongeait la capture d'une seconde : la prise sortait a 4 s la ou
+// l'assertion de duree en attend 2. Un correctif de flake qui fabrique un
+// echec ailleurs n'est pas un correctif.
+const TRACE_CLEARLY_DRAWN = 800;   // largement au-dessus du seuil des assertions
+const tracedPeakDuring = async (canvasIds, colour, totalMs) => {
+  const best = canvasIds.map(() => 0);
+  const until = Date.now() + totalMs;
+  while (Date.now() < until) {
+    // Chaque releve est un aller-retour CDP plus un getImageData : les
+    // enchainer sans repit vole du temps CPU au worklet audio et raccourcit la
+    // prise. Des que la reponse est acquise, on arrete de regarder et on laisse
+    // la capture se derouler.
+    if (!best.every(v => v >= TRACE_CLEARLY_DRAWN)) {
+      for (let i = 0; i < canvasIds.length; i++) {
+        best[i] = Math.max(best[i], await traced(canvasIds[i], colour));
+      }
+    }
+    await new Promise(r => setTimeout(r, 100));
+  }
+  return best;
+};
+
 console.log(`\n  === SMOKE ${BASE} ===`);
 await go();
 await ev("new Promise(r=>{const q=indexedDB.deleteDatabase('acousticConsole');q.onsuccess=q.onerror=q.onblocked=()=>r(1)})");
@@ -533,10 +562,9 @@ await ev("audiomx.app.setAppMode('rnd')");
 await ev("audiomx.app.setInputSource('computer')"); await new Promise(r => setTimeout(r, 300));
 await ev("audiomx.computerMicSource.connectComputerMic()"); await new Promise(r => setTimeout(r, 2200));
 T("micro ordi connecte", (await ev("audiomx.state.device.connected")) === true);
-await ev("audiomx.app.startRecording()"); await new Promise(r => setTimeout(r, 2000));
+await ev("audiomx.app.startRecording()");
 // Pendant la capture, pas apres : les moniteurs live sont effaces a l'arret.
-const rndWave = await traced("waveform", TRACE);
-const rndSpec = await traced("liveSpectrum", TRACE);
+const [rndWave, rndSpec] = await tracedPeakDuring(["waveform", "liveSpectrum"], TRACE, 2000);
 await ev("audiomx.app.stopRecording()"); await new Promise(r => setTimeout(r, 1200));
 T("forme d'onde live dessinee (R&D)", rndWave > 200, rndWave + " px de trace");
 T("spectre live dessine (R&D)", rndSpec > 200, rndSpec + " px de trace");
@@ -659,9 +687,7 @@ await ev("document.getElementById('pReadyBtn').click()");
 await new Promise(r => setTimeout(r, 7000));   // 5 s de decompte + bip de depart + marge
 T("le decompte a lance l'enregistrement", (await ev("audiomx.state.capture.recording")) === true);
 
-await new Promise(r => setTimeout(r, 2000));
-const clinWave = await traced("cWaveform", TRACE);
-const clinSpec = await traced("cSpectrum", TRACE);
+const [clinWave, clinSpec] = await tracedPeakDuring(["cWaveform", "cSpectrum"], TRACE, 2000);
 await ev("document.getElementById('cStopBtn').click()");
 await new Promise(r => setTimeout(r, 1500));
 

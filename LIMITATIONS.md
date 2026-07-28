@@ -99,7 +99,10 @@ will. This is a platform fact, not a gap in the app.
 **Removed by.** Nothing, on the web. The app degrades honestly: `serialSupport()`
 in [src/device/support.ts](src/device/support.ts) reports the reason in words a
 clinician can act on, and the UI marks the input unusable before it is reached
-for. A native app would be the only way, and it is not worth it for one input.
+for. Since the Device page exists, that reason is also **printed as text** next
+to the input rather than hidden in a tooltip — there is no tooltip on an iPad,
+which is exactly where this limitation bites. A native app would be the only
+way, and it is not worth it for one input.
 
 ## 5. iOS runs a reduced app
 
@@ -176,7 +179,10 @@ browser and is a signal measurement, not a clinical result.
 **Why.** Dr Rameau's model is Python. It will never run in a browser.
 
 **Removed by.** A scoring service behind the backend. The interface is already
-written: [src/storage/riskModel.ts](src/storage/riskModel.ts). Until then
+written: [src/storage/riskModel.ts](src/storage/riskModel.ts), and the chart now
+asks it rather than describing it — [src/ui/riskPanel.ts](src/ui/riskPanel.ts)
+renders "not connected" from `isAvailable()` returning false, and renders a real
+result the moment a model is installed through `setRiskModel()`. Until then
 `nullRiskModel` reports itself unavailable and refuses to produce a number,
 deliberately — a placeholder score displayed next to a real patient is a
 clinical hazard, not a harmless stub.

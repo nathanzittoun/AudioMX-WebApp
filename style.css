@@ -315,17 +315,19 @@ input {
 
 button {
   border: none;
-  border-radius: 16px;
-  padding: 13px 18px;
-  font-size: 15px;
-  font-weight: 700;
+  border-radius: var(--radius-sm);
+  padding: 12px 17px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+  transition: box-shadow 0.12s ease, background 0.12s ease, opacity 0.12s ease;
 }
 
+/* Every button used to lift a pixel and drop a heavy shadow on hover. Applied
+   to all of them at once it reads as a toy; on a clinical screen the feedback
+   should be present and quiet. */
 button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(0,0,0,0.14);
+  box-shadow: 0 4px 14px rgba(15, 29, 42, 0.14);
 }
 
 button:disabled {
@@ -333,8 +335,10 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* The one action a page is for. Brand, so it is the same blue as the nav and
+   the device — it used to be near-black, which belongs to no palette. */
 .primaryBtn {
-  background: var(--ink);
+  background: var(--brand);
   color: white;
 }
 
@@ -349,7 +353,8 @@ button:disabled {
 }
 
 .secondaryBtn {
-  background: #ececf0;
+  background: var(--card-solid);
+  border: 1px solid var(--line);
   color: var(--ink);
 }
 
@@ -382,13 +387,13 @@ button:disabled {
 }
 
 .modeBtn.active {
-  background: var(--ink);
-  color: white;
-  border-color: var(--ink);
+  background: var(--brand-tint);
+  color: var(--brand-deep);
+  border-color: var(--brand);
 }
 
 .modeBtn.active small {
-  color: rgba(255,255,255,0.75);
+  color: var(--brand);
 }
 
 .metaRow {
@@ -406,6 +411,7 @@ button:disabled {
   padding: 10px 14px;
   color: var(--muted);
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
 
 .plotCard {
@@ -472,7 +478,8 @@ canvas {
 
 .noiseValue {
   font-size: 21px;
-  font-weight: 800;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   margin-bottom: 9px;
 }
 
@@ -509,8 +516,9 @@ canvas {
 }
 
 .noiseFloorValue {
-  font-weight: 800;
+  font-weight: 700;
   font-size: 22px;
+  font-variant-numeric: tabular-nums;
   margin: 4px 0;
 }
 
@@ -697,15 +705,20 @@ audio {
   font-size: 12px;
 }
 
-/* Selection, not alarm — hence brand, not red. */
+/* Chosen, not pressed.
+   A solid brand fill means "this button does something"; a tint with a brand
+   border means "this is the one currently selected". Giving both the same
+   solid fill made "MEMS mics" — a toggle — look exactly like "Connect MEMS
+   device" — an action. Same rule governs .modeBtn.active and
+   .clinTestBtn.active. */
 .sourceBtn.active {
-  background: var(--brand);
-  color: white;
-  border-color: var(--brand-deep);
+  background: var(--brand-tint);
+  color: var(--brand-deep);
+  border-color: var(--brand);
 }
 
 .sourceBtn.active small {
-  color: rgba(255,255,255,0.75);
+  color: var(--brand);
 }
 
 @media (max-width: 980px) {
@@ -1399,9 +1412,6 @@ audio {
   margin-top: var(--sp-5);
 }
 
-.homeHeroActions .primaryBtn {
-  background: var(--brand);
-}
 
 /* The same connection state as the header pill, restated where someone
    deciding what to do next is actually looking. */

@@ -520,7 +520,11 @@ export function renderPatientTable(): void {
 
   if (list.length === 0) {
     cPatientTable.innerHTML = "<div class='empty'>" +
-      (clinicalPatients.length ? "No patients match." : "No patients yet. Click “New patient”.") + "</div>";
+      // Named the button that is actually on screen. It said “New patient”,
+      // left over from when this was a chain of prompt() dialogs; the button
+      // has read “Create patient” since the inline form replaced them, so the
+      // empty state was sending people to look for something that is not there.
+      (clinicalPatients.length ? "No patients match." : "No patients yet. Fill in a patient ID above, then press “Create patient”.") + "</div>";
     return;
   }
 
