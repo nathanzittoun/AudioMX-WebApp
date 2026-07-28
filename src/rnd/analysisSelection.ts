@@ -11,6 +11,7 @@ import { analysis, capture, library } from "../core/state";
 import { clamp } from "../core/dsp/levels";
 import { emit } from "../core/bus";
 import { ctx2d, el } from "../ui/dom";
+import { PLOT } from "../ui/theme";
 
 /** The full audio behind the Analyze view, before the selection is applied. */
 export interface AnalysisSource {
@@ -130,7 +131,7 @@ export function drawAnalysisWaveform(): void {
   const width = canvas.width;
   const height = canvas.height;
 
-  ctx.strokeStyle = "#b31b1b";
+  ctx.strokeStyle = PLOT.trace;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
 
@@ -176,7 +177,7 @@ function drawSelectionOverlay(totalSamples: number): void {
   const x1 = analysis.selectionStart * width;
   const x2 = analysis.selectionEnd * width;
 
-  ctx.fillStyle = "rgba(179, 27, 27, 0.16)";
+  ctx.fillStyle = PLOT.selection;
   ctx.fillRect(x1, 0, x2 - x1, height);
 
   // Dim what is excluded, so the selection reads as the subject.

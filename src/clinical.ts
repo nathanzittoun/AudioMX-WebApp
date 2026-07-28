@@ -31,6 +31,7 @@ import {
 import { deletePatient as deletePatientFromDb, loadPatients, savePatient } from "./storage/library";
 import type { StoredPatient } from "./storage/types";
 import { el, requireEl } from "./ui/dom";
+import { PLOT } from "./ui/theme";
 import { recordingBaseName, sanitizeForFilename, triggerDownload } from "./ui/download";
 import { setAppMode, setInputSource, startRecording, stopRecording } from "./app";
 import { log } from "./ui/log";
@@ -980,11 +981,11 @@ function trendSparkline(points: TrendPoint[], betterUp: boolean | null): string 
   let dots = "";
   points.forEach((p, i) => {
     dots += "<circle cx='" + x(i).toFixed(1) + "' cy='" + y(p.v).toFixed(1) +
-      "' r='3' fill='#3b6fb0'></circle>";
+      "' r='3' fill='" + PLOT.trace + "'></circle>";
   });
 
   // Colour the trend direction (last vs first) when a direction is "better".
-  let stroke = "#3b6fb0";
+  let stroke: string = PLOT.trace;
   if (betterUp !== null && points.length >= 2) {
     const rising = points[points.length - 1].v > points[0].v;
     const good = betterUp ? rising : !rising;
@@ -1323,7 +1324,7 @@ function drawClinicalWaveform(): void {
     cWaveCtx.stroke();
   }
   if (live.length < 2) return;
-  cWaveCtx.strokeStyle = "#3b6fb0";
+  cWaveCtx.strokeStyle = PLOT.trace;
   cWaveCtx.lineWidth = 2;
   cWaveCtx.beginPath();
   const step = Math.max(1, Math.floor(live.length / w));
@@ -1363,7 +1364,7 @@ function drawClinicalSpectrum(): void {
     const y = h - ((d - minDb) / (maxDb - minDb)) * h;
     cSpecCtx.fillText(d + " dBFS", 6, d === 0 ? y + 12 : y - 3);
   }
-  cSpecCtx.strokeStyle = "#3b6fb0";
+  cSpecCtx.strokeStyle = PLOT.trace;
   cSpecCtx.lineWidth = 1.6;
   cSpecCtx.beginPath();
   let started = false;

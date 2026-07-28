@@ -9,6 +9,7 @@ import { SAMPLE_RATE } from "../core/constants";
 import { capture } from "../core/state";
 import { computeSpectrum } from "../core/dsp/spectrum";
 import { ctx2d, el } from "../ui/dom";
+import { PLOT } from "../ui/theme";
 import { pushLiveSpectrogramColumn } from "../ui/canvas/spectrogram";
 
 /** Redraw interval, ms. A fast packet rate must not trigger an FFT per chunk. */
@@ -89,7 +90,7 @@ export function drawLiveSpectrum(): void {
     ctx.fillText(d + " dBFS", 6, d === 0 ? y + 12 : y - 3);
   }
 
-  ctx.strokeStyle = "#b31b1b";
+  ctx.strokeStyle = PLOT.trace;
   ctx.lineWidth = 1.6;
   ctx.beginPath();
 

@@ -93,8 +93,10 @@ const traced = async (canvasId, [r, g, b]) => ev(`(()=>{
     if (Math.abs(d[i]-${r}) < 40 && Math.abs(d[i+1]-${g}) < 40 && Math.abs(d[i+2]-${b}) < 40) n++;
   return n;
 })()`);
-const CRIMSON = [179, 27, 27];   // trace R&D
-const STEEL   = [59, 111, 176];  // trace clinique
+// Une seule couleur de trace dans toute l'app, cote R&D comme cote clinique :
+// PLOT.trace dans src/ui/theme.ts. Le rouge ne designe plus que la capture en
+// cours, les erreurs et les suppressions, donc il ne doit plus apparaitre ici.
+const TRACE = [47, 90, 140];     // = PLOT.trace (#2f5a8c)
 
 console.log(`\n  === SMOKE ${BASE} ===`);
 await go();
@@ -401,8 +403,8 @@ await ev("audiomx.computerMicSource.connectComputerMic()"); await new Promise(r 
 T("micro ordi connecte", (await ev("audiomx.state.device.connected")) === true);
 await ev("audiomx.app.startRecording()"); await new Promise(r => setTimeout(r, 2000));
 // Pendant la capture, pas apres : les moniteurs live sont effaces a l'arret.
-const rndWave = await traced("waveform", CRIMSON);
-const rndSpec = await traced("liveSpectrum", CRIMSON);
+const rndWave = await traced("waveform", TRACE);
+const rndSpec = await traced("liveSpectrum", TRACE);
 await ev("audiomx.app.stopRecording()"); await new Promise(r => setTimeout(r, 1200));
 T("forme d'onde live dessinee (R&D)", rndWave > 200, rndWave + " px de trace");
 T("spectre live dessine (R&D)", rndSpec > 200, rndSpec + " px de trace");
@@ -514,8 +516,8 @@ await new Promise(r => setTimeout(r, 7000));   // 5 s de decompte + bip de depar
 T("le decompte a lance l'enregistrement", (await ev("audiomx.state.capture.recording")) === true);
 
 await new Promise(r => setTimeout(r, 2000));
-const clinWave = await traced("cWaveform", STEEL);
-const clinSpec = await traced("cSpectrum", STEEL);
+const clinWave = await traced("cWaveform", TRACE);
+const clinSpec = await traced("cSpectrum", TRACE);
 await ev("document.getElementById('cStopBtn').click()");
 await new Promise(r => setTimeout(r, 1500));
 

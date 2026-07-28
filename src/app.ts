@@ -14,6 +14,7 @@ import { drawLiveSpectrum } from "./rnd/liveSpectrum";
 import { updateNoiseIndicators } from "./rnd/meters";
 import { clearLiveSpectrogram } from "./ui/canvas/spectrogram";
 import { ctx2d, el } from "./ui/dom";
+import { PLOT } from "./ui/theme";
 import { log } from "./ui/log";
 import { setStatus } from "./ui/status";
 import { updateCurrentStats } from "./ui/captureStats";
@@ -110,7 +111,7 @@ function drawLiveWaveform(): void {
   const ctx = ctx2d("waveform");
   if (!canvas || !ctx || capture.live.length < 2) return;
 
-  ctx.strokeStyle = "#b31b1b";
+  ctx.strokeStyle = PLOT.trace;
   ctx.lineWidth = 2;
   ctx.beginPath();
   const step = Math.max(1, Math.floor(capture.live.length / canvas.width));

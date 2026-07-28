@@ -1,8 +1,28 @@
-:root {
-  --wcm-red: #b31b1b;
-  --wcm-dark-red: #7f1212;
-  --wcm-orange: #f58220;
+/* Design tokens.
+   ---------------------------------------------------------------------------
+   One rule governs the palette: a colour means exactly one thing.
 
+   Red used to be both the brand accent and the recording indicator, which made
+   the single colour that must shout "this is live" also the colour of ordinary
+   furniture. Brand is now the AudioMX blue — the same one the device and the
+   marketing site use — and red is reserved for capture in progress, errors and
+   destructive actions. Nothing else may use it. */
+:root {
+  /* Brand. Taken from the device renders and the marketing identity. */
+  --brand: #2f5a8c;
+  --brand-bright: #4a82be;
+  --brand-deep: #0f1d2a;
+  --brand-tint: #eef3f9;
+
+  /* State. Each one has a single job, named after the job. */
+  --rec: #b31b1b;        /* capture in progress, errors, delete */
+  --rec-deep: #7f1212;
+  --warn: #f58220;       /* attention needed, not yet a failure */
+  --green: #18794e;      /* connected, passing, within range */
+  --purple: #7c3aed;
+
+  /* Neutrals, biased slightly cool so they sit under the blue rather than
+     fighting it. */
   --bg: #f5f5f7;
   --card: rgba(255, 255, 255, 0.86);
   --card-solid: #ffffff;
@@ -13,9 +33,35 @@
   --line: #dcdce0;
   --soft-line: #ececf0;
 
-  --green: #18794e;
-  --purple: #7c3aed;
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
+
+  /* Type. The UI face is the system stack — it renders natively on every
+     target and costs no network request, which matters for an offline-first
+     app behind a service worker. The mono face carries measurements and
+     uppercase labels, where digits have to line up. */
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "IBM Plex Mono", monospace;
+
+  /* Spacing scale. Every gap and pad should be one of these, so that rhythm is
+     a choice from a set rather than a number typed at the moment. */
+  --sp-1: 6px;
+  --sp-2: 10px;
+  --sp-3: 14px;
+  --sp-4: 20px;
+  --sp-5: 28px;
+  --sp-6: 40px;
+
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
+
+  /* Older names, kept as aliases. Repointing them here rather than renaming
+     1200 lines means no usage can be missed; new rules should use the names
+     above. */
+  --wcm-red: var(--rec);
+  --wcm-dark-red: var(--rec-deep);
+  --wcm-orange: var(--warn);
 }
 
 * {
@@ -24,11 +70,19 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif;
+  font-family: var(--font-ui);
   background:
-    radial-gradient(circle at top left, rgba(179, 27, 27, 0.08), transparent 28%),
+    radial-gradient(circle at top left, rgba(47, 90, 140, 0.10), transparent 30%),
     linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 100%);
   color: var(--ink);
+}
+
+/* Keyboard focus was invisible: the default ring is suppressed by the custom
+   button styling, and nothing replaced it. Zero-specificity :where() so no
+   existing rule has to be touched for this to apply. */
+:where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand-bright);
+  outline-offset: 2px;
 }
 
 .appShell {
@@ -586,10 +640,11 @@ audio {
   font-size: 12px;
 }
 
+/* Selection, not alarm — hence brand, not red. */
 .sourceBtn.active {
-  background: var(--wcm-red);
+  background: var(--brand);
   color: white;
-  border-color: var(--wcm-dark-red);
+  border-color: var(--brand-deep);
 }
 
 .sourceBtn.active small {
@@ -808,8 +863,8 @@ audio {
 }
 
 .clinTestBtn.active {
-  border-color: #3b6fb0;
-  background: #e2ecfa;
+  border-color: var(--brand);
+  background: var(--brand-tint);
 }
 
 .clinTestIcon { font-size: 17px; }
@@ -1107,7 +1162,7 @@ audio {
   border-radius: 14px;
   padding: 12px 14px;
 }
-.patientRow.active { border-color: #3b6fb0; background: #eef3fb; }
+.patientRow.active { border-color: var(--brand); background: var(--brand-tint); }
 .patientRowMain { font-size: 15px; }
 .patientRowName { color: var(--muted); font-weight: 600; }
 .patientRowMeta { color: var(--muted); font-size: 13px; margin-left: auto; }

@@ -11,6 +11,7 @@ import { clamp } from "../core/dsp/levels";
 import { computeSpectrum, findDominantFrequencies, interpretSpectrum } from "../core/dsp/spectrum";
 import { on } from "../core/bus";
 import { ctx2d, el } from "../ui/dom";
+import { PLOT } from "../ui/theme";
 import { renderStaticSpectrogram } from "../ui/canvas/spectrogram";
 import { triggerDownload } from "../ui/download";
 import { drawAnalysisWaveform, getAnalysisSamples } from "./analysisSelection";
@@ -128,7 +129,7 @@ export function plotNoiseSpectrum(): void {
   const toY = (db: number): number =>
     canvas.height - ((db - PLOT_MIN_DB) / (PLOT_MAX_DB - PLOT_MIN_DB)) * canvas.height;
 
-  ctx.strokeStyle = "#b31b1b";
+  ctx.strokeStyle = PLOT.trace;
   ctx.lineWidth = 2.25;
   ctx.beginPath();
 
