@@ -31,6 +31,7 @@ import {
 import { deletePatient as deletePatientFromDb, loadPatients, savePatient } from "./storage/library";
 import type { StoredPatient } from "./storage/types";
 import { el, requireEl } from "./ui/dom";
+import { reflectNav } from "./ui/nav";
 import { PLOT } from "./ui/theme";
 import { recordingBaseName, sanitizeForFilename, triggerDownload } from "./ui/download";
 import { setAppMode, setInputSource, startRecording, stopRecording } from "./app";
@@ -425,13 +426,13 @@ export function initClinical(): void {
 }
 
 export function setClinicalTab(name: string): void {
-  document.querySelectorAll<HTMLElement>(".clinTabBtn")
-    .forEach(b => b.classList.toggle("active", b.dataset["ctab"] === name));
   requireEl("clinPatients").hidden = name !== "patients";
   requireEl("clinExam").hidden = name !== "exam";
   requireEl("clinChart").hidden = name !== "chart";
   if (name === "chart") renderChart();
   if (name === "exam") renderExamHeader();
+  // Opening a patient row calls this directly; the bar follows.
+  reflectNav();
 }
 
 // ---- Connection --------------------------------------------------------

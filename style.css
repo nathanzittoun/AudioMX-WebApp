@@ -168,31 +168,82 @@ body {
   font-size: 12px;
 }
 
-.tabBar {
-  display: flex;
-  gap: 8px;
-  margin: 20px auto;
-  padding: 6px;
-  background: #e9e9ed;
-  width: fit-content;
-  border-radius: 999px;
+/* [hidden] loses to any rule that sets display, and this file sets display on a
+   lot of things. Three top-level containers are switched by the hidden property
+   alone, so make it win. */
+[hidden] {
+  display: none !important;
 }
 
-.tabBtn {
+/* ---------------------------------------------------------------------------
+   Main navigation
+
+   One bar in place of three. The group labels carry information rather than
+   decoration: they name the two audiences the app serves, which is what the
+   old "mode" switch never said out loud. Overview sits outside both groups
+   because it belongs to neither.
+   --------------------------------------------------------------------------- */
+
+.mainNav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  margin: var(--sp-4) 0 var(--sp-5);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--card);
+  border: 1px solid var(--soft-line);
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 20px rgba(15, 29, 42, 0.05);
+  backdrop-filter: blur(18px);
+}
+
+.navGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding-left: var(--sp-4);
+  border-left: 1px solid var(--line);
+}
+
+.navGroupLabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-right: var(--sp-1);
+  white-space: nowrap;
+}
+
+.navBtn {
   border: none;
-  padding: 11px 24px;
-  border-radius: 999px;
   background: transparent;
   color: var(--muted);
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 15px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s ease;
+  white-space: nowrap;
+  transition: background 0.14s ease, color 0.14s ease;
 }
 
-.tabBtn.active {
-  background: white;
-  color: var(--ink);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+/* The generic button:hover lifts and drops a shadow. Inside a nav bar that
+   reads as a bug, so this one only changes colour. */
+.navBtn:hover:not(.active) {
+  transform: none;
+  box-shadow: none;
+  background: var(--brand-tint);
+  color: var(--brand-deep);
+}
+
+.navBtn.active {
+  background: var(--brand);
+  color: white;
+  transform: none;
+  box-shadow: 0 4px 12px rgba(47, 90, 140, 0.28);
 }
 
 .view {
@@ -680,13 +731,6 @@ audio {
     grid-template-columns: 1fr;
   }
 
-  .tabBar {
-    width: 100%;
-  }
-
-  .tabBtn {
-    flex: 1;
-  }
 }
 
 .noiseOn {
@@ -775,31 +819,6 @@ audio {
 }
 
 /* Mode switch (R&D vs Clinical) */
-.modeSwitch {
-  display: inline-flex;
-  gap: 6px;
-  background: #e9e9ee;
-  padding: 5px;
-  border-radius: 16px;
-  margin: 0 0 18px;
-}
-
-.modeSwitchBtn {
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 15px;
-  padding: 9px 20px;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-.modeSwitchBtn.active {
-  background: var(--card-solid);
-  color: var(--ink);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
 
 /* Clinical split layout */
 .clinicalGrid {
@@ -1091,29 +1110,6 @@ audio {
 }
 
 /* ---- Clinical sub-tabs + patient database + session folders ---- */
-.clinTabs {
-  display: inline-flex;
-  gap: 6px;
-  background: #e9e9ee;
-  padding: 5px;
-  border-radius: 14px;
-  margin-bottom: 18px;
-}
-.clinTabBtn {
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 14px;
-  padding: 8px 18px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-.clinTabBtn.active {
-  background: var(--card-solid);
-  color: var(--ink);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
 
 /* Inline "new patient" form. Replaces a chain of four prompt() dialogs, which
    Chrome silently suppresses once the user ticks "prevent additional dialogs". */
@@ -1345,3 +1341,241 @@ audio {
   min-height: 0;
 }
 .patientCount:empty { display: none; }
+
+/* ---------------------------------------------------------------------------
+   Overview page
+
+   The front door. It exists because the app used to open on the microphone
+   test bench: the first thing anyone saw was an engineering instrument, with
+   nothing on screen saying what the product is or how the three pieces —
+   device, this app, the model — fit together.
+   --------------------------------------------------------------------------- */
+
+.homeHero {
+  display: grid;
+  grid-template-columns: 1.5fr 0.85fr;
+  gap: var(--sp-6);
+  align-items: center;
+  margin-bottom: var(--sp-4);
+}
+
+.eyebrow {
+  margin: 0 0 var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.homeTitle {
+  margin: 0;
+  font-size: clamp(28px, 3.4vw, 42px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  color: var(--brand-deep);
+}
+
+.homeLede {
+  margin: var(--sp-4) 0 0;
+  max-width: 58ch;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.homeHeroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-5);
+}
+
+.homeHeroActions .primaryBtn {
+  background: var(--brand);
+}
+
+/* The same connection state as the header pill, restated where someone
+   deciding what to do next is actually looking. */
+.homeDeviceLine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--soft-line);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.homeDeviceLineHint {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.homeDevice {
+  margin: 0;
+  padding: var(--sp-4);
+  background: linear-gradient(160deg, var(--brand-tint), #ffffff);
+  border: 1px solid var(--soft-line);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.deviceSvg {
+  display: block;
+  width: 100%;
+  max-width: 190px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.homeDevice figcaption {
+  margin-top: var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+/* --- the three stages ---
+   Numbered because this genuinely is a sequence: nothing can be measured
+   before it is captured, and nothing can be scored before it is measured. */
+
+.flowSteps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.flowStep {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  background: var(--card-solid);
+  border: 1px solid var(--soft-line);
+  border-radius: var(--radius-md);
+}
+
+.flowNum {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--brand-bright);
+}
+
+.flowStep h3 {
+  margin: 0;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  color: var(--brand-deep);
+}
+
+.flowStep p {
+  margin: 0;
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.flowState {
+  align-self: flex-start;
+  margin-top: var(--sp-1);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.flowState.ok {
+  background: #e6f2eb;
+  color: var(--green);
+}
+
+.flowState.pending {
+  background: #f3edff;
+  color: var(--purple);
+}
+
+/* --- honest notes ---
+   A summary of LIMITATIONS.md, on the page a new user lands on. */
+
+.homeNotes {
+  margin-top: var(--sp-4);
+}
+
+.noteGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-4);
+}
+
+.noteCard {
+  padding: var(--sp-4);
+  background: var(--brand-tint);
+  border: 1px solid #dde7f2;
+  border-radius: var(--radius-md);
+}
+
+.noteCard h3 {
+  margin: 0 0 var(--sp-2);
+  font-size: 15px;
+  color: var(--brand-deep);
+}
+
+.noteCard p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #4a5b6d;
+}
+
+@media (max-width: 980px) {
+  .homeHero {
+    grid-template-columns: 1fr;
+    gap: var(--sp-4);
+  }
+
+  .homeDevice {
+    order: -1;
+  }
+
+  .deviceSvg {
+    max-width: 130px;
+  }
+
+  .flowSteps,
+  .noteGrid {
+    grid-template-columns: 1fr;
+  }
+
+  /* The bar wraps rather than scrolls: a wrapped row is reachable by thumb,
+     a horizontally scrolled one hides its right-hand half. */
+  .mainNav {
+    gap: var(--sp-2);
+  }
+
+  .navGroup {
+    flex-wrap: wrap;
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid var(--line);
+    padding-top: var(--sp-2);
+    width: 100%;
+  }
+}

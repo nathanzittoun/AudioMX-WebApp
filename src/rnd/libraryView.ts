@@ -10,7 +10,7 @@ import { formatFeatures } from "../core/features";
 import { deleteRecording as removeFromStorage, saveRecording } from "../storage/library";
 import { recordingBaseName, triggerDownload } from "../ui/download";
 import { el, requireEl } from "../ui/dom";
-import { showTab } from "../ui/tabs";
+import { goto } from "../ui/nav";
 import { emit, on } from "../core/bus";
 import { resetAnalysisSelection } from "./analysisSelection";
 import { plotNoiseSpectrum } from "./fftView";
@@ -152,7 +152,10 @@ export function updateAnalysisSourceSelect(): void {
 export function analyzeRecording(recordingId: number): void {
   requireEl<HTMLSelectElement>("analysisSourceSelect").value = "recording-" + recordingId;
   resetAnalysisSelection();
-  showTab("analyzeView");
+  // goto(), not showTab(): this is also the Analyze button on a take inside a
+  // patient's chart, and from there showTab() switched a tab inside a container
+  // that was hidden. The view became active and nothing appeared on screen.
+  goto("analyze");
   plotNoiseSpectrum();
 }
 

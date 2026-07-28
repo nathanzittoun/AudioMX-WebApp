@@ -35,26 +35,177 @@
       </div>
 
       <div class="deviceStatus">
-        <div id="statusDot" class="statusDot"></div>
+        <div id="statusDot" class="statusDot" data-status-dot></div>
         <div>
-          <div id="status" class="statusText">Not connected</div>
+          <div id="status" class="statusText" data-status-text>Not connected</div>
           <div class="statusSubtext">USB-C / Wi-Fi</div>
         </div>
       </div>
     </header>
 
-    <nav class="modeSwitch">
-      <button class="modeSwitchBtn active" data-mode="rnd">R&amp;D</button>
-      <button class="modeSwitchBtn" data-mode="clinical">Clinical Study</button>
+    <!-- One navigation bar for the whole app.
+         There used to be three, stacked: a mode switch, then a tab bar per
+         mode. Each button here still calls the same setAppMode / showTab /
+         setClinicalTab it always did — see src/ui/nav.ts. The group labels are
+         the part that was missing entirely: nothing on screen ever said what
+         "mode" meant, or who each half was for. -->
+    <nav class="mainNav" aria-label="Sections">
+      <button class="navBtn" data-nav="home">Overview</button>
+
+      <span class="navGroup">
+        <span class="navGroupLabel">Clinical</span>
+        <button class="navBtn" data-nav="patients">Patients</button>
+        <button class="navBtn" data-nav="exam">Exam</button>
+        <button class="navBtn" data-nav="chart">Chart</button>
+      </span>
+
+      <span class="navGroup">
+        <span class="navGroupLabel">Bench</span>
+        <button class="navBtn" data-nav="record">Record</button>
+        <button class="navBtn" data-nav="analyze">Analyze</button>
+        <button class="navBtn" data-nav="recordings">Recordings</button>
+      </span>
     </nav>
 
-    <div id="rndMode">
-    <nav class="tabBar">
-      <button class="tabBtn active" data-tab="recordView">Record</button>
-      <button class="tabBtn" data-tab="analyzeView">Analyze</button>
-      <button class="tabBtn" data-tab="libraryView">Library</button>
-    </nav>
+    <!-- OVERVIEW -->
+    <div id="homeMode">
+      <section class="card homeHero">
+        <div class="homeHeroText">
+          <p class="eyebrow">Voice &amp; speech biomarker platform</p>
+          <h1 class="homeTitle">Capture a voice to protocol, measure it on the spot, and send the result back to the chart.</h1>
+          <p class="homeLede">
+            AudioMX pairs a purpose-built dual-MEMS microphone with a guided exam.
+            The clinician drives the protocol on this screen; the patient reads
+            from a second one. Every take is measured as it is captured, so an
+            unusable recording is caught while the patient is still in the room.
+          </p>
 
+          <div class="homeHeroActions">
+            <button class="primaryBtn" data-nav="patients">Start a clinical exam</button>
+            <button class="secondaryBtn" data-nav="record">Open the R&amp;D bench</button>
+          </div>
+
+          <div class="homeDeviceLine">
+            <span class="statusDot" data-status-dot></span>
+            <span data-status-text>Not connected</span>
+            <span class="homeDeviceLineHint">USB-C on Chrome or Edge · Wi-Fi on localhost · computer mic anywhere</span>
+          </div>
+        </div>
+
+        <figure class="homeDevice">
+          <!-- Schematic, not a photograph, and drawn rather than linked so it
+               cannot 404 offline. Swap in a render by replacing this <svg>. -->
+          <svg class="deviceSvg" viewBox="0 0 200 320" role="img"
+               aria-label="Schematic of the AudioMX capture device: a capsule body with a microphone grille and a USB-C port">
+            <defs>
+              <linearGradient id="amxBody" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#3d6c9f" />
+                <stop offset="100%" stop-color="#0f1d2a" />
+              </linearGradient>
+              <pattern id="amxGrille" width="12" height="12" patternUnits="userSpaceOnUse">
+                <circle cx="6" cy="6" r="2.1" fill="#8fb4dc" opacity="0.75" />
+              </pattern>
+            </defs>
+
+            <rect x="46" y="12" width="108" height="270" rx="42" fill="url(#amxBody)" />
+            <rect x="57" y="23" width="86" height="148" rx="34" fill="#0b1622" opacity="0.55" />
+            <rect x="57" y="23" width="86" height="148" rx="34" fill="url(#amxGrille)" />
+
+            <!-- The two capsules the stereo/left/right modes select between. -->
+            <circle cx="82" cy="200" r="4" fill="#8fb4dc" opacity="0.55" />
+            <circle cx="118" cy="200" r="4" fill="#8fb4dc" opacity="0.55" />
+            <circle cx="100" cy="224" r="5" fill="#4ad295" />
+
+            <rect x="84" y="262" width="32" height="9" rx="4.5" fill="#0b1622" />
+            <rect x="70" y="296" width="60" height="6" rx="3" fill="#0f1d2a" opacity="0.12" />
+          </svg>
+          <figcaption>AudioMX capture device — dual MEMS, USB-C, 16 kHz</figcaption>
+        </figure>
+      </section>
+
+      <section class="card homeFlow">
+        <div class="sectionHeader">
+          <div>
+            <h2>How a result is produced</h2>
+            <p>Three stages, in order. The third one is not connected yet, and the app says so rather than showing a number.</p>
+          </div>
+        </div>
+
+        <ol class="flowSteps">
+          <li class="flowStep">
+            <span class="flowNum">01</span>
+            <h3>Capture</h3>
+            <p>
+              The device streams audio to this page over USB-C or Wi-Fi. A
+              guided protocol of six tasks tells the patient what to say and
+              for how long, and a quality gate rejects a take that clips, sits
+              too hot, or is too quiet to measure.
+            </p>
+            <span class="flowState ok">Working</span>
+          </li>
+
+          <li class="flowStep">
+            <span class="flowNum">02</span>
+            <h3>Measure</h3>
+            <p>
+              The browser computes the acoustic features from the take itself —
+              F0, HNR, jitter, shimmer, spectra. These are signal measurements,
+              not a diagnosis, and they are what the model will be fed.
+            </p>
+            <span class="flowState ok">Working</span>
+          </li>
+
+          <li class="flowStep">
+            <span class="flowNum">03</span>
+            <h3>Score</h3>
+            <p>
+              Dr Rameau's model is written in Python and will never run in a
+              browser. It goes behind the backend, and its result is what gets
+              written back into Epic as a note.
+            </p>
+            <span class="flowState pending">Not connected</span>
+          </li>
+        </ol>
+      </section>
+
+      <section class="card homeNotes">
+        <div class="sectionHeader">
+          <div>
+            <h2>Before you rely on this build</h2>
+            <p>Three things that are true today. The full list lives in LIMITATIONS.md.</p>
+          </div>
+        </div>
+
+        <div class="noteGrid">
+          <div class="noteCard">
+            <h3>Data stays in this browser</h3>
+            <p>
+              Patients, sessions and audio live in this browser profile only.
+              There is no account and no sync: another computer, another
+              browser, or cleared site data means starting from zero.
+            </p>
+          </div>
+          <div class="noteCard">
+            <h3>Epic is a sandbox</h3>
+            <p>
+              The chart connection reaches Epic's public test environment, not
+              a real organisation. Use synthetic patients. No real patient data
+              may enter this build.
+            </p>
+          </div>
+          <div class="noteCard">
+            <h3>No risk score is produced</h3>
+            <p>
+              Every number on screen is a measurement of the signal. The app
+              deliberately refuses to show a score until a real model is behind
+              it — a placeholder next to a patient is a hazard, not a stub.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div><!-- /#homeMode -->
+
+    <div id="rndMode" hidden>
     <main>
       <!-- RECORD VIEW -->
       <section id="recordView" class="view activeView">
@@ -304,12 +455,6 @@
 
     <!-- CLINICAL MODE -->
     <div id="clinicalMode" hidden>
-      <nav class="clinTabs">
-        <button class="clinTabBtn active" data-ctab="patients">Patients</button>
-        <button class="clinTabBtn" data-ctab="exam">Exam</button>
-        <button class="clinTabBtn" data-ctab="chart">Patient chart</button>
-      </nav>
-
       <!-- PATIENTS TAB -->
       <section id="clinPatients" class="card clinPanel">
         <div class="sectionHeader">

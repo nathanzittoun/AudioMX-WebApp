@@ -126,6 +126,64 @@ T("6 tests de protocole rendus", (await ev("document.getElementById('cTestList')
 T("favicon servie", (await ev(
   "fetch(document.querySelector('link[rel=icon]').href).then(r => r.status)")) === 200);
 
+// --- 1c. navigation ---
+// Trois mecanismes de bascule vivent dessous — setAppMode, showTab,
+// setClinicalTab — et une seule barre les pilote. Ce qui casse en silence ici,
+// c'est la synchro : la barre lit le DOM au lieu de retenir le dernier clic,
+// precisement parce que du code navigue aussi (bouton Analyze d'une prise,
+// ouverture d'une ligne patient). Une barre qui retiendrait serait fausse a
+// chacun de ces appels, sans lever quoi que ce soit.
+const navClick = async section => {
+  await ev(`document.querySelector('.navBtn[data-nav="${section}"]').click()`);
+  await new Promise(r => setTimeout(r, 150));
+};
+const visible = async id => ev(`(()=>{const n=document.getElementById('${id}');return !!n && !n.hidden})()`);
+const navActive = async () => ev(
+  "[...document.querySelectorAll('.navBtn.active')].map(b=>b.dataset.nav).join(',')");
+
+T("l'app ouvre sur l'apercu, pas sur le banc de test",
+  (await visible("homeMode")) === true && (await visible("rndMode")) === false &&
+  (await visible("clinicalMode")) === false);
+T("bouton Overview actif au demarrage", (await navActive()) === "home");
+
+await navClick("record");
+T("nav -> Record bascule le mode ET l'onglet",
+  (await visible("rndMode")) === true &&
+  (await ev("document.querySelector('.view.activeView')?.id")) === "recordView" &&
+  (await navActive()) === "record");
+
+await navClick("chart");
+T("nav -> Chart traverse les deux mecanismes",
+  (await visible("clinicalMode")) === true && (await visible("clinChart")) === true &&
+  (await navActive()) === "chart");
+
+await navClick("record");
+await ev("audiomx.tabs.showTab('analyzeView')"); await new Promise(r => setTimeout(r, 100));
+T("la barre suit une navigation declenchee par du code", (await navActive()) === "analyze");
+// Cote clinique, le meme cas : ouvrir une ligne patient appelle
+// setClinicalTab() sans passer par la barre.
+await navClick("patients");
+await ev("audiomx.clinical.setClinicalTab('exam')"); await new Promise(r => setTimeout(r, 100));
+T("... des deux cotes de l'app", (await navActive()) === "exam");
+
+// L'ancienne interface affichait litteralement deux onglets actifs a la fois,
+// un par barre. Une seule barre n'a le droit qu'a une seule reponse.
+T("un seul bouton actif a la fois", !(await navActive()).includes(","));
+
+// Laisser une ancienne barre en place reintroduirait une seconde source de
+// verite sur "ou suis-je", et elle divergerait en silence.
+T("plus aucune ancienne barre dans le DOM",
+  (await ev("document.querySelectorAll('.tabBtn, .clinTabBtn, .modeSwitchBtn').length")) === 0);
+
+// L'etat de connexion s'affiche a deux endroits pour une seule ecriture.
+await ev("audiomx.status.setStatus('Smoke check', 'connected')");
+T("l'etat de connexion est mirroite sur l'apercu",
+  (await ev("[...document.querySelectorAll('[data-status-text]')].length >= 2 && " +
+            "[...document.querySelectorAll('[data-status-text]')].every(n=>n.textContent==='Smoke check')")) === true &&
+  (await ev("document.querySelectorAll('[data-status-dot].connected').length")) === 2);
+await ev("audiomx.status.setStatus('Not connected', 'idle')");
+await navClick("home");
+
 // --- 1b. config Epic ---
 // Rien ici ne leve d'exception quand c'est faux : Epic repond "error=4" a
 // l'autre bout, des minutes plus tard, sans rien dire de la cause. Ces valeurs
@@ -409,6 +467,18 @@ await ev("audiomx.app.stopRecording()"); await new Promise(r => setTimeout(r, 12
 T("forme d'onde live dessinee (R&D)", rndWave > 200, rndWave + " px de trace");
 T("spectre live dessine (R&D)", rndSpec > 200, rndSpec + " px de trace");
 T("enregistrement sauvegarde", (await ev("audiomx.state.library.recordings.length")) === 1);
+
+// "Analyze FFT" existe aussi sur une prise rangee dans le dossier d'un patient,
+// donc cliquee depuis le mode clinique. Elle appelait showTab(), qui activait
+// l'onglet dans un conteneur masque : la vue devenait active et rien
+// n'apparaissait. Le bouton passe par la barre, qui bascule aussi le mode.
+await ev("audiomx.app.setAppMode('clinical')");
+await ev("audiomx.libraryView.analyzeRecording(audiomx.state.library.recordings[0].id)");
+await new Promise(r => setTimeout(r, 250));
+T("Analyze depuis le mode clinique arrive sur une vue visible",
+  (await visible("rndMode")) === true &&
+  (await ev("document.querySelector('.view.activeView')?.id")) === "analyzeView");
+await ev("audiomx.app.setAppMode('rnd')");
 T("duree ~2s", Math.abs((await ev("audiomx.state.library.recordings[0]?.duration")) - 2) < 0.35, (await ev("audiomx.state.library.recordings[0]?.duration")) + "s");
 T("features extraites", (await ev("!!audiomx.state.library.recordings[0]?.features")));
 T("WAV a 16 kHz", (await ev("audiomx.state.library.recordings[0].blob.arrayBuffer().then(b=>new DataView(b).getUint32(24,true))")) === 16000);

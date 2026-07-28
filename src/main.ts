@@ -42,25 +42,18 @@ import { updateCurrentStats } from "./ui/captureStats";
 import { setStatus } from "./ui/status";
 import { el, requireEl } from "./ui/dom";
 import { toggleNoiseAttenuator } from "./rnd/noiseToggle";
-import { initClinical } from "./clinical";
+import { initClinical, setClinicalTab } from "./clinical";
+import { goto, initNav } from "./ui/nav";
 import { registerServiceWorker } from "./pwa";
 
 function boot(): void {
   // ---- navigation ----
 
-  document.querySelectorAll<HTMLElement>(".tabBtn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const tab = btn.dataset["tab"];
-      if (tab) showTab(tab);
-    });
-  });
-
-  document.querySelectorAll<HTMLElement>(".modeSwitchBtn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const mode = btn.dataset["mode"];
-      if (mode === "rnd" || mode === "clinical") setAppMode(mode);
-    });
-  });
+  // One bar for the three switching mechanisms. The handlers are injected here
+  // rather than imported by nav.ts, because nav.ts is also imported *by* those
+  // three modules so the bar follows a navigation made from code — a recording
+  // card's Analyze button, a patient row — and importing back would be a cycle.
+  initNav({ setAppMode, showTab, setClinicalTab });
 
   // ---- device + capture ----
 
@@ -142,7 +135,10 @@ function boot(): void {
 
   initClinical();
   void initEhr();
-  setAppMode("rnd");
+  // The app opens on the overview, not on the microphone test bench. initClinical
+  // leaves the clinical side on its Patients tab, so arriving there later is one
+  // click with nothing half-set.
+  goto("home");
 
   // Restore recordings persisted in this browser from earlier sessions.
   void restoreRecordings();

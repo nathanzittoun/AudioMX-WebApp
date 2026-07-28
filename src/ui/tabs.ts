@@ -8,6 +8,7 @@
 import { SAMPLE_RATE } from "../core/constants";
 import { drawSpectrumBackground } from "../rnd/fftView";
 import { el } from "./dom";
+import { reflectNav } from "./nav";
 
 export function showTab(tabId: string): void {
   document.querySelectorAll(".view").forEach(view => {
@@ -16,9 +17,9 @@ export function showTab(tabId: string): void {
 
   document.getElementById(tabId)?.classList.add("activeView");
 
-  document.querySelectorAll<HTMLElement>(".tabBtn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset["tab"] === tabId);
-  });
+  // The single nav bar replaced the per-mode tab bars; it reads the DOM, so it
+  // follows a showTab() called from a recording card just as well as a click.
+  reflectNav();
 
   // The spectrum background is sized from the current zoom range, so it has to
   // be redrawn whenever the analyse view becomes visible.

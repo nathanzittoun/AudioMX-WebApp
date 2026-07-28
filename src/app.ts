@@ -14,21 +14,26 @@ import { drawLiveSpectrum } from "./rnd/liveSpectrum";
 import { updateNoiseIndicators } from "./rnd/meters";
 import { clearLiveSpectrogram } from "./ui/canvas/spectrogram";
 import { ctx2d, el } from "./ui/dom";
+import { reflectNav } from "./ui/nav";
 import { PLOT } from "./ui/theme";
 import { log } from "./ui/log";
 import { setStatus } from "./ui/status";
 import { updateCurrentStats } from "./ui/captureStats";
 import { emit, on } from "./core/bus";
 
-export function setAppMode(mode: "rnd" | "clinical"): void {
+// "home" is the overview page: a third top-level container, and the one the app
+// opens on. It is a valid value of ui.mode rather than a special case outside
+// it, because every existing test on ui.mode asks "is this clinical?" — so a
+// third value answers no, exactly as it should, everywhere it is read.
+export function setAppMode(mode: "rnd" | "clinical" | "home"): void {
   ui.mode = mode;
+  const home = el("homeMode");
   const rnd = el("rndMode");
   const clinical = el("clinicalMode");
+  if (home) home.hidden = mode !== "home";
   if (rnd) rnd.hidden = mode !== "rnd";
   if (clinical) clinical.hidden = mode !== "clinical";
-  document.querySelectorAll<HTMLElement>(".modeSwitchBtn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset["mode"] === mode);
-  });
+  reflectNav();
 }
 
 let liveMonitorFrame = 0;
@@ -47,11 +52,14 @@ export function renderLiveMonitors(): void {
       // Announced, not called: clinical.ts imports this module for the capture
       // controls, so importing it back would be a cycle.
       emit("monitors:tick", undefined);
-    } else {
+    } else if (ui.mode === "rnd") {
       drawLiveWaveform();
       drawLiveSpectrum();
       updateNoiseIndicators(capture.live);
     }
+    // On the overview page there is no monitor on screen to repaint. Capture
+    // itself is driven by the ingest path, not by this frame, so a take that
+    // is running keeps running and simply redraws on return.
   });
 }
 
