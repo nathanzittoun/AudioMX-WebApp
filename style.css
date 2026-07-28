@@ -1830,3 +1830,26 @@ audio {
 .riskSlot .smallBtn {
   margin-top: var(--sp-2);
 }
+
+/* Narrow screens: a header laid out as "title left, status right" has no room
+   for either at 390px. Stacking gives the status its line and the transport
+   titles their full width, which is what stops "MEMS over Wi-Fi" breaking in
+   the middle of the word. */
+@media (max-width: 620px) {
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sectionHeader .deviceStatus,
+  .sectionHeader .chartExportBtns,
+  .sectionHeader .libraryHeaderRight {
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .transportHead {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
