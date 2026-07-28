@@ -16,9 +16,16 @@ const cmd = (m, p = {}) => new Promise(r => { pend.set(++id, r); ws.send(JSON.st
 
 let errs = [];
 const net404 = [];
+const dialogs = [];
 ws.onmessage = e => {
   const m = JSON.parse(e.data);
   if (m.id && pend.has(m.id)) { pend.get(m.id)(m.result); pend.delete(m.id); }
+  // Un alert() non traite fige le renderer, et donc tout le run. On note le
+  // message et on ferme, ce qui rend aussi les alertes observables.
+  if (m.method === "Page.javascriptDialogOpening") {
+    dialogs.push(m.params.message);
+    cmd("Page.handleJavaScriptDialog", { accept: true });
+  }
   if (m.method === "Runtime.exceptionThrown") {
     const d = m.params.exceptionDetails;
     errs.push((d.exception?.description || d.text).split("\n")[0]);
@@ -565,6 +572,25 @@ T("prise clinique retiree d'IndexedDB", del?.stillInDb === false);
 
 // --- 6. fenetre patient (page reelle, pas seulement l'API) ---
 T("protocole lisible par le pop-out", (await ev("!!audiomx.protocol.getProtocolTest(audiomx.protocol.PROTOCOL_TESTS[0].id)")));
+
+// window.open renvoie null quand un bloqueur de pop-up intervient — et sur iOS,
+// une app installee sur l'ecran d'accueil n'a tout simplement pas de seconde
+// fenetre a donner. Le bouton restait muet, ce qui est indiscernable d'un
+// bouton mort. On stubbe window.open pour reproduire le cas exactement.
+dialogs.length = 0;
+const popupBlocked = await ev(`(() => {
+  const real = window.open;
+  window.open = () => null;
+  const before = document.getElementById('log').textContent.length;
+  document.getElementById('cPopoutBtn').click();
+  window.open = real;
+  return document.getElementById('log').textContent.slice(before);
+})()`);
+T("pop-out bloque : le clinicien est prevenu", dialogs.length === 1 && /blocked/i.test(dialogs[0] || ""),
+  (dialogs[0] || "aucune alerte").slice(0, 60));
+T("pop-out bloque : l'adresse de repli est donnee", /patient\.html/.test(dialogs[0] || ""));
+T("pop-out bloque : trace dans le journal", /blocked/i.test(popupBlocked || ""),
+  (popupBlocked || "rien").trim().slice(0, 60));
 const wantTitle = await ev("audiomx.protocol.PROTOCOL_TESTS[0].patientTitle");
 // Same origin, so the snapshot survives the navigation and the pop-out picks
 // it up on load exactly as it does when the clinician opens the window.

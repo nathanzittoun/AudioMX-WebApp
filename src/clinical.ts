@@ -1248,7 +1248,24 @@ async function downloadPatientAll(): Promise<void> {
 
 function openPatientView(): void {
   // ?v= busts the browser cache so the window always loads the newest code.
-  patientWindowRef = window.open("patient.html?v=" + Date.now(), "audiomxPatient", "width=1024,height=768");
+  const url = "patient.html?v=" + Date.now();
+  patientWindowRef = window.open(url, "audiomxPatient", "width=1024,height=768");
+
+  // A pop-up blocker returns null, and so does iOS: a standalone home-screen
+  // app has no second window to hand out. Saying nothing made this look exactly
+  // like a dead button. The session is not lost either — the patient screen
+  // also follows along over BroadcastChannel and localStorage, so a window the
+  // clinician opens by hand on the patient's screen stays in sync.
+  if (!patientWindowRef) {
+    const manual = new URL(url, location.href).href;
+    log("Patient window blocked by the browser. Open this address on the " +
+      "patient's screen instead — it follows the session: " + manual);
+    alert(
+      "The browser blocked the patient window.\n\n" +
+      "Allow pop-ups for this site, or open this address on the patient's " +
+      "screen — it follows the session automatically:\n\n" + manual);
+    return;
+  }
 
   // Directly write the current prompt into the pop-out as soon as it is ready.
   // Poll for a couple of seconds since onload timing varies.
