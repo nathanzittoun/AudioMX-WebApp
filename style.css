@@ -482,8 +482,13 @@ button:hover:not(:disabled) {
   border-color: var(--ink);
 }
 
+/* A disabled control is a ghost, not a faded fill. Dropping the opacity of a
+   red button leaves a pink button, which still reads as red — the references
+   show every unavailable control as a hairline box with faint text. */
 button:disabled {
-  opacity: 0.38;
+  background: var(--panel) !important;
+  border: 1px solid var(--field-border) !important;
+  color: var(--faint) !important;
   cursor: not-allowed;
 }
 
@@ -553,13 +558,16 @@ button:disabled {
 }
 
 .modeBtn.active {
-  background: var(--brand-tint);
-  color: var(--brand-deep);
-  border-color: var(--brand);
+  background: var(--accent-tint);
+  color: var(--ink);
+  border-color: var(--hairline);
+  /* The 3px accent bar the references put on a selected row or cell. It is the
+     only place the accent appears as a fill. */
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .modeBtn.active small {
-  color: var(--brand);
+  color: var(--muted);
 }
 
 .metaRow {
@@ -609,7 +617,7 @@ button:disabled {
 canvas {
   width: 100%;
   background: var(--plot-bg);
-  border: 1px solid var(--line);
+  border: none;
   border-radius: 0;
   display: block;
 }
@@ -890,13 +898,16 @@ audio {
    device" — an action. Same rule governs .modeBtn.active and
    .clinTestBtn.active. */
 .sourceBtn.active {
-  background: var(--brand-tint);
-  color: var(--brand-deep);
-  border-color: var(--brand);
+  background: var(--accent-tint);
+  color: var(--ink);
+  border-color: var(--hairline);
+  /* The 3px accent bar the references put on a selected row or cell. It is the
+     only place the accent appears as a fill. */
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .sourceBtn.active small {
-  color: var(--brand);
+  color: var(--muted);
 }
 
 @media (max-width: 980px) {
@@ -1082,8 +1093,9 @@ audio {
 }
 
 .clinTestBtn.active {
-  border-color: var(--brand);
-  background: var(--brand-tint);
+  border-color: var(--hairline);
+  background: var(--accent-tint);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .clinTestIcon { font-size: 17px; }
@@ -1358,7 +1370,11 @@ audio {
   border: 1px solid var(--hairline);
   padding: 14px;
 }
-.patientRow.active { border-color: var(--brand); background: var(--brand-tint); }
+.patientRow.active {
+  border-color: var(--hairline);
+  background: var(--accent-tint);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
 .patientRowMain { font-size: 15px; }
 .patientRowName { color: var(--muted); font-weight: 600; }
 .patientRowMeta { color: var(--muted); font-size: 13px; margin-left: auto; }

@@ -41,10 +41,10 @@ export function drawSpectrumBackground(minFreq = 0, maxFreq = SAMPLE_RATE / 2): 
   const ctx = spectrumCtx();
   if (!canvas || !ctx) return;
 
-  ctx.fillStyle = "#f0f0f2";
+  ctx.fillStyle = PLOT.bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.strokeStyle = "#d8d8dc";
+  ctx.strokeStyle = PLOT.grid;
   ctx.lineWidth = 1;
   ctx.font = "12px -apple-system, BlinkMacSystemFont, Arial";
 
@@ -52,13 +52,13 @@ export function drawSpectrumBackground(minFreq = 0, maxFreq = SAMPLE_RATE / 2): 
   for (let i = 0; i <= 5; i++) {
     const y = (canvas.height / 5) * i;
 
-    ctx.strokeStyle = "#d8d8dc";
+    ctx.strokeStyle = PLOT.grid;
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(canvas.width, y);
     ctx.stroke();
 
-    ctx.fillStyle = "#7a7a7d";
+    ctx.fillStyle = PLOT.label;
     ctx.fillText(0 - i * 20 + " dB", 8, y + 14);
   }
 
@@ -67,13 +67,13 @@ export function drawSpectrumBackground(minFreq = 0, maxFreq = SAMPLE_RATE / 2): 
     const x = (canvas.width / 8) * i;
     const freq = Math.round(minFreq + (maxFreq - minFreq) * (i / 8));
 
-    ctx.strokeStyle = "#d8d8dc";
+    ctx.strokeStyle = PLOT.grid;
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, canvas.height);
     ctx.stroke();
 
-    ctx.fillStyle = "#7a7a7d";
+    ctx.fillStyle = PLOT.label;
     ctx.fillText(freq + " Hz", x + 6, canvas.height - 10);
   }
 }
@@ -161,7 +161,7 @@ export function plotNoiseSpectrum(): void {
     " FFT averaged over " + spectrum.averagedFrames +
     " frame(s) from the selected waveform region.");
 
-  ctx.fillStyle = "#1d1d1f";
+  ctx.fillStyle = PLOT.label;
   ctx.font = "12px -apple-system, BlinkMacSystemFont, Arial";
 
   for (const peak of peaks.slice(0, 6)) {

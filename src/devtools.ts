@@ -52,6 +52,10 @@ import * as ehrPanel from "./ehr/ehrPanel";
 import * as noiseToggle from "./rnd/noiseToggle";
 import * as dom from "./ui/dom";
 import * as tabs from "./ui/tabs";
+// Exposed so the smoke suite can read the plot palette instead of hard-coding
+// it. An assertion that repeats a colour literal has to be edited by hand every
+// time the design moves, and reports the edit it needed as a failure.
+import * as theme from "./ui/theme";
 import * as logger from "./ui/log";
 import * as status from "./ui/status";
 import * as captureStats from "./ui/captureStats";
@@ -64,7 +68,7 @@ const api = {
   ehrConfig, ehrPanel, fhirExport, smart,
   analysisSelection, fftView, libraryView, liveSpectrum, meters, noiseToggle,
   storage, riskModel,
-  captureStats, dom, download, logger, spectrogram, status, tabs,
+  captureStats, dom, download, logger, spectrogram, status, tabs, theme,
 };
 
 declare global {

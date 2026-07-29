@@ -100,10 +100,10 @@ export function drawAnalysisWaveform(): void {
 
   const source = getFullAnalysisSource();
 
-  ctx.fillStyle = "#f0f0f2";
+  ctx.fillStyle = PLOT.bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.strokeStyle = "#d8d8dc";
+  ctx.strokeStyle = PLOT.grid;
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const y = (canvas.height / 4) * i;
@@ -115,7 +115,7 @@ export function drawAnalysisWaveform(): void {
 
   const midY = canvas.height / 2;
 
-  ctx.strokeStyle = "#b8b8bd";
+  ctx.strokeStyle = PLOT.axis;
   ctx.beginPath();
   ctx.moveTo(0, midY);
   ctx.lineTo(canvas.width, midY);
@@ -181,12 +181,14 @@ function drawSelectionOverlay(totalSamples: number): void {
   ctx.fillRect(x1, 0, x2 - x1, height);
 
   // Dim what is excluded, so the selection reads as the subject.
-  ctx.fillStyle = "rgba(0, 0, 0, 0.10)";
+  ctx.fillStyle = PLOT.excluded;
   ctx.fillRect(0, 0, x1, height);
   ctx.fillRect(x2, 0, width - x2, height);
 
-  ctx.strokeStyle = "#1d1d1f";
-  ctx.lineWidth = 3;
+  // The bounds and their handles are the accent, not an axis label: they are
+  // the one thing on this canvas the user is directly manipulating.
+  ctx.strokeStyle = PLOT.selectionEdge;
+  ctx.lineWidth = 2;
 
   ctx.beginPath();
   ctx.moveTo(x1, 0);
@@ -199,7 +201,7 @@ function drawSelectionOverlay(totalSamples: number): void {
   ctx.stroke();
 
   // The grab handles.
-  ctx.fillStyle = "#1d1d1f";
+  ctx.fillStyle = PLOT.selectionEdge;
   ctx.fillRect(x1 - 5, height / 2 - 22, 10, 44);
   ctx.fillRect(x2 - 5, height / 2 - 22, 10, 44);
 

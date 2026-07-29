@@ -99,9 +99,9 @@ const traced = async (canvasId, [r, g, b]) => ev(`(()=>{
   return n;
 })()`);
 // Une seule couleur de trace dans toute l'app, cote R&D comme cote clinique :
-// PLOT.trace dans src/ui/theme.ts. Le rouge ne designe plus que la capture en
-// cours, les erreurs et les suppressions, donc il ne doit plus apparaitre ici.
-const TRACE = [47, 90, 140];     // = PLOT.trace (#2f5a8c)
+// PLOT.trace dans src/ui/theme.ts. Depuis le passage aux surfaces sombres du
+// langage 1A, c'est un bleu clair — le seul qui ait du poids sur #0e1420.
+const TRACE = [91, 155, 224];    // = PLOT.trace (#5b9be0)
 
 // Un seul releve tombe parfois entre un effacement et un trace : les moniteurs
 // live redessinent sur rAF (relaye en setTimeout ici) et l'instant du releve
@@ -418,11 +418,16 @@ const sg = await ev(`(()=>{
   const cv = document.getElementById('liveSpectrogram');
   const c = cv.getContext('2d');
   audiomx.spectrogram.clearLiveSpectrogram();
-  // Apres effacement : #0e0e14 partout.
+  // Apres effacement : PLOT.bg partout. La valeur est lue depuis le module, pas
+  // recopiee ici — une assertion qui repete un litteral de couleur doit etre
+  // reeditee a chaque evolution du design, et signale cette edition comme une
+  // panne. C'est exactement ce qui vient d'arriver avec #0e0e14.
+  const hex = audiomx.theme.PLOT.bg;
+  const want = [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16));
   const blank = c.getImageData(0, 0, cv.width, cv.height).data;
   let cleared = true;
   for (let i = 0; i < blank.length; i += 4)
-    if (blank[i] !== 14 || blank[i+1] !== 14 || blank[i+2] !== 20) { cleared = false; break; }
+    if (blank[i] !== want[0] || blank[i+1] !== want[1] || blank[i+2] !== want[2]) { cleared = false; break; }
 
   // Trame FFT synthetique : toute l'energie dans les basses frequences.
   const bins = 512, mag = new Float32Array(bins);

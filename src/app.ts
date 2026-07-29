@@ -104,9 +104,9 @@ export function clearCanvas(): void {
   const ctx = ctx2d("waveform");
   if (!canvas || !ctx) return;
 
-  ctx.fillStyle = "#f0f0f2";
+  ctx.fillStyle = PLOT.bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "#d8d8dc";
+  ctx.strokeStyle = PLOT.grid;
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const y = (canvas.height / 4) * i;
@@ -116,13 +116,13 @@ export function clearCanvas(): void {
     ctx.stroke();
   }
 
-  ctx.strokeStyle = "#b8b8bd";
+  ctx.strokeStyle = PLOT.axis;
   ctx.beginPath();
   ctx.moveTo(0, canvas.height / 2);
   ctx.lineTo(canvas.width, canvas.height / 2);
   ctx.stroke();
 
-  ctx.fillStyle = "#8a8a8d";
+  ctx.fillStyle = PLOT.label;
   ctx.font = "11px -apple-system, BlinkMacSystemFont, Arial";
   ctx.fillText("+1.0", 6, canvas.height / 2 - canvas.height * 0.42 + 11);
   ctx.fillText("0", 6, canvas.height / 2 - 4);

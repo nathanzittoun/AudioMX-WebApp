@@ -11,6 +11,7 @@
 import { fftRadix2 } from "../../core/dsp/fft";
 import { SAMPLE_RATE } from "../../core/constants";
 import { ctx2d, el } from "../dom";
+import { PLOT } from "../theme";
 import { spectrogramColor } from "./spectrogramColor";
 
 /** A single averaged FFT frame, as computeSpectrum() returns it. */
@@ -47,7 +48,7 @@ export function clearLiveSpectrogram(): void {
 
   lastColumnTime = 0;
 
-  ctx.fillStyle = "#0e0e14";
+  ctx.fillStyle = PLOT.bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -117,7 +118,7 @@ export function renderStaticSpectrogram(
   const width = canvas.width;
   const height = canvas.height;
 
-  ctx.fillStyle = "#0e0e14";
+  ctx.fillStyle = PLOT.bg;
   ctx.fillRect(0, 0, width, height);
 
   if (!samples || samples.length < 256) return;
@@ -192,7 +193,7 @@ export function renderStaticSpectrogram(
   ctx.putImageData(img, 0, 0);
 
   // Frequency axis (y, kHz) and a time-direction hint, drawn on top.
-  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+  ctx.fillStyle = PLOT.label;
   ctx.font = "11px -apple-system, BlinkMacSystemFont, Arial";
   for (const f of [2000, 4000, 6000]) {
     const y = height - (f / maxFreq) * height;

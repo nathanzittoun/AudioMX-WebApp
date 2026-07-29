@@ -39,10 +39,10 @@ export function drawLiveSpectrum(): void {
   const width = canvas.width;
   const height = canvas.height;
 
-  ctx.fillStyle = "#f0f0f2";
+  ctx.fillStyle = PLOT.bg;
   ctx.fillRect(0, 0, width, height);
 
-  ctx.strokeStyle = "#e2e2e6";
+  ctx.strokeStyle = PLOT.grid;
   ctx.lineWidth = 1;
   for (let i = 1; i < 4; i++) {
     const y = (height / 4) * i;
@@ -69,13 +69,13 @@ export function drawLiveSpectrum(): void {
   const toY = (db: number): number =>
     height - ((db - DISPLAY_MIN_DB) / (DISPLAY_MAX_DB - DISPLAY_MIN_DB)) * height;
 
-  ctx.fillStyle = "#9a9a9d";
+  ctx.fillStyle = PLOT.label;
   ctx.font = "11px -apple-system, BlinkMacSystemFont, Arial";
 
   // Frequency axis (x), labelled in kHz.
   for (let f = 2000; f < maxFreq; f += 2000) {
     const x = (f / maxFreq) * width;
-    ctx.strokeStyle = "#e8e8ec";
+    ctx.strokeStyle = PLOT.grid;
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, height);
@@ -84,7 +84,7 @@ export function drawLiveSpectrum(): void {
   }
 
   // Level axis (y), labelled in dBFS.
-  ctx.fillStyle = "#7a7a7d";
+  ctx.fillStyle = PLOT.label;
   for (const d of [0, -25, -50, -75]) {
     const y = toY(d);
     ctx.fillText(d + " dBFS", 6, d === 0 ? y + 12 : y - 3);

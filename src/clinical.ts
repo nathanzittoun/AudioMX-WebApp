@@ -1297,16 +1297,16 @@ function openPatientView(): void {
 
 export function clearClinicalMonitors(): void {
   if (cWaveCtx) {
-    cWaveCtx.fillStyle = "#f0f0f2";
+    cWaveCtx.fillStyle = PLOT.bg;
     cWaveCtx.fillRect(0, 0, cWaveCanvas.width, cWaveCanvas.height);
-    cWaveCtx.strokeStyle = "#b8b8bd";
+    cWaveCtx.strokeStyle = PLOT.axis;
     cWaveCtx.beginPath();
     cWaveCtx.moveTo(0, cWaveCanvas.height / 2);
     cWaveCtx.lineTo(cWaveCanvas.width, cWaveCanvas.height / 2);
     cWaveCtx.stroke();
   }
   if (cSpecCtx) {
-    cSpecCtx.fillStyle = "#f0f0f2";
+    cSpecCtx.fillStyle = PLOT.bg;
     cSpecCtx.fillRect(0, 0, cSpecCanvas.width, cSpecCanvas.height);
   }
 }
@@ -1321,9 +1321,9 @@ function drawClinicalWaveform(): void {
   if (!cWaveCtx) return;
   const live = capture.live;
   const w = cWaveCanvas.width, h = cWaveCanvas.height;
-  cWaveCtx.fillStyle = "#f0f0f2";
+  cWaveCtx.fillStyle = PLOT.bg;
   cWaveCtx.fillRect(0, 0, w, h);
-  cWaveCtx.strokeStyle = "#dfe6f2";
+  cWaveCtx.strokeStyle = PLOT.grid;
   for (let i = 1; i < 4; i++) {
     const y = (h / 4) * i;
     cWaveCtx.beginPath();
@@ -1350,18 +1350,18 @@ function drawClinicalSpectrum(): void {
   if (!cSpecCtx) return;
   const live = capture.live;
   const w = cSpecCanvas.width, h = cSpecCanvas.height;
-  cSpecCtx.fillStyle = "#f0f0f2";
+  cSpecCtx.fillStyle = PLOT.bg;
   cSpecCtx.fillRect(0, 0, w, h);
   const n = Math.min(live.length, 4096);
   if (n < 512) return;
   const spectrum = computeSpectrum(Int16Array.from(live.slice(live.length - n)));
   if (!spectrum) return;
   const maxFreq = SAMPLE_RATE / 2, minDb = -100, maxDb = 0;
-  cSpecCtx.fillStyle = "#9aa4b3";
+  cSpecCtx.fillStyle = PLOT.label;
   cSpecCtx.font = "11px -apple-system, BlinkMacSystemFont, Arial";
   for (let f = 2000; f < maxFreq; f += 2000) {
     const x = (f / maxFreq) * w;
-    cSpecCtx.strokeStyle = "#e6ebf3";
+    cSpecCtx.strokeStyle = PLOT.grid;
     cSpecCtx.beginPath();
     cSpecCtx.moveTo(x, 0);
     cSpecCtx.lineTo(x, h);
