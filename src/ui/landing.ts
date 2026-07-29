@@ -1,149 +1,127 @@
-// Motion on the landing page.
+// Motion on the landing page — reference 1A's motion spec.
 //
-// Three things move, and each one is saying something rather than decorating:
+// Four things move, and each is saying something rather than decorating:
 //
-//   • the full-width waveform runs continuously and gains amplitude as you
-//     scroll, so the page behaves like the instrument it is selling;
-//   • the device screen wakes and its timecode counts up to the value printed
-//     on the render, which is what makes a still image read as a recorder;
-//   • the internals rise into view once, when you reach them.
+//   • the device settles once on load and its drop shadow deepens;
+//   • the leader lines draw outward, staggered, so the eye follows them to the
+//     part being named;
+//   • the on-device timecode counts up and the screen trace redraws — the only
+//     moving pixels above the fold, and what makes a still device read as a
+//     recorder;
+//   • spec cells, spectrum bars and the measurement panel reveal once when
+//     reached. They do not loop: a measurement is not a visualiser.
 //
-// prefers-reduced-motion is honoured by drawing one static frame and stopping.
-// Everything is cancelled while the landing page is not on screen: the app is a
-// clinical tool and a marketing animation has no business burning a frame
-// budget behind an exam.
+// Two rules the previous version learned the hard way, both enforced here:
+//
+//   1. Nothing's *existence* depends on an animation callback. The class that
+//      hides a revealable element is added by this file, never by the
+//      stylesheet, so an element can only be hidden by code that has already
+//      committed to showing it again. The revealed state is declared in CSS
+//      rather than left to animation-fill-mode, so an animation that never runs
+//      still leaves the content visible.
+//   2. Reveals are driven from the animation loop, not from IntersectionObserver
+//      or scroll events. Measured: in a page whose visibilityState is "hidden"
+//      — a background tab, a headless browser — neither of those fires at all.
+//
+// Everything stops while the landing page is off screen. A marketing animation
+// has no business burning a frame budget behind a clinical exam.
 
 import { el } from "./dom";
 
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** Sample count along the waveform. 260 keeps the path under 4 kB of `d`. */
-const POINTS = 260;
-const WAVE_HEIGHT = 64;
+/** Where the on-device timecode lands, matching the number drawn on the screen. */
+const TIMECODE_TARGET_SECONDS = 205;
+const TIMECODE_MS = 2600;
 
-/** Resting amplitude, and how far a scroll can push it. */
-const REST_ENERGY = 0.35;
-const MAX_ENERGY = 1;
+/** Scroll depth past which the nav bar grows a hairline. */
+const NAV_STICK_AT = 80;
 
 let phase = 0;
-let energy = REST_ENERGY;
-let lastScrollY = 0;
 let frame = 0;
-
-function waveGeometry(width: number, height: number, amplitude: number): string {
-  const mid = height / 2;
-  const parts: string[] = [];
-  for (let i = 0; i <= POINTS; i++) {
-    const x = i / POINTS;
-    // Fades to nothing at both ends so the line does not appear to be cut off
-    // by the viewport.
-    const envelope = Math.pow(Math.sin(Math.PI * x), 0.7);
-    const v =
-      Math.sin(x * 46 + phase) * 0.55 +
-      Math.sin(x * 17 - phase * 1.7) * 0.3 +
-      Math.sin(x * 103 + phase * 0.6) * 0.15;
-    const y = mid + v * envelope * amplitude * mid * 1.7;
-    parts.push((i ? "L" : "M") + (x * width).toFixed(1) + " " + y.toFixed(1));
-  }
-  return parts.join(" ");
-}
-
-function drawWave(): void {
-  const svg = el<SVGSVGElement>("lWave");
-  const path = el<SVGPathElement>("lWavePath");
-  if (!svg || !path) return;
-  const width = svg.clientWidth || 1000;
-  path.setAttribute("d", waveGeometry(width, WAVE_HEIGHT, energy));
-}
-
-/** The miniature trace inside the device screen. Same generator, tiny box. */
-function drawScreenWave(): void {
-  const path = el<SVGPathElement>("lScreenWave");
-  if (!path) return;
-  const parts: string[] = [];
-  const x0 = 80, y0 = 118, w = 100, h = 14;
-  for (let i = 0; i <= 60; i++) {
-    const x = i / 60;
-    const envelope = Math.pow(Math.sin(Math.PI * x), 0.5);
-    const v = Math.sin(x * 30 + phase * 2.2) * 0.6 + Math.sin(x * 71 - phase) * 0.4;
-    parts.push((i ? "L" : "M") + (x0 + x * w).toFixed(1) + " " +
-      (y0 + v * envelope * h * 0.5).toFixed(1));
-  }
-  path.setAttribute("d", parts.join(" "));
-}
-
-function loop(): void {
-  frame = 0;
-  phase += 0.045;
-  // Scroll adds energy; it decays back to rest on its own.
-  energy += (REST_ENERGY - energy) * 0.05;
-  drawWave();
-  drawScreenWave();
-  revealInternals();
-  if (isOnScreen()) frame = requestAnimationFrame(loop);
-}
+let timecodeStartedAt = 0;
 
 function isOnScreen(): boolean {
   const landing = el("landingMode");
   return landing !== null && !landing.hidden;
 }
 
-function onScroll(): void {
-  energy = Math.min(MAX_ENERGY, energy + Math.abs(window.scrollY - lastScrollY) * 0.012);
-  lastScrollY = window.scrollY;
+/** The miniature trace inside the device screen. */
+function drawScreenWave(): void {
+  const path = el<SVGPathElement>("lScreenWave");
+  if (!path) return;
+  const x0 = 72, y0 = 132, w = 98, h = 20;
+  const parts: string[] = [];
+  for (let i = 0; i <= 48; i++) {
+    const x = i / 48;
+    const envelope = Math.pow(Math.sin(Math.PI * x), 0.4);
+    const v = Math.sin(x * 34 + phase * 2.1) * 0.6 + Math.sin(x * 79 - phase * 1.3) * 0.4;
+    parts.push((i ? "L" : "M") + (x0 + x * w).toFixed(1) + " " +
+      (y0 - v * envelope * h * 0.5).toFixed(1));
+  }
+  path.setAttribute("d", parts.join(" "));
+}
+
+/** Count the on-device timer up to the value printed on its screen. */
+function drawTimecode(): void {
+  const node = el("lTimecode");
+  if (!node) return;
+  const p = Math.min((performance.now() - timecodeStartedAt) / TIMECODE_MS, 1);
+  const s = Math.floor(p * TIMECODE_TARGET_SECONDS);
+  node.textContent = "00:" + String(Math.floor(s / 60)).padStart(2, "0") +
+    ":" + String(s % 60).padStart(2, "0");
 }
 
 /**
- * Show the internals once they are on screen.
+ * Reveal anything marked [data-reveal] once it is on screen.
  *
- * This was an IntersectionObserver. Measured: in a page whose visibilityState
- * is "hidden" — a background tab, a headless browser — neither the observer nor
- * the scroll event fires at all. Combined with hiding the graphic in CSS, that
- * left content whose existence depended on a callback that never came, and
- * nothing anywhere reported it.
- *
- * A rectangle test costs one layout read per frame until it fires, then
- * nothing. It runs from the animation loop already drawing the waveform, so it
- * needs no second mechanism and cannot be throttled away on its own.
+ * One mechanism for the callouts, the spec cells, the bars and the measurement
+ * panel, driven from the loop below. A rectangle test costs one layout read per
+ * frame per pending element and nothing at all once they have all fired.
  */
-function revealInternals(): void {
-  const exploded = document.querySelector(".lExploded");
-  if (!exploded || exploded.classList.contains("in")) return;
-  const box = exploded.getBoundingClientRect();
-  if (box.top < window.innerHeight * 0.85 && box.bottom > 0) {
-    exploded.classList.add("in");
-  }
+function revealVisible(): void {
+  const pending = document.querySelectorAll<HTMLElement>("#landingMode [data-reveal]:not(.in)");
+  if (pending.length === 0) return;
+  const limit = window.innerHeight * 0.88;
+  pending.forEach(node => {
+    const box = node.getBoundingClientRect();
+    if (box.top < limit && box.bottom > 0) node.classList.add("in");
+  });
 }
 
-/** Count the device timecode up to the value printed on the screen. */
-function runTimecode(): void {
-  const node = el("lTimecode");
-  if (!node) return;
-  const targetSeconds = 205;   // 00:03:25, as shown on the render
-  const durationMs = 2600;
-  const startedAt = performance.now();
-  const step = (now: number): void => {
-    const p = Math.min((now - startedAt) / durationMs, 1);
-    const s = Math.floor(p * targetSeconds);
-    node.textContent = "00:" + String(Math.floor(s / 60)).padStart(2, "0") +
-      ":" + String(s % 60).padStart(2, "0");
-    if (p < 1 && isOnScreen()) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
+/** The nav bar takes a hairline once the hero has scrolled under it. */
+function reflectNavBar(): void {
+  const bar = el("lNavBar");
+  if (bar) bar.classList.toggle("stuck", window.scrollY > NAV_STICK_AT);
+}
+
+function loop(): void {
+  frame = 0;
+  phase += 0.05;
+  drawScreenWave();
+  drawTimecode();
+  revealVisible();
+  reflectNavBar();
+  if (isOnScreen()) frame = requestAnimationFrame(loop);
 }
 
 /** Start or restart the page. Safe to call every time it is shown. */
 export function startLanding(): void {
   // One frame drawn synchronously, before any scheduling. requestAnimationFrame
-  // does not run in a hidden page — a background tab, or a headless browser —
-  // so without this the waveform is an empty <path> until the page is looked
-  // at, and it renders as a blank strip.
-  drawWave();
+  // does not run in a hidden page, so without this the device screen would show
+  // an empty trace and a frozen 00:00:00 until the page is looked at.
+  timecodeStartedAt = performance.now();
   drawScreenWave();
-  if (REDUCED) return;
-  lastScrollY = window.scrollY;
+  if (REDUCED) {
+    // The spec says the timecode freezes at its final value under reduced
+    // motion rather than counting.
+    const node = el("lTimecode");
+    if (node) node.textContent = "00:03:25";
+    revealVisible();
+    return;
+  }
+  drawTimecode();
   if (!frame) frame = requestAnimationFrame(loop);
-  runTimecode();
 }
 
 export function stopLanding(): void {
@@ -155,28 +133,43 @@ export function stopLanding(): void {
 
 export function initLanding(): void {
   const readout = el("lReadout");
+  const stage = document.querySelector<HTMLElement>(".lStage");
 
-  if (REDUCED) {
-    if (readout) readout.style.opacity = "1";
-    drawWave();
-    drawScreenWave();
-  } else {
-    window.addEventListener("scroll", onScroll, { passive: true });
-    // Fades in once the screen has "woken". Delayed rather than immediate so
-    // the eye reads the device first and the caption second.
-    readout?.animate([{ opacity: 0 }, { opacity: 1 }],
-      { duration: 600, delay: 900, fill: "forwards" });
-  }
-
-  window.addEventListener("resize", drawWave);
-
-  // The internals rise the first time they are reached. The class that hides
-  // them is added here rather than in the stylesheet, so the graphic is only
-  // ever hidden by code that has already committed to showing it again.
+  // Mark what may be hidden, here rather than in the stylesheet.
   if (!REDUCED) {
-    document.querySelector(".lExploded")?.classList.add("willRise");
-    revealInternals();   // already in view on a tall screen
+    document.querySelectorAll<HTMLElement>(
+      "#landingMode .lCallout, #landingMode .lSpec, #landingMode .lBars, " +
+      "#landingMode .lMeasure, #landingMode .lStep, #landingMode .lInputCard"
+    ).forEach(node => {
+      node.dataset["reveal"] = "";
+      node.classList.add("willReveal");
+    });
+
+    // The device rises once and its shadow deepens — 1A's "device settle", no
+    // bounce. It is not revealable: the device is the page and must never be
+    // hidden waiting for a frame.
+    stage?.animate(
+      [{ transform: "translateY(24px)" }, { transform: "none" }],
+      { duration: 900, easing: "cubic-bezier(.16,1,.3,1)", fill: "backwards" }
+    );
+
+    readout?.animate([{ opacity: 0 }, { opacity: 1 }],
+      { duration: 600, delay: 1100, fill: "forwards" });
+  } else if (readout) {
+    readout.style.opacity = "1";
   }
 
+  // Bars are drawn from their data attribute rather than 18 inline styles, so
+  // the heights stay readable in the markup as one list of numbers.
+  document.querySelectorAll<HTMLElement>("#landingMode .lBars").forEach(host => {
+    const heights = (host.dataset["bars"] ?? "").split(",").map(n => Number(n.trim()));
+    for (const h of heights) {
+      const bar = document.createElement("span");
+      bar.style.setProperty("--h", h + "%");
+      host.appendChild(bar);
+    }
+  });
+
+  window.addEventListener("resize", drawScreenWave);
   startLanding();
 }

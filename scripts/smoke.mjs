@@ -182,11 +182,11 @@ const navActive = async () => ev(
 T("l'app ouvre sur la page produit",
   (await visible("landingMode")) === true && (await visible("appShell")) === false);
 
-// La waveform est dessinee des le premier rendu, pas a la premiere frame :
-// requestAnimationFrame ne tourne pas dans une page cachee (onglet en arriere
-// plan, navigateur headless) et la bande resterait vide.
-T("la waveform est tracee sans attendre une frame",
-  (await ev("(document.getElementById('lWavePath').getAttribute('d')||'').length")) > 500);
+// La trace de l'ecran du device est dessinee des le premier rendu, pas a la
+// premiere frame : requestAnimationFrame ne tourne pas dans une page cachee
+// (onglet en arriere plan, navigateur headless) et l'ecran resterait vide.
+T("la trace de l'ecran est faite sans attendre une frame",
+  (await ev("(document.getElementById('lScreenWave').getAttribute('d')||'').length")) > 200);
 // Les polices sont hebergees localement : un CDN de police est une dependance
 // reseau que le service worker ne peut pas satisfaire hors ligne.
 T("aucune police chargee depuis un CDN externe",
@@ -197,11 +197,11 @@ const displayStack = await ev("getComputedStyle(document.querySelector('.lTitle'
 T("la pile typographique est celle de la maquette",
   /SF Pro/.test(displayStack) && /Geist/.test(displayStack), displayStack);
 
-// Moitie manquante de l'assertion plus bas : verifier qu'ils sont VISIBLES une
-// fois atteints ne prouve rien s'ils n'ont jamais ete masques. Au chargement,
-// le schema est sous la ligne de flottaison et doit etre invisible.
-T("les internes sont masques tant qu'on ne les a pas atteints",
-  (await ev("getComputedStyle(document.querySelector('.lExploded svg')).opacity")) === "0");
+// Moitie manquante de l'assertion plus bas : verifier qu'un element est VISIBLE
+// une fois atteint ne prouve rien s'il n'a jamais ete masque. Au chargement, la
+// bande de specs est sous la ligne de flottaison et doit etre invisible.
+T("les cellules de specs sont masquees tant qu'on ne les atteint pas",
+  (await ev("getComputedStyle(document.querySelector('.lSpec')).opacity")) === "0");
 
 // "Request a demo" est la seule porte d'entree vers l'app.
 await ev("document.querySelector('.lBtn[data-nav=\"home\"]').click()");
@@ -219,15 +219,35 @@ await ev("document.querySelector('.lNavDemo').click()");
 await new Promise(r => setTimeout(r, 250));
 T("bouton Overview actif une fois dans l'app", (await navActive()) === "home");
 
-// Le schema des internes est masque puis revele par un IntersectionObserver.
-// Masque par defaut en CSS, il serait reste invisible pour toujours des que
-// l'observateur ne se declenche pas — sans lever la moindre erreur.
+// Les elements reveles sont masques par une classe posee en JS, puis reveles par
+// un test de rectangle dans la boucle d'animation. Ni IntersectionObserver ni
+// les evenements scroll ne se declenchent dans une page cachee : un contenu qui
+// en dependrait resterait invisible pour toujours, sans lever d'erreur.
 await ev("document.querySelector('.topBar .brand').click()");
 await new Promise(r => setTimeout(r, 200));
-await ev("document.querySelector('.lExploded').scrollIntoView()");
+await ev("document.querySelector('.lSpecs').scrollIntoView()");
 await new Promise(r => setTimeout(r, 1200));
-T("les internes deviennent visibles quand on les atteint",
-  (await ev("getComputedStyle(document.querySelector('.lExploded svg')).opacity")) === "1");
+// Deux choses, et la distinction compte.
+//
+// 1. La classe .in est bien posee. C'est LE mecanisme qui etait casse avant :
+//    un IntersectionObserver ne se declenche pas dans une page cachee, donc la
+//    classe n'arrivait jamais et le contenu restait invisible pour toujours.
+// 2. L'etat revele est declare, pas seulement interpole. On coupe les
+//    transitions avant de lire : une transition a exactement le meme defaut
+//    qu'une animation — sa valeur courante ne progresse pas dans une page qui
+//    n'est jamais affichee. La question utile n'est donc pas "l'opacite vaut-
+//    elle 1 maintenant" mais "vaudrait-elle 1 si la transition ne tournait
+//    jamais", ce qui est la garantie qu'on veut vraiment.
+T("la classe de reveal est bien posee",
+  (await ev("document.querySelector('.lSpec').classList.contains('in')")) === true);
+await ev(`(()=>{const s=document.createElement('style');
+  s.id='amxNoTransition';
+  s.textContent='#landingMode *{transition:none !important;animation:none !important}';
+  document.head.appendChild(s)})()`);
+await new Promise(r => setTimeout(r, 120));
+T("le contenu revele reste visible sans transition",
+  (await ev("getComputedStyle(document.querySelector('.lSpec')).opacity")) === "1");
+await ev("document.getElementById('amxNoTransition')?.remove()");
 await ev("scrollTo(0,0); document.querySelector('.lNavDemo').click()");
 await new Promise(r => setTimeout(r, 250));
 

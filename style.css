@@ -2052,495 +2052,6 @@ audio {
 }
 
 /* ===========================================================================
-   LANDING PAGE
-
-   A deliberately different register from the app: flat field colour instead of
-   floating cards, 2px corners instead of 28px, Bricolage at 800 for display.
-   The app is an instrument and reads like one; this page addresses someone who
-   has not decided to use it yet.
-
-   Its own palette lives here rather than in :root, because these values are
-   this page's and must not leak into the clinical UI.
-   =========================================================================== */
-
-#landingMode {
-  --field: #edeff2;
-  --panel: #f3f3f3;
-  --l-ink: #0f1d2a;
-  --l-soft: #63707d;
-  --l-line: rgba(15, 29, 42, 0.13);
-
-  min-height: 100vh;
-  background: var(--field);
-  color: var(--l-ink);
-  font-size: 16px;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-}
-
-.lWrap {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 28px;
-}
-
-.lEyebrow {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--l-soft);
-}
-
-/* --- masthead --- */
-
-.lTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  padding: 26px 0;
-}
-
-.lLogo {
-  height: 26px;
-  display: block;
-}
-
-.lNav {
-  display: flex;
-  align-items: center;
-  gap: 26px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.lNav a,
-.lNavDemo {
-  color: var(--l-soft);
-  text-decoration: none;
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  cursor: pointer;
-}
-
-.lNav a:hover,
-.lNavDemo:hover {
-  color: var(--l-ink);
-  box-shadow: none;
-}
-
-.lNavDemo {
-  color: var(--blue-deep, #2f5a8c);
-  font-weight: 500;
-}
-
-/* --- hero --- */
-
-.lHero {
-  display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: 56px;
-  align-items: center;
-  padding: 34px 0 10px;
-  min-height: 74vh;
-}
-
-.lTitle {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(38px, 6vw, 74px);
-  line-height: 0.98;
-  letter-spacing: -0.03em;
-  margin: 16px 0 22px;
-  max-width: 13ch;
-  text-wrap: balance;
-}
-
-.lTitle em {
-  font-style: normal;
-  color: var(--brand);
-}
-
-.lLede {
-  font-size: 18px;
-  color: var(--l-soft);
-  max-width: 44ch;
-  margin: 0 0 34px;
-}
-
-.lActions {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.lCentered {
-  justify-content: center;
-  margin-top: var(--sp-5);
-}
-
-.lBtn {
-  display: inline-block;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 14px 22px;
-  border-radius: 2px;
-  text-decoration: none;
-  border: 1px solid var(--l-ink);
-  background: var(--l-ink);
-  color: #fff;
-  cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.lBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: none;
-}
-
-.lBtn.ghost {
-  background: transparent;
-  color: var(--l-ink);
-  border-color: var(--l-line);
-}
-
-.lBtn.ghost:hover {
-  border-color: var(--l-ink);
-}
-
-/* --- the device --- */
-
-.lStage {
-  position: relative;
-  margin: 0;
-  background: var(--panel);
-  border-radius: 3px;
-  padding: 30px 0 54px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-}
-
-.lDeviceArt {
-  width: 100%;
-  max-width: 300px;
-  height: auto;
-  display: block;
-  filter: drop-shadow(0 30px 50px rgba(15, 29, 42, 0.16));
-}
-
-.lScreenIcon { fill: #7f8b98; font-size: 15px; font-family: var(--font-ui); }
-.lScreenTime {
-  fill: #eef3f9;
-  font-family: var(--font-mono);
-  font-size: 17px;
-  text-anchor: middle;
-  font-variant-numeric: tabular-nums;
-}
-.lScreenWave { fill: none; stroke: var(--brand-bright); stroke-width: 1.2; }
-.lScreenMeta { fill: #8d99a6; font-family: var(--font-ui); font-size: 9px; }
-.lScreenMeta.lRight { text-anchor: end; }
-.lChip { fill: #1b2530; font-family: var(--font-mono); font-size: 11px; text-anchor: middle; }
-.lBoardLabel { fill: #cfe3d8; font-family: var(--font-mono); font-size: 8px; text-anchor: middle; }
-.lBoardLabel.dark { fill: #4b5560; }
-
-.lReadout {
-  position: absolute;
-  left: 24px;
-  bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--l-soft);
-  opacity: 0;
-}
-
-.lDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--rec);
-}
-
-/* --- the running waveform --- */
-
-.lWave {
-  display: block;
-  width: 100%;
-  height: 64px;
-  margin: 26px 0 0;
-}
-
-.lWave path {
-  fill: none;
-  stroke: var(--brand-bright);
-  stroke-width: 1.25;
-  stroke-linecap: round;
-}
-
-/* --- spec strip --- */
-
-.lSpecs {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1px;
-  background: var(--l-line);
-  border-top: 1px solid var(--l-line);
-  border-bottom: 1px solid var(--l-line);
-  margin: 8px 0 0;
-}
-
-.lSpec {
-  background: var(--field);
-  padding: 22px 18px;
-}
-
-.lSpec dt {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--l-soft);
-}
-
-.lSpec dd {
-  margin: 8px 0 0;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 17px;
-  letter-spacing: -0.01em;
-}
-
-/* --- inside --- */
-
-.lH2 {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(28px, 3.6vw, 44px);
-  letter-spacing: -0.025em;
-  line-height: 1.05;
-  margin: 14px 0 20px;
-  text-wrap: balance;
-}
-
-.lBody {
-  color: var(--l-soft);
-  max-width: 46ch;
-}
-
-.lInside {
-  display: grid;
-  grid-template-columns: 0.9fr 1.1fr;
-  gap: 64px;
-  align-items: center;
-  padding: 110px 0;
-}
-
-.lParts {
-  list-style: none;
-  margin: 28px 0 0;
-  padding: 0;
-}
-
-.lParts li {
-  display: flex;
-  gap: 16px;
-  padding: 13px 0;
-  border-top: 1px solid var(--l-line);
-  font-size: 15px;
-}
-
-.lParts span {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--brand);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  min-width: 62px;
-  padding-top: 3px;
-}
-
-.lExploded {
-  margin: 0;
-  background: var(--panel);
-  border-radius: 3px;
-  padding: 26px;
-  text-align: center;
-}
-
-.lExploded svg {
-  max-width: 300px;
-  width: 100%;
-  height: auto;
-}
-
-/* Hidden only once JS has committed to revealing it. Hiding by default meant
-   that anything preventing the observer from firing — no IntersectionObserver,
-   an odd scroll container — left the graphic invisible for good, with no error
-   anywhere. Content must not depend on an animation to exist. */
-.lExploded.willRise svg {
-  opacity: 0;
-  transform: translateY(26px);
-}
-
-/* The end state is declared, not left to animation-fill-mode. An animation
-   that never runs — a throttled background tab, a browser that skips it — must
-   still leave the graphic visible; the animation only makes the arrival
-   pleasant. */
-.lExploded.willRise.in svg {
-  opacity: 1;
-  transform: none;
-  animation: lRise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-
-@keyframes lRise {
-  to { opacity: 1; transform: none; }
-}
-
-/* --- the three stages --- */
-
-.lFlow {
-  padding: 0 0 100px;
-}
-
-.lSteps {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--l-line);
-  border-top: 1px solid var(--l-line);
-  border-bottom: 1px solid var(--l-line);
-  margin: 34px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.lSteps li {
-  background: var(--field);
-  padding: 26px 22px 30px;
-}
-
-.lStepNum {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  color: var(--brand);
-}
-
-.lSteps h3 {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 21px;
-  letter-spacing: -0.015em;
-  margin: 10px 0 10px;
-}
-
-.lSteps p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--l-soft);
-}
-
-.lSteps strong {
-  color: var(--l-ink);
-  font-weight: 600;
-}
-
-/* --- partners + footer --- */
-
-.lPartners {
-  padding: 76px 0 90px;
-  border-top: 1px solid var(--l-line);
-  text-align: center;
-}
-
-.lMarks {
-  display: flex;
-  gap: 64px;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: 30px;
-}
-
-.lMarks img { height: 44px; opacity: 0.85; }
-.lMarks img.wcm { height: 58px; }
-
-.lFooter {
-  border-top: 1px solid var(--l-line);
-  padding: 30px 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  color: var(--l-soft);
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-@media (max-width: 860px) {
-  .lHero,
-  .lInside {
-    grid-template-columns: 1fr;
-    gap: 36px;
-    padding: 24px 0 0;
-  }
-
-  .lHero { min-height: auto; }
-
-  .lStage {
-    order: -1;
-    max-width: 420px;
-    margin: 0 auto;
-    width: 100%;
-  }
-
-  .lInside { padding: 70px 0; }
-  .lSpecs { grid-template-columns: repeat(2, 1fr); }
-  .lSteps { grid-template-columns: 1fr; }
-  .lMarks { gap: 36px; }
-  .lNav a { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lReadout { opacity: 1; }
-  .lExploded.willRise svg { opacity: 1; transform: none; }
-  .lBtn:hover { transform: none; }
-}
-
-/* The app header's wordmark is now a button back to the landing page. */
-.brand {
-  background: none;
-  border: none;
-  padding: 0;
-  text-align: left;
-  cursor: pointer;
-}
-
-.brand:hover { box-shadow: none; opacity: 0.75; }
-
-.brandTag {
-  display: block;
-  margin: 5px 0 0;
-  color: var(--muted);
-  font-size: 15px;
-  font-weight: 400;
-}
-
-/* ===========================================================================
    EXAM — reference 2C
 
    A session strip across the top, then three columns: the protocol on the
@@ -3289,3 +2800,599 @@ audio {
 }
 
 .recordingCard:last-child { border-bottom: none; }
+
+/* ===========================================================================
+   LANDING — reference 1A
+
+   Same tokens as the app, a different rhythm: 64px gutters, a 104px hero, and
+   full-bleed bands that alternate ground / white / #e5e8ed. Square corners and
+   hairlines throughout, like everything else.
+   =========================================================================== */
+
+#landingMode {
+  --l-gutter: 64px;
+  background: var(--ground);
+  color: var(--ink);
+}
+
+/* --- nav --- */
+
+.lNav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  height: 72px;
+  padding: 0 var(--l-gutter);
+  background: rgba(244, 245, 247, 0.86);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.lNav.stuck { border-bottom-color: var(--hairline); }
+
+.lLogo { height: 26px; width: auto; display: block; }
+
+.lNavLinks {
+  display: flex;
+  align-items: center;
+  gap: 38px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.lNavLinks a {
+  color: var(--muted);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+}
+
+.lNavLinks a:hover { color: var(--ink); border-bottom-color: var(--ink); }
+
+.lNavActions { display: flex; align-items: center; gap: var(--sp-3); }
+
+.lNavDemo {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.13em;
+  padding: 0;
+}
+
+.lNavDemo:hover { color: var(--ink); border-color: transparent; }
+
+.lBtn {
+  display: inline-block;
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 13px 20px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.lBtn.ghost { background: transparent; color: var(--ink); border-color: #c9ced6; }
+.lBtn.ghost:hover { border-color: var(--ink); }
+
+/* --- hero --- */
+
+.lHero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 88px var(--l-gutter) 56px;
+}
+
+.lEyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7c8593;
+}
+
+.lTitle {
+  margin: 22px 0 0;
+  max-width: 1040px;
+  font-size: clamp(44px, 7.2vw, 104px);
+  line-height: 0.94;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.lTitle em { font-style: normal; color: var(--accent); }
+
+.lLede {
+  margin: 26px 0 0;
+  max-width: 620px;
+  text-align: center;
+  font-size: 19px;
+  line-height: 1.62;
+  color: #4d5764;
+  text-wrap: pretty;
+}
+
+.lActions { display: flex; gap: var(--sp-3); margin-top: 34px; flex-wrap: wrap; }
+.lActions .lBtn { padding: 16px 26px; font-size: 13px; }
+.lCentered { justify-content: center; }
+
+/* --- the device on its stage --- */
+
+.lStage {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  margin-top: 64px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  min-height: 560px;
+}
+
+.lStageRule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d5d9df 20%, #d5d9df 80%, transparent);
+}
+
+.lStageGlow {
+  position: absolute;
+  bottom: 20px;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(47, 93, 143, 0.10), transparent 68%);
+  filter: blur(6px);
+}
+
+.lDeviceArt {
+  position: relative;
+  width: 300px;
+  height: auto;
+  filter: drop-shadow(0 40px 60px rgba(16, 22, 31, 0.18));
+}
+
+.lScreenTag {
+  fill: #5e6a78;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+}
+
+.lScreenTag.lRight { text-anchor: end; }
+
+.lScreenTime {
+  fill: #eef2f6;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lScreenWave { fill: none; stroke: var(--accent-line); stroke-width: 1.6; stroke-linejoin: round; }
+
+/* --- leader lines --- */
+
+.lCallout {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.lCalloutText {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.lCalloutLeft .lCalloutText { text-align: right; }
+.lCalloutText em { display: block; font-style: normal; color: #98a0ac; }
+
+.lCalloutLine { width: 96px; height: 1px; background: #c4cad3; }
+.lCalloutDot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+
+/* The line grows from the end nearest the device, so it reads as pointing away
+   from the part it names. The label follows it in. */
+.lCallout.willReveal .lCalloutLine { transform: scaleX(0); }
+.lCallout.willReveal.lCalloutLeft .lCalloutLine { transform-origin: right; }
+.lCallout.willReveal.lCalloutRight .lCalloutLine { transform-origin: left; }
+.lCallout.willReveal .lCalloutText { opacity: 0; }
+
+.lCallout.willReveal.in .lCalloutLine {
+  transform: none;
+  transition: transform 0.4s ease 0.9s;
+}
+
+.lCallout.willReveal.in .lCalloutText {
+  opacity: 1;
+  transition: opacity 0.35s ease 1.2s;
+}
+
+.lReadout {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 40px 0 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.lDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rec);
+  animation: lPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes lPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+/* --- spec strip --- */
+
+.lSpecs {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  margin: 0;
+  background: var(--panel);
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.lSpec {
+  padding: 30px 32px;
+  border-right: 1px solid var(--hairline-soft);
+}
+
+.lSpec:last-child { border-right: none; }
+.lSpec dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-2); }
+.lSpec dd { margin: 8px 0 0; font-size: 19px; font-weight: 500; }
+
+.lSpec.willReveal { opacity: 0; transform: translateY(8px); }
+.lSpec.willReveal.in { opacity: 1; transform: none; transition: opacity 0.4s ease, transform 0.4s ease; }
+.lSpec:nth-child(2).willReveal.in { transition-delay: 0.06s; }
+.lSpec:nth-child(3).willReveal.in { transition-delay: 0.12s; }
+.lSpec:nth-child(4).willReveal.in { transition-delay: 0.18s; }
+.lSpec:nth-child(5).willReveal.in { transition-delay: 0.24s; }
+
+/* --- sections --- */
+
+.lSection { padding: 104px var(--l-gutter); }
+.lSectionAlt { background: #e5e8ed; }
+
+.lSectionHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+
+.lSectionHeadNarrow { max-width: 720px; }
+
+.lH2 {
+  margin: 18px 0 0;
+  font-size: clamp(32px, 4vw, 56px);
+  line-height: 1.02;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.lSectionNote,
+.lBody {
+  margin: 22px 0 0;
+  max-width: 460px;
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: #4d5764;
+  text-wrap: pretty;
+}
+
+.lSectionNote { margin: 0; max-width: 400px; font-size: 16px; }
+
+/* --- the three stages --- */
+
+.lSteps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 56px 0 0;
+  padding: 0;
+  list-style: none;
+  background: var(--hairline);
+  border: 1px solid var(--hairline);
+}
+
+.lStep {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: 40px 36px 36px;
+  background: var(--panel);
+  min-height: 300px;
+}
+
+.lStepPending { background: var(--panel-alt); }
+.lStepPending h3 { color: var(--muted); }
+.lStepPending p { color: #6b7482; }
+
+.lStepTop { display: flex; align-items: center; justify-content: space-between; }
+
+.lStepNum {
+  font-family: var(--font-mono);
+  font-size: 34px;
+  font-weight: 400;
+  color: #c9ced6;
+}
+
+.lStep h3 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
+.lStep p { margin: 0; font-size: 15px; line-height: 1.65; color: #4d5764; text-wrap: pretty; }
+
+.lStepFoot {
+  margin-top: auto !important;
+  padding-top: 14px;
+  border-top: 1px dashed #d8dce2;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted-2) !important;
+}
+
+.lChip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 5px 9px;
+  border: 1px solid;
+}
+
+.lChip.ok { color: var(--ok-text); border-color: var(--ok-border); }
+.lChip.warn { color: var(--warn-text); border-color: var(--warn-border); }
+
+.lTaskTags { margin-top: auto; display: flex; flex-wrap: wrap; gap: 6px; }
+
+.lTaskTags span {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  border: 1px solid var(--field-border);
+  padding: 5px 8px;
+}
+
+/* --- spectrum bars: grow once, never loop --- */
+
+.lBars {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 56px;
+}
+
+.lBars span { flex: 1; height: var(--h); background: #c5d3e3; }
+.lBars span:nth-child(3) { background: var(--accent); }
+
+.lBarsWide { height: 120px; margin: 10px 0 0; gap: 2px; }
+.lBarsWide span { background: var(--accent); opacity: 0.85; }
+
+.lBars.willReveal span { height: 0; }
+.lBars.willReveal.in span { height: var(--h); transition: height 0.5s cubic-bezier(.2,.7,.2,1); }
+.lBars.willReveal.in span:nth-child(n+2) { transition-delay: calc(18ms * var(--i, 1)); }
+
+/* --- the measurement panel --- */
+
+.lTwoUp {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+}
+
+.lGateGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin-top: 44px;
+  background: #cfd5dd;
+}
+
+.lGateGrid > div { background: #e5e8ed; padding: 22px 24px; }
+.lGateGrid dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; color: #7c8593; }
+.lGateGrid dd { margin: 8px 0 0; font-family: var(--font-mono); font-size: 24px; font-weight: 500; }
+
+.lMeasure { background: var(--panel); border: 1px solid #cfd5dd; }
+
+.lMeasureHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 16px 22px;
+  border-bottom: 1px solid #cfd5dd;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6b7482;
+}
+
+.lAccent { color: var(--accent); }
+.lWarnText { color: var(--warn-text); }
+
+.lMeasureGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-4); padding: 26px 22px; }
+.lMeasureGrid dt { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #7c8593; }
+.lMeasureGrid dd { margin: 6px 0 0; font-family: var(--font-mono); font-size: 28px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.lMeasureGrid dd em { font-style: normal; font-size: 13px; color: #6b7482; }
+
+.lMeasureLabel { padding: 0 22px 8px; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #7c8593; }
+.lMeasure .lBarsWide { margin: 0 22px; border-bottom: 1px solid #cfd5dd; }
+.lMeasureAxis { display: flex; justify-content: space-between; padding: 10px 22px 22px; font-family: var(--font-mono); font-size: 10px; color: var(--muted-2); }
+
+.lMeasureFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #cfd5dd;
+  padding: 18px 22px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b7482;
+}
+
+/* --- three ways in --- */
+
+.lInputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 52px; }
+
+.lInputCard { background: var(--panel); border: 1px solid var(--hairline); padding: 32px; }
+.lInputHead { display: flex; align-items: center; justify-content: space-between; }
+.lInputCard h3 { margin: 0; font-size: 22px; font-weight: 600; }
+.lInputCard p { margin: 14px 0 0; font-size: 15px; line-height: 1.6; color: #4d5764; }
+
+.lStateDot { width: 8px; height: 8px; border-radius: 50%; }
+.lStateDot.ok { background: var(--ok); }
+.lStateDot.warn { background: var(--warn); }
+
+.lInputState {
+  display: block;
+  margin-top: 22px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.lInputState.ok { color: var(--ok); }
+.lInputState.warn { color: var(--warn-text); }
+
+.lIntegration {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 1px;
+  margin-top: 24px;
+  background: var(--hairline);
+  border: 1px solid var(--hairline);
+}
+
+.lIntegration > div { background: var(--panel); padding: 36px; }
+.lIntegration h3 { margin: 12px 0 0; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
+.lIntegration p { margin: 14px 0 0; font-size: 15px; line-height: 1.65; color: #4d5764; text-wrap: pretty; }
+.lIntegration .lEyebrow { font-size: 11px; letter-spacing: 0.14em; color: var(--muted-2); }
+
+/* --- partners + cta --- */
+
+.lPartners {
+  padding: 96px var(--l-gutter);
+  background: var(--panel);
+  border-top: 1px solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  text-align: center;
+}
+
+.lMarks { display: flex; align-items: center; gap: 64px; flex-wrap: wrap; justify-content: center; }
+.lMarks img { height: 52px; width: auto; opacity: 0.9; }
+.lMarks img.nyp { height: 34px; }
+.lMarksRule { width: 1px; height: 44px; background: var(--hairline); }
+
+.lCta {
+  margin: 0;
+  max-width: 760px;
+  font-size: clamp(28px, 3.2vw, 44px);
+  line-height: 1.06;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.lFooter {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding: 28px var(--l-gutter);
+  border-top: 1px solid var(--hairline);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+/* Generic reveal for the panels that only fade in. */
+.lStep.willReveal,
+.lMeasure.willReveal,
+.lInputCard.willReveal { opacity: 0; transform: translateY(10px); }
+
+.lStep.willReveal.in,
+.lMeasure.willReveal.in,
+.lInputCard.willReveal.in {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+@media (max-width: 1100px) {
+  #landingMode { --l-gutter: 32px; }
+  .lSpecs { grid-template-columns: repeat(2, 1fr); }
+  .lSpec { border-bottom: 1px solid var(--hairline-soft); }
+  .lTwoUp, .lIntegration { grid-template-columns: 1fr; gap: 40px; }
+  .lIntegration { gap: 1px; }
+  .lSteps, .lInputs { grid-template-columns: 1fr; }
+  .lNavLinks { display: none; }
+  /* The callouts need room around a 300px device; below this they overlap it. */
+  .lCallout { display: none; }
+  .lStage { min-height: 420px; }
+  .lDeviceArt { width: 220px; }
+}
+
+@media (max-width: 620px) {
+  #landingMode { --l-gutter: 20px; }
+  .lSpecs { grid-template-columns: 1fr; }
+  .lMeasureGrid { grid-template-columns: 1fr 1fr; }
+  .lSection { padding: 64px var(--l-gutter); }
+  .lHero { padding: 48px var(--l-gutter) 40px; }
+  .lActions { width: 100%; flex-direction: column; }
+  .lActions .lBtn { text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lDot { animation: none; }
+  .lCallout.willReveal .lCalloutLine { transform: none; }
+  .lCallout.willReveal .lCalloutText { opacity: 1; }
+  .lSpec.willReveal,
+  .lStep.willReveal,
+  .lMeasure.willReveal,
+  .lInputCard.willReveal { opacity: 1; transform: none; }
+  .lBars.willReveal span { height: var(--h); }
+}
