@@ -31,7 +31,21 @@ class CaptureProcessor extends AudioWorkletProcessor {
     // quantum — 128 frames, under 3 ms — of the moment Start was pressed,
     // instead of reaching back over a whole buffer.
     this.port.onmessage = event => {
-      if (event.data === "flush") this.filled = 0;
+      if (event.data === "flush") {
+        this.filled = 0;
+        return;
+      }
+      if (event.data === "drain") {
+        // The tail: whatever has been collected but not yet posted, up to one
+        // block short of a full one. Without this it is simply never delivered,
+        // so up to 256 ms of the END of every take was lost — which is exactly
+        // the quantity the maximum phonation time test is measuring.
+        // Always answered, even empty, because the caller waits for it.
+        const tail = this.filled > 0 ? this.buffer.slice(0, this.filled) : null;
+        this.filled = 0;
+        if (tail) this.port.postMessage({ drained: tail }, [tail.buffer]);
+        else this.port.postMessage({ drained: null });
+      }
     };
   }
 

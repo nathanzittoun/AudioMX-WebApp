@@ -189,10 +189,17 @@ export async function startRecording(meta?: RecordingMeta | null): Promise<void>
 
 export async function stopRecording(): Promise<void> {
   if (!device.connected || !capture.recording) return;
+
+  // The computer mic drains first, while capture.recording is still true: the
+  // audio still held in the worklet has to travel the same ingest path as every
+  // other block, and ingest() refuses anything once the flag is down. The MEMS
+  // path is unchanged — it clears the flag before sending STOP, as it always
+  // did, because the device stops on its own.
+  if (device.sourceId === "computer") await stopComputerMicCapture();
+
   capture.recording = false;
 
   if (device.sourceId === "mems") await sendMemsCommand("STOP");
-  else if (device.sourceId === "computer") stopComputerMicCapture();
 
   const startBtn = el<HTMLButtonElement>("startBtn");
   const stopBtn = el<HTMLButtonElement>("stopBtn");

@@ -27,6 +27,8 @@ let context: AudioContext | null = null;
 let sourceNode: MediaStreamAudioSourceNode | null = null;
 let processorNode: ScriptProcessorNode | null = null;
 let workletNode: AudioWorkletNode | null = null;
+/** Set while a stop is waiting for the worklet's tail. */
+let drainResolve: (() => void) | null = null;
 
 /** Native rate of the open context. Exposed for diagnostics and tests. */
 export function captureRate(): number {
@@ -70,6 +72,10 @@ export function preRollFrames(): number {
 /** One block of captured audio, converted and handed to the recorder. */
 function takeBlock(input: Float32Array, rate: number): void {
   if (!capture.recording || device.sourceId !== "computer") return;
+  convertAndIngest(input, rate);
+}
+
+function convertAndIngest(input: Float32Array, rate: number): void {
 
   const source = rate === SAMPLE_RATE
     ? input
@@ -111,7 +117,21 @@ async function attachCapture(
         numberOfOutputs: 0,
       });
       workletNode.port.onmessage = event => {
-        takeBlock(event.data as Float32Array, rate);
+        const data = event.data as Float32Array | { drained: Float32Array | null };
+        if (data instanceof Float32Array) {
+          takeBlock(data, rate);
+          return;
+        }
+        // The tail, answering a drain. Only accepted while a stop is actually
+        // waiting for it: the wait times out after 150 ms so a take is never
+        // lost to a missing message, and a reply arriving after that would
+        // otherwise be counted into a recording that has already been saved —
+        // corrupting the *next* take rather than this one.
+        if (!drainResolve) return;
+        // Bypasses takeBlock's recording guard on purpose: this is the audio
+        // captured before Stop, and the flag is about to go down.
+        if (data.drained) convertAndIngest(data.drained, rate);
+        drainResolve();
       };
       // No output, so nothing to connect to the destination — which also means
       // the microphone is never routed to the speakers.
@@ -205,8 +225,36 @@ export function startComputerMicCapture(): void {
   log("Computer mic recording started.");
 }
 
-export function stopComputerMicCapture(): void {
+/**
+ * End a take, and wait for the audio still sitting in the worklet.
+ *
+ * A block is only posted once it is full, so at the moment Stop is pressed up
+ * to one block — 256 ms — has been captured and never delivered. It used to be
+ * dropped on the floor: every take lost up to a quarter second off its end,
+ * silently, including the maximum phonation time test whose entire result is
+ * that duration.
+ *
+ * Resolves on a timer as well as on the answer, because a take must never be
+ * lost waiting for a message that is not coming.
+ */
+export function stopComputerMicCapture(): Promise<void> {
   log("Computer mic recording stopped.");
+  const node = workletNode;
+  if (!node) return Promise.resolve();
+
+  return new Promise<void>(resolve => {
+    let settled = false;
+    const finish = (): void => {
+      if (settled) return;
+      settled = true;
+      drainResolve = null;
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(finish, 150);
+    drainResolve = finish;
+    node.port.postMessage("drain");
+  });
 }
 
 /** Release the microphone and tear the graph down. */

@@ -626,6 +626,10 @@ await ev("setTimeout(() => { const end = performance.now() + 600;" +
 await ev("audiomx.app.startRecording()");
 // Pendant la capture, pas apres : les moniteurs live sont effaces a l'arret.
 const [rndWave, rndSpec] = await tracedPeakDuring(["waveform", "liveSpectrum"], TRACE, 2000);
+// Un demi-bloc de plus avant l'arret, pour que la queue ne soit pas vide par
+// hasard. Sans ce decalage, l'arret peut tomber pile sur une frontiere de bloc
+// et l'assertion sur la queue ne mesure plus rien.
+await new Promise(r => setTimeout(r, 130));
 await ev("audiomx.app.stopRecording()"); await new Promise(r => setTimeout(r, 1200));
 T("forme d'onde live dessinee (R&D)", rndWave > 200, rndWave + " px de trace");
 T("spectre live dessine (R&D)", rndSpec > 200, rndSpec + " px de trace");
@@ -651,6 +655,15 @@ const blockSeconds = 4096 / 16000;
 T("aucun bloc perdu malgre 600 ms de fil principal bloque",
   capturedSeconds > 2 - blockSeconds - 0.02,
   capturedSeconds + " s ; un bloc perdu donnerait " + (capturedSeconds - blockSeconds).toFixed(3));
+
+// La queue de la prise. Un bloc n'est poste qu'une fois plein, donc a l'arret
+// il en restait jusqu'a 256 ms jamais livrees — perdues en silence, y compris
+// sur le test de temps de phonation maximal dont c'est justement le resultat.
+// Sans le drainage, le total est TOUJOURS un multiple exact de la taille de
+// bloc ; avec, il ne l'est quasiment jamais. C'est ce qui separe les deux.
+const capturedFrames = await ev("audiomx.state.library.recordings[0]?.frames");
+T("la queue de la prise est bien livree", capturedFrames % 4096 !== 0,
+  capturedFrames + " trames = " + (capturedFrames / 4096).toFixed(3) + " blocs");
 T("features extraites", (await ev("!!audiomx.state.library.recordings[0]?.features")));
 T("WAV a 16 kHz", (await ev("audiomx.state.library.recordings[0].blob.arrayBuffer().then(b=>new DataView(b).getUint32(24,true))")) === 16000);
 
