@@ -212,12 +212,18 @@
         <img src="nyp_logo.png" alt="NewYork-Presbyterian" onerror="this.style.display='none'" />
       </div>
 
-      <div class="deviceStatus">
-        <div id="statusDot" class="statusDot" data-status-dot></div>
-        <div>
-          <div id="status" class="statusText" data-status-text>Not connected</div>
-          <div class="statusSubtext">USB-C / Wi-Fi</div>
+      <div class="headerRight">
+        <div class="deviceStatus">
+          <div id="statusDot" class="statusDot" data-status-dot></div>
+          <div>
+            <div id="status" class="statusText" data-status-text>Not connected</div>
+            <div class="statusSubtext">USB-C / Wi-Fi</div>
+          </div>
         </div>
+        <!-- The explicit way out, as reference 2A shows it. The wordmark on the
+             left leads to the same place — a clickable logo is convention, not
+             a second control to keep in step. -->
+        <button class="exitBtn" type="button" data-nav="landing">Exit to site</button>
       </div>
     </header>
 
@@ -244,6 +250,8 @@
         <button class="navBtn" data-nav="analyze">Analyze</button>
         <button class="navBtn" data-nav="recordings">Recordings</button>
       </span>
+
+      <div id="crumb" class="crumb"></div>
     </nav>
 
     <!-- OVERVIEW -->

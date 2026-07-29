@@ -163,29 +163,51 @@ body {
   outline-offset: 2px;
 }
 
+/* App chrome — reference 2A.
+   Full bleed: the header and the nav are bars that span the window, not cards
+   floating in a margin. Depth is the hairline under each bar and the white
+   sitting on the grey ground. */
 .appShell {
-  max-width: 1240px;
-  margin: 28px auto;
-  padding: 0 22px 34px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* The four top-level app containers carry the page gutter, so the bars above
+   them can reach the edges. */
+#homeMode,
+#deviceMode,
+#rndMode,
+#clinicalMode {
+  padding: 32px var(--gutter) var(--sp-6);
 }
 
 .topBar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 22px;
-  padding: 22px 26px;
-  background: var(--card);
-  border: 1px solid var(--soft-line);
-  border-radius: 0;
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
+  gap: var(--sp-5);
+  height: 68px;
+  padding: 0 var(--gutter);
+  background: var(--panel);
+  border-bottom: 1px solid var(--hairline);
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: var(--sp-3);
+}
+
+.appIcon {
+  height: 30px;
+  width: auto;
+}
+
+.wordmark {
+  height: 17px;
+  width: auto;
+  display: block;
 }
 
 .logo {
@@ -209,16 +231,35 @@ body {
 .deviceStatus {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 160px;
+  gap: 9px;
   justify-content: flex-end;
 }
 
+/* Right-hand group of the header: live state, then the way out. */
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.exitBtn {
+  background: transparent;
+  border: 1px solid #c9ced6;
+  color: var(--ink);
+  padding: 10px 14px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+/* The one round thing in the interface, and deliberately so: a state light is
+   a light. Everything else in this language is a rectangle. */
 .statusDot {
-  width: 12px;
-  height: 12px;
-  border-radius: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   background: #b8b8bd;
+  flex: none;
 }
 
 .statusDot.connected {
@@ -237,13 +278,17 @@ body {
 }
 
 .statusText {
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink);
 }
 
 .statusSubtext {
-  color: var(--muted);
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-2);
 }
 
 /* Panels.
@@ -269,34 +314,54 @@ body {
 
 .mainNav {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   flex-wrap: wrap;
-  gap: var(--sp-2) var(--sp-4);
-  margin: var(--sp-4) 0 var(--sp-5);
-  padding: var(--sp-2) var(--sp-3);
-  background: var(--card);
-  border: 1px solid var(--soft-line);
-  border-radius: var(--radius-md);
-  box-shadow: 0 6px 20px rgba(15, 29, 42, 0.05);
-  backdrop-filter: blur(18px);
+  gap: 0;
+  margin: 0;
+  padding: 0 var(--gutter);
+  background: var(--panel);
+  border-bottom: 1px solid var(--hairline);
 }
 
+/* Where in the app you are, spelled out — reference 2B-2G print it as a path
+   beside the wordmark. Written by reflectNav(), which already knows. */
+.crumb {
+  margin-left: auto;
+  align-self: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+/* Groups are separated by a vertical hairline rather than a gap, so the bar
+   reads as one strip of cells. The first group has no rule to its left. */
 .navGroup {
   display: flex;
   align-items: center;
-  gap: var(--sp-1);
-  padding-left: var(--sp-4);
-  border-left: 1px solid var(--line);
+  gap: 2px;
+  padding: 0 22px;
+  border-left: 1px solid var(--hairline-soft);
+}
+
+.mainNav > .navBtn:first-of-type {
+  margin-left: 0;
+}
+
+.mainNav > .navBtn {
+  align-self: stretch;
 }
 
 .navGroupLabel {
   font-family: var(--font-mono);
   font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-weight: 500;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--muted);
-  padding-right: var(--sp-1);
+  color: var(--faint);
+  padding-right: 8px;
   white-space: nowrap;
 }
 
@@ -769,7 +834,7 @@ audio {
 }
 
 .logBox {
-  margin-top: 18px;
+  margin: 0 var(--gutter) var(--sp-6);
   background: rgba(255,255,255,0.68);
   border: 1px solid var(--soft-line);
   border-radius: 0;
@@ -938,16 +1003,19 @@ audio {
 .partnerLogos {
   display: flex;
   align-items: center;
-  gap: 18px;
-  margin-left: auto;
-  margin-right: 22px;
+  gap: var(--sp-5);
+  margin: 0 auto;
 }
 
 .partnerLogos img {
-  height: 34px;
+  height: 30px;
   width: auto;
   object-fit: contain;
-  opacity: 0.92;
+  opacity: 0.85;
+}
+
+.partnerLogos img[alt*="Presbyterian"] {
+  height: 20px;
 }
 
 /* Mode switch (R&D vs Clinical) */

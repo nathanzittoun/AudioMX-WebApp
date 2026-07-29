@@ -22,17 +22,19 @@ export interface NavHandlers {
   setClinicalTab(name: string): void;
 }
 
-/** What each nav button stands for, in terms of the calls that already exist. */
+/** What each nav button stands for, in terms of the calls that already exist,
+ *  plus the path printed beside the nav — reference 2B-2G spell out where you
+ *  are rather than relying on the highlight alone. */
 const SECTIONS = {
-  landing: { mode: "landing" },
-  home: { mode: "home" },
-  device: { mode: "device" },
-  patients: { mode: "clinical", ctab: "patients" },
-  exam: { mode: "clinical", ctab: "exam" },
-  chart: { mode: "clinical", ctab: "chart" },
-  record: { mode: "rnd", view: "recordView" },
-  analyze: { mode: "rnd", view: "analyzeView" },
-  recordings: { mode: "rnd", view: "libraryView" },
+  landing: { mode: "landing", crumb: "" },
+  home: { mode: "home", crumb: "/ Overview" },
+  device: { mode: "device", crumb: "/ Device" },
+  patients: { mode: "clinical", ctab: "patients", crumb: "/ Clinical / Patients" },
+  exam: { mode: "clinical", ctab: "exam", crumb: "/ Clinical / Exam" },
+  chart: { mode: "clinical", ctab: "chart", crumb: "/ Clinical / Chart" },
+  record: { mode: "rnd", view: "recordView", crumb: "/ Bench / Record" },
+  analyze: { mode: "rnd", view: "analyzeView", crumb: "/ Bench / Analyze" },
+  recordings: { mode: "rnd", view: "libraryView", crumb: "/ Bench / Recordings" },
 } as const;
 
 export type NavSection = keyof typeof SECTIONS;
@@ -76,6 +78,8 @@ export function goto(section: NavSection): void {
  *  would silently go stale every one of those times. */
 export function reflectNav(): void {
   const current = currentSection();
+  const crumb = document.getElementById("crumb");
+  if (crumb) crumb.textContent = SECTIONS[current].crumb;
   document.querySelectorAll<HTMLElement>(".navBtn").forEach(btn => {
     const on = btn.dataset["nav"] === current;
     btn.classList.toggle("active", on);

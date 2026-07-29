@@ -1009,8 +1009,13 @@ if (process.argv[2] === "preview") {
   // echoue la seconde.
   T("l'app demarre hors ligne", (await ev("typeof audiomx?.constants?.SAMPLE_RATE")) === "number");
   T("protocole rendu hors ligne", (await ev("document.getElementById('cTestList')?.children.length")) === 6);
+  // On interroge un token, pas une valeur de mise en page. Une propriete
+  // personnalisee n'existe que si la feuille est bien la, alors qu'un
+  // "max-width: 1240px" code en dur casse des qu'une phase de refonte change
+  // legitimement la largeur — ce qui est arrive, et l'assertion a signale une
+  // evolution comme une panne.
   T("CSS servi hors ligne", (await ev(
-    "getComputedStyle(document.querySelector('.appShell')).maxWidth")) === "1240px");
+    "getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()")) === "#2f5d8f");
   await cmd("Network.emulateNetworkConditions",
     { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await go();
