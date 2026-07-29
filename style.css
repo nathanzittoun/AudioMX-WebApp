@@ -177,7 +177,7 @@ body {
   padding: 22px 26px;
   background: var(--card);
   border: 1px solid var(--soft-line);
-  border-radius: 28px;
+  border-radius: 0;
   box-shadow: var(--shadow);
   backdrop-filter: blur(18px);
 }
@@ -217,7 +217,7 @@ body {
 .statusDot {
   width: 12px;
   height: 12px;
-  border-radius: 999px;
+  border-radius: 0;
   background: #b8b8bd;
 }
 
@@ -245,6 +245,11 @@ body {
   color: var(--muted);
   font-size: 12px;
 }
+
+/* Panels.
+   White rectangles on grey, separated by hairlines. No radius, no shadow, no
+   backdrop blur — those three are what the references single out as making the
+   previous build read as a template. */
 
 /* [hidden] loses to any rule that sets display, and this file sets display on a
    lot of things. The four top-level containers are switched by the hidden
@@ -299,9 +304,10 @@ body {
   border: none;
   background: transparent;
   color: var(--muted);
-  font-size: 14px;
-  font-weight: 600;
-  padding: 9px 15px;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  padding: 16px 14px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   white-space: nowrap;
@@ -311,17 +317,18 @@ body {
 /* The generic button:hover lifts and drops a shadow. Inside a nav bar that
    reads as a bug, so this one only changes colour. */
 .navBtn:hover:not(.active) {
-  transform: none;
-  box-shadow: none;
-  background: var(--brand-tint);
-  color: var(--brand-deep);
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink);
 }
 
+/* Active is an inset 2px underline, not a filled pill — the references mark the
+   current tab that way, and a filled block would spend the accent on chrome.
+   The header structure itself is phase 3. */
 .navBtn.active {
-  background: var(--brand);
-  color: white;
-  transform: none;
-  box-shadow: 0 4px 12px rgba(47, 90, 140, 0.28);
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 -2px 0 var(--ink);
 }
 
 .view {
@@ -339,12 +346,9 @@ body {
 }
 
 .card {
-  background: var(--card);
-  border: 1px solid var(--soft-line);
-  border-radius: 28px;
-  box-shadow: var(--shadow);
-  padding: 26px;
-  backdrop-filter: blur(18px);
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  padding: var(--sp-5) 28px;
 }
 
 .mainCard {
@@ -391,21 +395,26 @@ input {
   font-family: inherit;
 }
 
+/* Controls.
+   Every button is a mono, uppercase, letter-spaced label in a square box. The
+   font-family and text-transform live here rather than on each variant, so a
+   component that only overrides its size still speaks the same language. */
 button {
   border: none;
-  border-radius: var(--radius-sm);
-  padding: 12px 17px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 0;
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: box-shadow 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+  transition: background 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
 }
 
-/* Every button used to lift a pixel and drop a heavy shadow on hover. Applied
-   to all of them at once it reads as a toy; on a clinical screen the feedback
-   should be present and quiet. */
+/* No lift, no shadow. A hover in this language darkens a border or a fill. */
 button:hover:not(:disabled) {
-  box-shadow: 0 4px 14px rgba(15, 29, 42, 0.14);
+  border-color: var(--ink);
 }
 
 button:disabled {
@@ -413,26 +422,37 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* The one action a page is for. Brand, so it is the same blue as the nav and
-   the device — it used to be near-black, which belongs to no palette. */
+/* The one action a page is for. Ink, not accent: the accent is reserved for
+   marking what is currently selected, and a button is not a selection. */
 .primaryBtn {
-  background: var(--brand);
-  color: white;
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  color: #fff;
 }
 
+.primaryBtn:hover:not(:disabled) {
+  background: var(--ink-strong);
+}
+
+/* Start is a quiet bordered control, not a green one. Green in this language
+   means "ready / passing / within range" and is never spent on an action. */
 .successBtn {
-  background: var(--green);
-  color: white;
+  background: var(--panel);
+  border: 1px solid var(--field-border);
+  color: var(--ink);
 }
 
+/* Stop / End test. Red because it ends a live capture — the one action on the
+   exam screen that is destructive of a take in progress. */
 .warningBtn {
-  background: var(--wcm-orange);
-  color: white;
+  background: var(--rec-text);
+  border: 1px solid var(--rec-text);
+  color: #fff;
 }
 
 .secondaryBtn {
-  background: var(--card-solid);
-  border: 1px solid var(--line);
+  background: var(--panel);
+  border: 1px solid var(--field-border);
   color: var(--ink);
 }
 
@@ -447,12 +467,15 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 3px;
-  background: #f1f1f4;
+  gap: 4px;
+  background: var(--panel);
   color: var(--ink);
-  border: 1px solid var(--line);
-  padding: 16px;
+  border: 1px solid var(--field-border);
+  padding: 15px;
   text-align: left;
+  font-family: var(--font-ui);
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .modeBtn span {
@@ -483,20 +506,21 @@ button:disabled {
 
 .metaBox,
 .countPill {
-  background: #f1f1f4;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  padding: 9px 12px;
   color: var(--muted);
-  font-size: 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   font-variant-numeric: tabular-nums;
 }
 
 .plotCard {
-  background: var(--card-solid);
-  border: 1px solid var(--soft-line);
-  border-radius: 22px;
-  padding: 18px;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  padding: var(--sp-4) 24px;
 }
 
 .plotHeader {
@@ -521,7 +545,7 @@ canvas {
   width: 100%;
   background: var(--plot-bg);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 0;
   display: block;
 }
 
@@ -540,10 +564,9 @@ canvas {
 }
 
 .noiseCard {
-  background: white;
-  border: 1px solid var(--soft-line);
-  border-radius: 18px;
-  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  padding: var(--sp-4);
 }
 
 .noiseLabel {
@@ -564,7 +587,7 @@ canvas {
 .indicatorOuter {
   height: 8px;
   width: 100%;
-  border-radius: 999px;
+  border-radius: 0;
   overflow: hidden;
   background: #ececf0;
 }
@@ -572,7 +595,7 @@ canvas {
 .indicatorInner {
   height: 100%;
   width: 0%;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--green);
   transition: width 0.08s linear;
 }
@@ -589,7 +612,7 @@ canvas {
   margin-top: 14px;
   background: white;
   border: 1px solid var(--soft-line);
-  border-radius: 20px;
+  border-radius: 0;
   padding: 16px;
 }
 
@@ -613,22 +636,31 @@ canvas {
 }
 
 .fieldGroup label {
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
-  letter-spacing: 0.45px;
+  color: var(--muted-2);
 }
 
 select,
 input {
-  height: 44px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: white;
-  padding: 0 12px;
-  font-size: 15px;
+  height: 42px;
+  border: 1px solid var(--field-border);
+  border-radius: 0;
+  background: var(--panel-alt);
+  padding: 0 13px;
+  font-size: 14px;
+  color: var(--ink);
   min-width: 130px;
+}
+
+select:focus,
+input:focus {
+  border-color: var(--ink);
+  background: var(--panel);
+  outline: none;
 }
 
 #analysisSourceSelect {
@@ -653,7 +685,7 @@ input {
 .analysisSummary div {
   background: white;
   border: 1px solid var(--soft-line);
-  border-radius: 20px;
+  border-radius: 0;
   padding: 18px;
 }
 
@@ -677,7 +709,7 @@ input {
 .recordingCard {
   background: white;
   border: 1px solid var(--soft-line);
-  border-radius: 22px;
+  border-radius: 0;
   padding: 18px;
 }
 
@@ -707,9 +739,8 @@ audio {
 }
 
 .smallBtn {
-  padding: 9px 12px;
-  border-radius: 12px;
-  font-size: 13px;
+  padding: 9px 11px;
+  font-size: 10.5px;
 }
 
 .downloadBtn {
@@ -723,24 +754,25 @@ audio {
 }
 
 .deleteBtn {
-  background: #f3e8e8;
-  color: var(--wcm-red);
+  background: var(--panel);
+  border: 1px solid var(--rec-border);
+  color: var(--rec-text);
 }
 
 .empty {
-  background: white;
-  border: 1px dashed var(--line);
-  border-radius: 22px;
+  background: var(--panel-alt);
+  border: 1px dashed var(--field-border);
   padding: 32px;
   color: var(--muted);
   text-align: center;
+  font-size: 14px;
 }
 
 .logBox {
   margin-top: 18px;
   background: rgba(255,255,255,0.68);
   border: 1px solid var(--soft-line);
-  border-radius: 20px;
+  border-radius: 0;
   padding: 12px 14px;
   height: 95px;
   overflow-y: auto;
@@ -766,12 +798,15 @@ audio {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 3px;
-  background: #f1f1f4;
+  gap: 4px;
+  background: var(--panel);
   color: var(--ink);
-  border: 1px solid var(--line);
-  padding: 16px;
+  border: 1px solid var(--field-border);
+  padding: 15px;
   text-align: left;
+  font-family: var(--font-ui);
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .sourceBtn span {
@@ -971,7 +1006,7 @@ audio {
   background: #eef1f6;
   color: var(--ink);
   border: 2px solid transparent;
-  border-radius: 14px;
+  border-radius: 0;
   padding: 9px 13px;
   font-weight: 600;
   font-size: 13px;
@@ -1003,7 +1038,7 @@ audio {
 .clinRunBtns { display: flex; gap: 10px; }
 
 .clinGate {
-  border-radius: 14px;
+  border-radius: 0;
   padding: 12px 14px;
   margin-bottom: 14px;
   font-size: 14px;
@@ -1026,7 +1061,7 @@ audio {
 
 .sessionRow {
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 0;
   padding: 12px;
 }
 
@@ -1048,7 +1083,7 @@ audio {
   font-weight: 800;
   font-size: 17px;
   padding: 14px;
-  border-radius: 14px;
+  border-radius: 0;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
@@ -1090,7 +1125,7 @@ audio {
 .patientReads {
   margin-top: 18px;
   background: rgba(255,255,255,0.7);
-  border-radius: 14px;
+  border-radius: 0;
   padding: 16px 20px;
 }
 
@@ -1104,7 +1139,7 @@ audio {
 .patientTimerWrap {
   height: 14px;
   background: rgba(255,255,255,0.6);
-  border-radius: 10px;
+  border-radius: 0;
   overflow: hidden;
   margin-top: 16px;
 }
@@ -1122,7 +1157,7 @@ audio {
   background: var(--green);
   color: #fff;
   border: none;
-  border-radius: 16px;
+  border-radius: 0;
   font-size: 26px;
   font-weight: 800;
   padding: 20px 40px;
@@ -1152,7 +1187,7 @@ audio {
 .clinPatientMeta {
   background: #eef3fb;
   border: 1px solid #d6e2f3;
-  border-radius: 12px;
+  border-radius: 0;
   padding: 10px 14px;
   font-size: 14px;
   color: #33506f;
@@ -1161,7 +1196,7 @@ audio {
 
 .sessionBlock {
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 0;
   padding: 14px;
   margin-bottom: 14px;
   background: #fff;
@@ -1216,7 +1251,7 @@ audio {
   gap: 14px;
   background: var(--card-solid);
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: 0;
   padding: 20px;
   margin-top: 14px;
 }
@@ -1251,9 +1286,9 @@ audio {
   display: flex;
   align-items: center;
   gap: 14px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  padding: 14px;
 }
 .patientRow.active { border-color: var(--brand); background: var(--brand-tint); }
 .patientRowMain { font-size: 15px; }
@@ -1271,7 +1306,7 @@ audio {
 .clinSessionLabel {
   background: #eef3fb;
   border: 1px solid #d6e2f3;
-  border-radius: 999px;
+  border-radius: 0;
   padding: 9px 14px;
   font-size: 13px;
   font-weight: 700;
@@ -1281,7 +1316,7 @@ audio {
 
 .sessionFolder {
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 0;
   padding: 8px 14px 12px;
   margin-bottom: 12px;
   background: #fff;
@@ -1317,7 +1352,7 @@ audio {
   font-size: 12px;
   color: #33506f;
   background: #eef3fb;
-  border-radius: 10px;
+  border-radius: 0;
   padding: 6px 10px;
   margin: 6px 0;
 }
@@ -1325,7 +1360,7 @@ audio {
 .featureCard {
   background: #f4f8fd;
   border: 1px solid #dbe7f5;
-  border-radius: 12px;
+  border-radius: 0;
   padding: 10px 12px;
   margin: 6px 0;
 }
@@ -1340,7 +1375,7 @@ audio {
 .featureTag {
   background: #dbe7f5;
   color: #33506f;
-  border-radius: 999px;
+  border-radius: 0;
   padding: 1px 8px;
   font-size: 10px;
   margin-left: 6px;
@@ -1360,7 +1395,7 @@ audio {
 .clinEhrCard {
   background: #f4f8fd;
   border: 1px solid #dbe7f5;
-  border-radius: 14px;
+  border-radius: 0;
   padding: 12px 14px;
   margin: 12px 0;
 }
@@ -1393,7 +1428,7 @@ audio {
 .trendPanel {
   background: #f4f8fd;
   border: 1px solid #dbe7f5;
-  border-radius: 16px;
+  border-radius: 0;
   padding: 14px 16px;
   margin-bottom: 14px;
 }
@@ -1413,7 +1448,7 @@ audio {
 .trendCard {
   background: white;
   border: 1px solid #dbe7f5;
-  border-radius: 12px;
+  border-radius: 0;
   padding: 10px 12px;
 }
 .trendLabel {
@@ -1588,7 +1623,7 @@ audio {
   align-self: flex-start;
   margin-top: var(--sp-1);
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
@@ -1756,7 +1791,7 @@ audio {
 
 .transportBadge {
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: 0;
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
@@ -1852,7 +1887,7 @@ audio {
 
 .riskBadge {
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: 0;
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
