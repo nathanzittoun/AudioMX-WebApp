@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "AudioMX \u2014 voice biomarker capture and analysis for clinical and R&D use",
+  "description": "AudioMX — voice biomarker capture and analysis for clinical and R&D use",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
