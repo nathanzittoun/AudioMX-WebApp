@@ -14,8 +14,9 @@ import { log } from "../ui/log";
 import { setStatus } from "../ui/status";
 
 /**
- * ScriptProcessor buffer, in samples at the capture rate. Also the size of the
- * problem in preRollFrames() below.
+ * Frames per block handed to the ingest path, at the capture rate. Also the
+ * size of the problem in preRollFrames() below. Both paths use it, so the
+ * timing the rest of the app sees does not depend on which one is running.
  */
 const PROCESSOR_BUFFER = 4096;
 
@@ -25,6 +26,7 @@ let stream: MediaStream | null = null;
 let context: AudioContext | null = null;
 let sourceNode: MediaStreamAudioSourceNode | null = null;
 let processorNode: ScriptProcessorNode | null = null;
+let workletNode: AudioWorkletNode | null = null;
 
 /** Native rate of the open context. Exposed for diagnostics and tests. */
 export function captureRate(): number {
@@ -33,6 +35,13 @@ export function captureRate(): number {
 
 export function isReady(): boolean {
   return context !== null;
+}
+
+/** Which capture path is live. "none" until the microphone is connected. */
+export function captureMode(): "worklet" | "script" | "none" {
+  if (workletNode) return "worklet";
+  if (processorNode) return "script";
+  return "none";
 }
 
 /**
@@ -44,11 +53,84 @@ export function isReady(): boolean {
  * room as it was before the clinician pressed anything — and, in the clinical
  * exam, with the countdown's go tone.
  *
+ * Zero on the worklet path, and that is the better fix rather than a shortcut:
+ * the worklet is told to drop its partial buffer at Start, so nothing from
+ * before Start survives to be skipped. Keeping a non-zero skip there would
+ * throw away a block of real audio from *after* Start — the opposite mistake,
+ * and a harder one to notice.
+ *
  * Returned in frames at SAMPLE_RATE, which is what the ingest path counts, so
  * it stays correct when the browser refuses our rate and we resample.
  */
 export function preRollFrames(): number {
+  if (workletNode) return 0;
   return Math.ceil((PROCESSOR_BUFFER * SAMPLE_RATE) / captureRate());
+}
+
+/** One block of captured audio, converted and handed to the recorder. */
+function takeBlock(input: Float32Array, rate: number): void {
+  if (!capture.recording || device.sourceId !== "computer") return;
+
+  const source = rate === SAMPLE_RATE
+    ? input
+    : resampler.process(input, rate, SAMPLE_RATE);
+
+  const samples = new Int16Array(source.length);
+  for (let i = 0; i < source.length; i++) {
+    const s = Math.max(-1, Math.min(1, source[i]));
+    samples[i] = Math.round(s * 32767);
+  }
+
+  ingest(samples, 1);
+}
+
+/**
+ * Put the microphone on the audio thread if this browser can, and on the main
+ * thread if it cannot.
+ *
+ * The worklet is not an optimisation. A ScriptProcessor callback that arrives
+ * while the main thread is drawing a waveform and running an FFT for the live
+ * spectrum is late, and a late block is dropped outright — the audio in it is
+ * gone from the take. On the audio thread the schedule cannot be delayed by
+ * main-thread work, and a block that arrives late merely arrives late.
+ *
+ * The fallback is the old path verbatim, for a browser without AudioWorklet.
+ */
+async function attachCapture(
+  ctx: AudioContext, source: MediaStreamAudioSourceNode, rate: number
+): Promise<void> {
+  if (ctx.audioWorklet) {
+    try {
+      // Served from public/ rather than imported. Vite inlines a small asset as
+      // a data: URI, and addModule() refuses one — the module has to come from a
+      // real, same-origin address. BASE_URL is what makes it resolve both at "/"
+      // in dev and under the Pages sub-path in the build.
+      await ctx.audioWorklet.addModule(import.meta.env.BASE_URL + "capture-worklet.js");
+      workletNode = new AudioWorkletNode(ctx, "audiomx-capture", {
+        numberOfInputs: 1,
+        numberOfOutputs: 0,
+      });
+      workletNode.port.onmessage = event => {
+        takeBlock(event.data as Float32Array, rate);
+      };
+      // No output, so nothing to connect to the destination — which also means
+      // the microphone is never routed to the speakers.
+      source.connect(workletNode);
+      return;
+    } catch (error) {
+      console.warn("AudioWorklet unavailable, falling back:", error);
+      workletNode = null;
+    }
+  }
+
+  log("This browser has no AudioWorklet; capture runs on the main thread and " +
+    "may drop blocks while the live monitors are drawing.");
+  processorNode = ctx.createScriptProcessor(PROCESSOR_BUFFER, 1, 1);
+  processorNode.onaudioprocess = event => {
+    takeBlock(event.inputBuffer.getChannelData(0), rate);
+  };
+  source.connect(processorNode);
+  processorNode.connect(ctx.destination);
 }
 
 export async function connectComputerMic(): Promise<void> {
@@ -90,27 +172,7 @@ export async function connectComputerMic(): Promise<void> {
     }
 
     sourceNode = context.createMediaStreamSource(stream);
-    processorNode = context.createScriptProcessor(PROCESSOR_BUFFER, 1, 1);
-
-    processorNode.onaudioprocess = event => {
-      if (!capture.recording || device.sourceId !== "computer") return;
-
-      const input = event.inputBuffer.getChannelData(0);
-      const source = rate === SAMPLE_RATE
-        ? input
-        : resampler.process(input, rate, SAMPLE_RATE);
-
-      const samples = new Int16Array(source.length);
-      for (let i = 0; i < source.length; i++) {
-        const s = Math.max(-1, Math.min(1, source[i]));
-        samples[i] = Math.round(s * 32767);
-      }
-
-      ingest(samples, 1);
-    };
-
-    sourceNode.connect(processorNode);
-    processorNode.connect(context.destination);
+    await attachCapture(context, sourceNode, rate);
 
     device.connected = true;
 
@@ -135,6 +197,11 @@ export function startComputerMicCapture(): void {
   // The autoplay policy parks a context created outside a gesture; resuming is
   // a no-op when it is already running.
   if (context && context.state === "suspended") void context.resume();
+  // Drop what the worklet has collected but not yet posted, so the take opens
+  // at Start rather than reaching back over a whole block. The warm-up skip in
+  // startRecording() still covers the block already in flight.
+  workletNode?.port.postMessage("flush");
+  resampler.reset();
   log("Computer mic recording started.");
 }
 
@@ -144,6 +211,11 @@ export function stopComputerMicCapture(): void {
 
 /** Release the microphone and tear the graph down. */
 export async function disconnectComputerMic(): Promise<void> {
+  if (workletNode) {
+    workletNode.port.onmessage = null;
+    workletNode.disconnect();
+    workletNode = null;
+  }
   if (processorNode) {
     processorNode.disconnect();
     processorNode.onaudioprocess = null;

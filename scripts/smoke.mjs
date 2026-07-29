@@ -615,6 +615,14 @@ await ev("audiomx.app.setAppMode('rnd')");
 await ev("audiomx.app.setInputSource('computer')"); await new Promise(r => setTimeout(r, 300));
 await ev("audiomx.computerMicSource.connectComputerMic()"); await new Promise(r => setTimeout(r, 2200));
 T("micro ordi connecte", (await ev("audiomx.state.device.connected")) === true);
+// LE test du correctif audio. On bloque volontairement le fil principal 600 ms
+// en pleine capture — ce que fait, en plus discret, le dessin des courbes et la
+// FFT du spectre live pendant un examen. Un ScriptProcessorNode y perd ses
+// blocs en retard, et la prise ressort trouee et plus courte. Un AudioWorklet
+// tourne sur le fil audio : les blocs arrivent en retard, pas en moins.
+// L'assertion de duree ci-dessous est ce qui le mesure.
+await ev("setTimeout(() => { const end = performance.now() + 600;" +
+  " while (performance.now() < end); }, 700)");
 await ev("audiomx.app.startRecording()");
 // Pendant la capture, pas apres : les moniteurs live sont effaces a l'arret.
 const [rndWave, rndSpec] = await tracedPeakDuring(["waveform", "liveSpectrum"], TRACE, 2000);
@@ -634,7 +642,15 @@ T("Analyze depuis le mode clinique arrive sur une vue visible",
   (await visible("rndMode")) === true &&
   (await ev("document.querySelector('.view.activeView')?.id")) === "analyzeView");
 await ev("audiomx.app.setAppMode('rnd')");
-T("duree ~2s", Math.abs((await ev("audiomx.state.library.recordings[0]?.duration")) - 2) < 0.35, (await ev("audiomx.state.library.recordings[0]?.duration")) + "s");
+// La duree est quantifiee par blocs de 4096 trames (0,256 s) : le reste, encore
+// dans le tampon du worklet a l'arret, n'arrive jamais. 2 s de capture donnent
+// donc 7 blocs complets = 1,792 s, et c'est normal. Un bloc PERDU ferait 1,536.
+// Le seuil est place entre les deux, sinon l'assertion ne distingue rien.
+const capturedSeconds = await ev("audiomx.state.library.recordings[0]?.duration");
+const blockSeconds = 4096 / 16000;
+T("aucun bloc perdu malgre 600 ms de fil principal bloque",
+  capturedSeconds > 2 - blockSeconds - 0.02,
+  capturedSeconds + " s ; un bloc perdu donnerait " + (capturedSeconds - blockSeconds).toFixed(3));
 T("features extraites", (await ev("!!audiomx.state.library.recordings[0]?.features")));
 T("WAV a 16 kHz", (await ev("audiomx.state.library.recordings[0].blob.arrayBuffer().then(b=>new DataView(b).getUint32(24,true))")) === 16000);
 
@@ -689,10 +705,20 @@ const warm = await ev(`(()=>{
   c.recording = false; c.chunks = []; c.frames = 0; c.values = 0; c.live = [];
   return { preRoll, afterFirst, afterSecond };
 })()`);
-T("pre-roll dimensionne sur un buffer", warm && warm.preRoll >= 1024,
+// La capture tourne sur le fil audio quand le navigateur le permet. C'est LA
+// difference entre un bloc en retard et un bloc perdu : un callback de
+// ScriptProcessor arrive en retard est jete, avec l'audio qu'il portait.
+T("la capture tourne sur le fil audio (AudioWorklet)",
+  (await ev("audiomx.computerMicSource.captureMode()")) === "worklet",
+  await ev("audiomx.computerMicSource.captureMode()"));
+
+// Sur le chemin worklet, le pre-roll vaut zero — non pas parce qu'on renonce a
+// le traiter, mais parce que le worklet vide son tampon partiel au Start.
+// Garder un rejet non nul y jetterait un bloc d'audio d'APRES le Start.
+T("pas de pre-roll a jeter sur le chemin worklet", warm?.preRoll === 0,
   warm ? warm.preRoll + " trames" : "-");
-T("la premiere trame (l'avant-Start) est jetee", warm?.afterFirst === 0);
-T("la suivante est bien enregistree", warm?.afterSecond === 4096, warm?.afterSecond + " trames");
+T("rien n'est jete quand le pre-roll est nul", warm?.afterFirst === 4096);
+T("le bloc suivant s'ajoute", warm?.afterSecond === 8192, warm?.afterSecond + " trames");
 
 // --- 4. clinique ---
 await ev("audiomx.app.setAppMode('clinical'); audiomx.clinical.setClinicalTab('patients')");
