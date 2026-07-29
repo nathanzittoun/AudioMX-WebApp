@@ -170,10 +170,40 @@ const visible = async id => ev(`(()=>{const n=document.getElementById('${id}');r
 const navActive = async () => ev(
   "[...document.querySelectorAll('.navBtn.active')].map(b=>b.dataset.nav).join(',')");
 
-T("l'app ouvre sur l'apercu, pas sur le banc de test",
-  (await visible("homeMode")) === true && (await visible("rndMode")) === false &&
-  (await visible("clinicalMode")) === false);
-T("bouton Overview actif au demarrage", (await navActive()) === "home");
+// --- 1b. page vitrine ---
+// L'app ouvre sur la page produit, pas sur l'outil. Elle remplace toute la
+// coque applicative — en-tete et barre comprises — parce qu'elle s'adresse a
+// quelqu'un qui n'a pas encore decide de s'en servir.
+T("l'app ouvre sur la page produit",
+  (await visible("landingMode")) === true && (await visible("appShell")) === false);
+
+// La waveform est dessinee des le premier rendu, pas a la premiere frame :
+// requestAnimationFrame ne tourne pas dans une page cachee (onglet en arriere
+// plan, navigateur headless) et la bande resterait vide.
+T("la waveform est tracee sans attendre une frame",
+  (await ev("(document.getElementById('lWavePath').getAttribute('d')||'').length")) > 500);
+// Les polices sont hebergees localement : un CDN de police est une dependance
+// reseau que le service worker ne peut pas satisfaire hors ligne.
+T("aucune police chargee depuis un CDN externe",
+  (await ev("[...document.querySelectorAll('link')].every(l => !/fonts\\.(googleapis|gstatic)/.test(l.href))")) === true);
+T("la police display est bien appliquee",
+  /Bricolage/.test(await ev("getComputedStyle(document.querySelector('.lTitle')).fontFamily")));
+
+// "Request a demo" est la seule porte d'entree vers l'app.
+await ev("document.querySelector('.lBtn[data-nav=\"home\"]').click()");
+await new Promise(r => setTimeout(r, 250));
+T("« Request a demo » ouvre l'app",
+  (await visible("appShell")) === true && (await visible("landingMode")) === false &&
+  (await visible("homeMode")) === true && (await navActive()) === "home");
+
+// Et le logo de l'en-tete est la sortie.
+await ev("document.querySelector('.topBar .brand').click()");
+await new Promise(r => setTimeout(r, 250));
+T("le logo de l'en-tete revient a la page produit",
+  (await visible("landingMode")) === true && (await visible("appShell")) === false);
+await ev("document.querySelector('.lNavDemo').click()");
+await new Promise(r => setTimeout(r, 250));
+T("bouton Overview actif une fois dans l'app", (await navActive()) === "home");
 
 await navClick("record");
 T("nav -> Record bascule le mode ET l'onglet",

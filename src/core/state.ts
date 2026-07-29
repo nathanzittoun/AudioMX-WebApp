@@ -141,7 +141,7 @@ export const library = {
  *  "is this rnd?", so the pages that show no live monitor needed no other call
  *  site to change. */
 export const ui = {
-  mode: "home" as "rnd" | "clinical" | "home" | "device",
+  mode: "landing" as "rnd" | "clinical" | "home" | "device" | "landing",
 };
 
 /** R&D analysis view state. Not used by the clinical mode. */

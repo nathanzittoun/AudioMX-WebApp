@@ -19,15 +19,193 @@
 </head>
 
 <body>
-  <div class="appShell">
-    <header class="topBar">
-      <div class="brand">
-        <img class="appIcon" src="AudioMXimagelogo.png" alt="AudioMX icon" />
+  <!-- ===================================================================
+       LANDING — the product, for someone who has never seen it.
+
+       A different register from the app on purpose: full bleed, sharp
+       corners, display type. It is a fourth top-level container like any
+       other (see setAppMode), so it costs no second page, no second entry
+       point, and no change to the Epic redirect URI — which is the app root
+       and must stay exactly what is registered with Epic.
+
+       "Request a demo" enters the app. The app's own header and nav are
+       hidden while this is on screen.
+       =================================================================== -->
+  <div id="landingMode">
+    <div class="lWrap">
+      <header class="lTop">
+        <img class="lLogo" src="AudioMXnamelogo.png" alt="AudioMX" />
+        <nav class="lNav">
+          <a href="#lDevice">Device</a>
+          <a href="#lInside">Inside</a>
+          <a href="#lPartners">Partners</a>
+          <button class="lNavDemo" data-nav="home">Demo</button>
+        </nav>
+      </header>
+
+      <section class="lHero">
         <div>
-          <img class="wordmark" src="AudioMXnamelogo.png" alt="AudioMX" />
-          <p>Voice &amp; speech biomarker platform</p>
+          <p class="lEyebrow">Voice biomarker platform</p>
+          <h1 class="lTitle">The voice carries the sign. <em>We measure it.</em></h1>
+          <p class="lLede">
+            AudioMX captures speech on a purpose-built dual-microphone recorder
+            and runs it through a clinical algorithm trained to find disease in
+            the signal. The exam takes minutes at the desk, and the result goes
+            back into the patient's chart.
+          </p>
+          <div class="lActions">
+            <button class="lBtn" data-nav="home">Request a demo</button>
+            <a class="lBtn ghost" href="#lInside">See inside</a>
+          </div>
         </div>
-      </div>
+
+        <figure class="lStage">
+          <!-- Drop a render at public/device.png and swap this <svg> for
+               <img src="%BASE_URL%device.png" alt="AudioMX recorder" />.
+               Drawn rather than linked until then: a missing file would 404,
+               and the app is offline-first. -->
+          <svg class="lDeviceArt" viewBox="0 0 260 480" role="img"
+               aria-label="The AudioMX recorder: a handheld aluminium body with a screen and two microphone ports">
+            <defs>
+              <linearGradient id="lShell" x1="0" y1="0" x2="1" y2="0.6">
+                <stop offset="0%" stop-color="#f7f8fa" />
+                <stop offset="42%" stop-color="#d9dde3" />
+                <stop offset="58%" stop-color="#eef0f3" />
+                <stop offset="100%" stop-color="#c3c9d1" />
+              </linearGradient>
+              <pattern id="lPorts" width="9" height="9" patternUnits="userSpaceOnUse">
+                <circle cx="4.5" cy="4.5" r="1.5" fill="#8d949d" />
+              </pattern>
+            </defs>
+
+            <rect x="48" y="26" width="164" height="428" rx="26" fill="url(#lShell)" />
+            <rect x="48" y="26" width="164" height="428" rx="26" fill="none" stroke="#b6bcc4" />
+
+            <!-- screen -->
+            <rect x="66" y="52" width="128" height="96" rx="7" fill="#0d1117" />
+            <text x="80" y="78" class="lScreenIcon">‸</text>
+            <text id="lTimecode" x="130" y="98" class="lScreenTime">00:00:00</text>
+            <rect x="80" y="112" width="100" height="12" fill="none" />
+            <path id="lScreenWave" d="" class="lScreenWave" />
+            <text x="80" y="140" class="lScreenMeta">Patient 0047</text>
+            <text x="180" y="140" class="lScreenMeta lRight">12:30 PM</text>
+
+            <circle cx="130" cy="196" r="15" fill="#dfe3e8" stroke="#b6bcc4" />
+            <circle cx="130" cy="196" r="7" fill="#c8ced6" />
+
+            <circle cx="106" cy="330" r="20" fill="url(#lPorts)" />
+            <circle cx="154" cy="330" r="20" fill="url(#lPorts)" />
+
+            <rect x="112" y="436" width="36" height="7" rx="3.5" fill="#9aa1aa" />
+          </svg>
+
+          <figcaption id="lReadout" class="lReadout">
+            <span class="lDot"></span> Recording · dual MEMS · 16 kHz
+          </figcaption>
+        </figure>
+      </section>
+    </div>
+
+    <!-- The signature. Runs continuously and gains amplitude as you scroll. -->
+    <svg id="lWave" class="lWave" preserveAspectRatio="none" aria-hidden="true">
+      <path id="lWavePath" />
+    </svg>
+
+    <div class="lWrap">
+      <dl id="lDevice" class="lSpecs">
+        <div class="lSpec"><dt>Capture</dt><dd>Dual MEMS mics</dd></div>
+        <div class="lSpec"><dt>Wireless</dt><dd>ESP32-WROOM-32</dd></div>
+        <div class="lSpec"><dt>Battery</dt><dd>1000 mAh · 3.70 Wh</dd></div>
+        <div class="lSpec"><dt>Charging</dt><dd>USB-C</dd></div>
+        <div class="lSpec"><dt>Housing</dt><dd>Machined aluminium</dd></div>
+      </dl>
+
+      <section id="lInside" class="lInside">
+        <div>
+          <p class="lEyebrow">Inside</p>
+          <h2 class="lH2">Five parts, one job.</h2>
+          <p class="lBody">
+            Nothing in the enclosure is there to add a feature. The board is laid
+            out around the two microphones, and everything else gets out of their
+            way.
+          </p>
+          <ul class="lParts">
+            <li><span>Mic L/R</span> Two capsules on a fixed baseline, so a voice across the desk stays separable from the one beside it.</li>
+            <li><span>ESP32</span> Streams the take out over USB-C or Wi-Fi. No audio is kept on the device.</li>
+            <li><span>Screen</span> Elapsed time, level, and which patient the take belongs to.</li>
+            <li><span>Cell</span> A full clinic day on a charge, upright in the dock overnight.</li>
+            <li><span>Shell</span> Aluminium, wipe-down, no seams that trap anything.</li>
+          </ul>
+        </div>
+
+        <!-- Second slot: drop public/device-inside.png and swap this figure. -->
+        <figure class="lExploded">
+          <svg viewBox="0 0 220 400" role="img" aria-label="The internals: board, ESP32 module, two microphone capsules and the cell">
+            <rect x="16" y="12" width="188" height="376" rx="20" fill="#eef0f3" stroke="#c3c9d1" />
+            <rect x="34" y="30" width="152" height="86" rx="6" fill="#1b2530" />
+            <rect x="30" y="126" width="160" height="244" rx="8" fill="#1c6b45" />
+            <rect x="56" y="146" width="70" height="46" rx="4" fill="#e8eaed" />
+            <text x="91" y="174" class="lChip">ESP32</text>
+            <circle cx="72" cy="252" r="19" fill="#11161c" stroke="#3d444d" />
+            <circle cx="146" cy="252" r="19" fill="#11161c" stroke="#3d444d" />
+            <text x="109" y="290" class="lBoardLabel">MIC L · MIC R</text>
+            <rect x="46" y="306" width="128" height="46" rx="4" fill="#d7dade" stroke="#a9aeb5" />
+            <text x="110" y="334" class="lBoardLabel dark">3.7V 1000mAh</text>
+          </svg>
+        </figure>
+      </section>
+
+      <section class="lFlow">
+        <p class="lEyebrow">How a result is produced</p>
+        <h2 class="lH2">Capture, measure, score.</h2>
+        <ol class="lSteps">
+          <li>
+            <span class="lStepNum">01</span>
+            <h3>Capture</h3>
+            <p>Six guided tasks tell the patient what to say and for how long. A quality gate rejects a take that clips or is too quiet to measure, while they are still in the room.</p>
+          </li>
+          <li>
+            <span class="lStepNum">02</span>
+            <h3>Measure</h3>
+            <p>Acoustic features come straight off the take — F0, HNR, jitter, shimmer, spectra. Measurements of the signal, not a diagnosis.</p>
+          </li>
+          <li>
+            <span class="lStepNum">03</span>
+            <h3>Score</h3>
+            <p>The model reads those features and returns a risk score, which is written back to the chart as a note. <strong>Not connected in this build.</strong></p>
+          </li>
+        </ol>
+      </section>
+
+      <section id="lPartners" class="lPartners">
+        <p class="lEyebrow">Developed with</p>
+        <div class="lMarks">
+          <img src="nyp_logo.png" alt="NewYork-Presbyterian" />
+          <img class="wcm" src="logo.png" alt="Weill Cornell Medicine Otolaryngology — Head &amp; Neck Surgery" />
+        </div>
+        <div class="lActions lCentered">
+          <button class="lBtn" data-nav="home">Request a demo</button>
+        </div>
+      </section>
+
+      <footer class="lFooter">
+        <span>AudioMX</span>
+        <span>hello@audiomx.com</span>
+      </footer>
+    </div>
+  </div><!-- /#landingMode -->
+
+  <div class="appShell" id="appShell" hidden>
+    <header class="topBar">
+      <!-- The wordmark is the way out of the app: back to the landing page.
+           data-nav works on any element — initNav is delegated. -->
+      <button class="brand" type="button" data-nav="landing" title="Back to the AudioMX home page">
+        <img class="appIcon" src="AudioMXimagelogo.png" alt="" />
+        <span>
+          <img class="wordmark" src="AudioMXnamelogo.png" alt="AudioMX" />
+          <span class="brandTag">Voice &amp; speech biomarker platform</span>
+        </span>
+      </button>
 
       <div class="partnerLogos">
         <img src="logo.png" alt="Weill Cornell Medicine Otolaryngology" />

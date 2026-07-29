@@ -44,6 +44,7 @@ import { el, requireEl } from "./ui/dom";
 import { toggleNoiseAttenuator } from "./rnd/noiseToggle";
 import { initClinical, setClinicalTab } from "./clinical";
 import { goto, initNav } from "./ui/nav";
+import { initLanding } from "./ui/landing";
 import { registerServiceWorker } from "./pwa";
 
 function boot(): void {
@@ -135,10 +136,10 @@ function boot(): void {
 
   initClinical();
   void initEhr();
-  // The app opens on the overview, not on the microphone test bench. initClinical
-  // leaves the clinical side on its Patients tab, so arriving there later is one
-  // click with nothing half-set.
-  goto("home");
+  // The app opens on the product page. initClinical leaves the clinical side on
+  // its Patients tab, so arriving there later is one click with nothing half-set.
+  initLanding();
+  goto("landing");
 
   // Restore recordings persisted in this browser from earlier sessions.
   void restoreRecordings();

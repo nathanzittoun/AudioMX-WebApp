@@ -9,11 +9,14 @@
 // Results are cached, so repeated lookups cost nothing and identity is stable
 // (the previous consts held one fixed reference each).
 
-const elementCache = new Map<string, HTMLElement | null>();
+// Element, not HTMLElement: the landing page addresses <path> and <svg> nodes
+// by id, and those are SVGElement. The default type parameter stays
+// HTMLElement, so every existing call site is typed exactly as before.
+const elementCache = new Map<string, Element | null>();
 const contextCache = new Map<string, CanvasRenderingContext2D | null>();
 
 /** The element, or null when the page does not have it. */
-export function el<T extends HTMLElement = HTMLElement>(id: string): T | null {
+export function el<T extends Element = HTMLElement>(id: string): T | null {
   if (!elementCache.has(id)) {
     elementCache.set(id, document.getElementById(id));
   }
@@ -21,7 +24,7 @@ export function el<T extends HTMLElement = HTMLElement>(id: string): T | null {
 }
 
 /** The element, or a named error. Use where absence is a bug, not a variant. */
-export function requireEl<T extends HTMLElement = HTMLElement>(id: string): T {
+export function requireEl<T extends Element = HTMLElement>(id: string): T {
   const node = el<T>(id);
   if (!node) throw new Error(`Missing element #${id}`);
   return node;

@@ -17,13 +17,14 @@
 // are injected once from main.ts instead.
 
 export interface NavHandlers {
-  setAppMode(mode: "rnd" | "clinical" | "home" | "device"): void;
+  setAppMode(mode: "rnd" | "clinical" | "home" | "device" | "landing"): void;
   showTab(tabId: string): void;
   setClinicalTab(name: string): void;
 }
 
 /** What each nav button stands for, in terms of the calls that already exist. */
 const SECTIONS = {
+  landing: { mode: "landing" },
   home: { mode: "home" },
   device: { mode: "device" },
   patients: { mode: "clinical", ctab: "patients" },
@@ -89,6 +90,7 @@ function shown(id: string): boolean {
 }
 
 function currentSection(): NavSection {
+  if (shown("landingMode")) return "landing";
   if (shown("homeMode")) return "home";
   if (shown("deviceMode")) return "device";
   if (shown("clinicalMode")) {

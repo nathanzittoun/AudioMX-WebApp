@@ -1,3 +1,40 @@
+/* Self-hosted so the app keeps working offline. A font CDN is a network
+   dependency the service worker cannot satisfy, and a page whose type
+   silently falls back to a system stack is not the design that was
+   approved. Latin subset only. */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("./assets/fonts/bricolage-400-800.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/plexmono-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./assets/fonts/plexmono-500.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("./assets/fonts/inter-400-700.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* Design tokens.
    ---------------------------------------------------------------------------
    One rule governs the palette: a colour means exactly one thing.
@@ -39,8 +76,9 @@
      target and costs no network request, which matters for an offline-first
      app behind a service worker. The mono face carries measurements and
      uppercase labels, where digits have to line up. */
-  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "IBM Plex Mono", monospace;
+  --font-display: "Bricolage Grotesque", var(--font-ui);
+  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Spacing scale. Every gap and pad should be one of these, so that rhythm is
      a choice from a set rather than a number typed at the moment. */
@@ -1852,4 +1890,480 @@ audio {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* ===========================================================================
+   LANDING PAGE
+
+   A deliberately different register from the app: flat field colour instead of
+   floating cards, 2px corners instead of 28px, Bricolage at 800 for display.
+   The app is an instrument and reads like one; this page addresses someone who
+   has not decided to use it yet.
+
+   Its own palette lives here rather than in :root, because these values are
+   this page's and must not leak into the clinical UI.
+   =========================================================================== */
+
+#landingMode {
+  --field: #edeff2;
+  --panel: #f3f3f3;
+  --l-ink: #0f1d2a;
+  --l-soft: #63707d;
+  --l-line: rgba(15, 29, 42, 0.13);
+
+  min-height: 100vh;
+  background: var(--field);
+  color: var(--l-ink);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.lWrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+.lEyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--l-soft);
+}
+
+/* --- masthead --- */
+
+.lTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: 26px 0;
+}
+
+.lLogo {
+  height: 26px;
+  display: block;
+}
+
+.lNav {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lNav a,
+.lNavDemo {
+  color: var(--l-soft);
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.lNav a:hover,
+.lNavDemo:hover {
+  color: var(--l-ink);
+  box-shadow: none;
+}
+
+.lNavDemo {
+  color: var(--blue-deep, #2f5a8c);
+  font-weight: 500;
+}
+
+/* --- hero --- */
+
+.lHero {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 56px;
+  align-items: center;
+  padding: 34px 0 10px;
+  min-height: 74vh;
+}
+
+.lTitle {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(38px, 6vw, 74px);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  margin: 16px 0 22px;
+  max-width: 13ch;
+  text-wrap: balance;
+}
+
+.lTitle em {
+  font-style: normal;
+  color: var(--brand);
+}
+
+.lLede {
+  font-size: 18px;
+  color: var(--l-soft);
+  max-width: 44ch;
+  margin: 0 0 34px;
+}
+
+.lActions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.lCentered {
+  justify-content: center;
+  margin-top: var(--sp-5);
+}
+
+.lBtn {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 14px 22px;
+  border-radius: 2px;
+  text-decoration: none;
+  border: 1px solid var(--l-ink);
+  background: var(--l-ink);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.lBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+.lBtn.ghost {
+  background: transparent;
+  color: var(--l-ink);
+  border-color: var(--l-line);
+}
+
+.lBtn.ghost:hover {
+  border-color: var(--l-ink);
+}
+
+/* --- the device --- */
+
+.lStage {
+  position: relative;
+  margin: 0;
+  background: var(--panel);
+  border-radius: 3px;
+  padding: 30px 0 54px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.lDeviceArt {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 30px 50px rgba(15, 29, 42, 0.16));
+}
+
+.lScreenIcon { fill: #7f8b98; font-size: 15px; font-family: var(--font-ui); }
+.lScreenTime {
+  fill: #eef3f9;
+  font-family: var(--font-mono);
+  font-size: 17px;
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
+}
+.lScreenWave { fill: none; stroke: var(--brand-bright); stroke-width: 1.2; }
+.lScreenMeta { fill: #8d99a6; font-family: var(--font-ui); font-size: 9px; }
+.lScreenMeta.lRight { text-anchor: end; }
+.lChip { fill: #1b2530; font-family: var(--font-mono); font-size: 11px; text-anchor: middle; }
+.lBoardLabel { fill: #cfe3d8; font-family: var(--font-mono); font-size: 8px; text-anchor: middle; }
+.lBoardLabel.dark { fill: #4b5560; }
+
+.lReadout {
+  position: absolute;
+  left: 24px;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--l-soft);
+  opacity: 0;
+}
+
+.lDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rec);
+}
+
+/* --- the running waveform --- */
+
+.lWave {
+  display: block;
+  width: 100%;
+  height: 64px;
+  margin: 26px 0 0;
+}
+
+.lWave path {
+  fill: none;
+  stroke: var(--brand-bright);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+}
+
+/* --- spec strip --- */
+
+.lSpecs {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: var(--l-line);
+  border-top: 1px solid var(--l-line);
+  border-bottom: 1px solid var(--l-line);
+  margin: 8px 0 0;
+}
+
+.lSpec {
+  background: var(--field);
+  padding: 22px 18px;
+}
+
+.lSpec dt {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--l-soft);
+}
+
+.lSpec dd {
+  margin: 8px 0 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+/* --- inside --- */
+
+.lH2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(28px, 3.6vw, 44px);
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  margin: 14px 0 20px;
+  text-wrap: balance;
+}
+
+.lBody {
+  color: var(--l-soft);
+  max-width: 46ch;
+}
+
+.lInside {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 64px;
+  align-items: center;
+  padding: 110px 0;
+}
+
+.lParts {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+}
+
+.lParts li {
+  display: flex;
+  gap: 16px;
+  padding: 13px 0;
+  border-top: 1px solid var(--l-line);
+  font-size: 15px;
+}
+
+.lParts span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--brand);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  min-width: 62px;
+  padding-top: 3px;
+}
+
+.lExploded {
+  margin: 0;
+  background: var(--panel);
+  border-radius: 3px;
+  padding: 26px;
+  text-align: center;
+}
+
+.lExploded svg {
+  max-width: 300px;
+  width: 100%;
+  height: auto;
+  opacity: 0;
+  transform: translateY(26px);
+}
+
+.lExploded.in svg {
+  animation: lRise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+@keyframes lRise {
+  to { opacity: 1; transform: none; }
+}
+
+/* --- the three stages --- */
+
+.lFlow {
+  padding: 0 0 100px;
+}
+
+.lSteps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--l-line);
+  border-top: 1px solid var(--l-line);
+  border-bottom: 1px solid var(--l-line);
+  margin: 34px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lSteps li {
+  background: var(--field);
+  padding: 26px 22px 30px;
+}
+
+.lStepNum {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--brand);
+}
+
+.lSteps h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 21px;
+  letter-spacing: -0.015em;
+  margin: 10px 0 10px;
+}
+
+.lSteps p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--l-soft);
+}
+
+.lSteps strong {
+  color: var(--l-ink);
+  font-weight: 600;
+}
+
+/* --- partners + footer --- */
+
+.lPartners {
+  padding: 76px 0 90px;
+  border-top: 1px solid var(--l-line);
+  text-align: center;
+}
+
+.lMarks {
+  display: flex;
+  gap: 64px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+
+.lMarks img { height: 44px; opacity: 0.85; }
+.lMarks img.wcm { height: 58px; }
+
+.lFooter {
+  border-top: 1px solid var(--l-line);
+  padding: 30px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--l-soft);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 860px) {
+  .lHero,
+  .lInside {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding: 24px 0 0;
+  }
+
+  .lHero { min-height: auto; }
+
+  .lStage {
+    order: -1;
+    max-width: 420px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .lInside { padding: 70px 0; }
+  .lSpecs { grid-template-columns: repeat(2, 1fr); }
+  .lSteps { grid-template-columns: 1fr; }
+  .lMarks { gap: 36px; }
+  .lNav a { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lReadout { opacity: 1; }
+  .lExploded svg { opacity: 1; transform: none; }
+  .lBtn:hover { transform: none; }
+}
+
+/* The app header's wordmark is now a button back to the landing page. */
+.brand {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.brand:hover { box-shadow: none; opacity: 0.75; }
+
+.brandTag {
+  display: block;
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 400;
 }
