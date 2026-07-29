@@ -65,6 +65,11 @@ await cmd("Page.addScriptToEvaluateOnNewDocument", { source: `(() => {
   window.cancelAnimationFrame = handle => clearTimeout(handle);
 })()` });
 await cmd("Network.setCacheDisabled", { cacheDisabled: true });
+// Fenetre fixe. Sans cela le run herite de la taille laissee sur la cible par
+// n'importe quel autre script, et toute assertion qui parle de "sous la ligne
+// de flottaison" devient dependante de ce qui a tourne avant.
+await cmd("Emulation.setDeviceMetricsOverride",
+  { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
 
 const ev = async x => {
   const r = await cmd("Runtime.evaluate", { expression: x, returnByValue: true, awaitPromise: true });
@@ -189,6 +194,12 @@ T("aucune police chargee depuis un CDN externe",
 T("la police display est bien appliquee",
   /Bricolage/.test(await ev("getComputedStyle(document.querySelector('.lTitle')).fontFamily")));
 
+// Moitie manquante de l'assertion plus bas : verifier qu'ils sont VISIBLES une
+// fois atteints ne prouve rien s'ils n'ont jamais ete masques. Au chargement,
+// le schema est sous la ligne de flottaison et doit etre invisible.
+T("les internes sont masques tant qu'on ne les a pas atteints",
+  (await ev("getComputedStyle(document.querySelector('.lExploded svg')).opacity")) === "0");
+
 // "Request a demo" est la seule porte d'entree vers l'app.
 await ev("document.querySelector('.lBtn[data-nav=\"home\"]').click()");
 await new Promise(r => setTimeout(r, 250));
@@ -204,6 +215,18 @@ T("le logo de l'en-tete revient a la page produit",
 await ev("document.querySelector('.lNavDemo').click()");
 await new Promise(r => setTimeout(r, 250));
 T("bouton Overview actif une fois dans l'app", (await navActive()) === "home");
+
+// Le schema des internes est masque puis revele par un IntersectionObserver.
+// Masque par defaut en CSS, il serait reste invisible pour toujours des que
+// l'observateur ne se declenche pas — sans lever la moindre erreur.
+await ev("document.querySelector('.topBar .brand').click()");
+await new Promise(r => setTimeout(r, 200));
+await ev("document.querySelector('.lExploded').scrollIntoView()");
+await new Promise(r => setTimeout(r, 1200));
+T("les internes deviennent visibles quand on les atteint",
+  (await ev("getComputedStyle(document.querySelector('.lExploded svg')).opacity")) === "1");
+await ev("scrollTo(0,0); document.querySelector('.lNavDemo').click()");
+await new Promise(r => setTimeout(r, 250));
 
 await navClick("record");
 T("nav -> Record bascule le mode ET l'onglet",

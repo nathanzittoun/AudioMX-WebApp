@@ -79,6 +79,7 @@ function loop(): void {
   energy += (REST_ENERGY - energy) * 0.05;
   drawWave();
   drawScreenWave();
+  revealInternals();
   if (isOnScreen()) frame = requestAnimationFrame(loop);
 }
 
@@ -90,6 +91,28 @@ function isOnScreen(): boolean {
 function onScroll(): void {
   energy = Math.min(MAX_ENERGY, energy + Math.abs(window.scrollY - lastScrollY) * 0.012);
   lastScrollY = window.scrollY;
+}
+
+/**
+ * Show the internals once they are on screen.
+ *
+ * This was an IntersectionObserver. Measured: in a page whose visibilityState
+ * is "hidden" — a background tab, a headless browser — neither the observer nor
+ * the scroll event fires at all. Combined with hiding the graphic in CSS, that
+ * left content whose existence depended on a callback that never came, and
+ * nothing anywhere reported it.
+ *
+ * A rectangle test costs one layout read per frame until it fires, then
+ * nothing. It runs from the animation loop already drawing the waveform, so it
+ * needs no second mechanism and cannot be throttled away on its own.
+ */
+function revealInternals(): void {
+  const exploded = document.querySelector(".lExploded");
+  if (!exploded || exploded.classList.contains("in")) return;
+  const box = exploded.getBoundingClientRect();
+  if (box.top < window.innerHeight * 0.85 && box.bottom > 0) {
+    exploded.classList.add("in");
+  }
 }
 
 /** Count the device timecode up to the value printed on the screen. */
@@ -147,17 +170,12 @@ export function initLanding(): void {
 
   window.addEventListener("resize", drawWave);
 
-  // The internals rise the first time they are reached.
-  const exploded = document.querySelector(".lExploded");
-  if (exploded && !REDUCED && "IntersectionObserver" in window) {
-    const observer = new IntersectionObserver(entries => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
-        entry.target.classList.add("in");
-        observer.unobserve(entry.target);
-      }
-    }, { threshold: 0.25 });
-    observer.observe(exploded);
+  // The internals rise the first time they are reached. The class that hides
+  // them is added here rather than in the stylesheet, so the graphic is only
+  // ever hidden by code that has already committed to showing it again.
+  if (!REDUCED) {
+    document.querySelector(".lExploded")?.classList.add("willRise");
+    revealInternals();   // already in view on a tall screen
   }
 
   startLanding();

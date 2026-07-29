@@ -2224,12 +2224,25 @@ audio {
   max-width: 300px;
   width: 100%;
   height: auto;
+}
+
+/* Hidden only once JS has committed to revealing it. Hiding by default meant
+   that anything preventing the observer from firing — no IntersectionObserver,
+   an odd scroll container — left the graphic invisible for good, with no error
+   anywhere. Content must not depend on an animation to exist. */
+.lExploded.willRise svg {
   opacity: 0;
   transform: translateY(26px);
 }
 
-.lExploded.in svg {
-  animation: lRise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+/* The end state is declared, not left to animation-fill-mode. An animation
+   that never runs — a throttled background tab, a browser that skips it — must
+   still leave the graphic visible; the animation only makes the arrival
+   pleasant. */
+.lExploded.willRise.in svg {
+  opacity: 1;
+  transform: none;
+  animation: lRise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 @keyframes lRise {
@@ -2345,7 +2358,7 @@ audio {
 
 @media (prefers-reduced-motion: reduce) {
   .lReadout { opacity: 1; }
-  .lExploded svg { opacity: 1; transform: none; }
+  .lExploded.willRise svg { opacity: 1; transform: none; }
   .lBtn:hover { transform: none; }
 }
 
