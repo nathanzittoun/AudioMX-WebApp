@@ -2922,3 +2922,370 @@ audio {
 .panelHeadValue.isConnected {
   color: var(--ok-text);
 }
+
+/* ===========================================================================
+   PATIENTS — reference 2B
+
+   A real table: one grid, declared once, used by the header and by every row,
+   so the two cannot drift out of alignment.
+   =========================================================================== */
+
+.patientTable {
+  display: block;
+  margin-top: var(--sp-4);
+  border: 1px solid var(--hairline);
+}
+
+.patientRow {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) 70px 60px 90px 130px 190px;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 14px var(--sp-5);
+  background: var(--panel);
+  border: none;
+  border-bottom: 1px solid var(--hairline-soft);
+  font-size: 14px;
+  color: var(--text);
+}
+
+.patientRow:last-child {
+  border-bottom: none;
+}
+
+.patientRowHead {
+  background: var(--panel-alt);
+  border-bottom: 1px solid var(--hairline);
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.patientCellId {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.patientCellName {
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.patientCellDate {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.patientRowActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.patientRow .smallBtn {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Epic, filed beside creating a patient by hand. */
+.clinEhrCard {
+  margin-top: 24px;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  padding: var(--sp-4) var(--sp-5);
+}
+
+.clinEhrHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.clinEhrBtns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: var(--sp-3);
+}
+
+@media (max-width: 1100px) {
+  .patientTable {
+    overflow-x: auto;
+  }
+
+  .patientRow {
+    grid-template-columns: 110px minmax(180px, 1fr) 60px 50px 80px 120px 180px;
+    min-width: 900px;
+  }
+}
+
+/* ===========================================================================
+   DEVICE · ANALYZE · CHART · RECORDINGS — references 2F, 2G, 2E
+
+   All four were grids of bordered cards. In this language a list of readings
+   is a stack of hairline rows inside one panel: fewer boxes, and the values
+   line up down a single right edge.
+   =========================================================================== */
+
+/* --- Device 2F: specs and inputs as rows --- */
+
+.specGrid {
+  display: block;
+  margin: 0;
+  border: 1px solid var(--hairline);
+}
+
+.specGrid > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: 11px var(--sp-5);
+  background: var(--panel);
+  border: none;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.specGrid > div:last-child { border-bottom: none; }
+.specGrid dd { margin: 0; font-size: 14.5px; font-weight: 400; }
+
+.transportList {
+  display: block;
+  border: 1px solid var(--hairline);
+  margin-bottom: var(--sp-4);
+}
+
+.transportCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 0;
+  padding: 22px var(--sp-5);
+  background: var(--panel);
+  border: none;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.transportCard:last-child { border-bottom: none; }
+.transportCard.unavailable { background: var(--panel); border-style: none; }
+
+/* Title left, verdict right, on one line — the badge is nested inside the head
+   so it cannot be placed by the card's grid. */
+.transportHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  grid-column: 1 / -1;
+}
+
+.transportHead h3 {
+  font-size: 16.5px;
+  font-weight: 600;
+}
+
+.transportBadge {
+  flex: none;
+  border: 1px solid var(--hairline);
+  background: none;
+  padding: 8px 11px;
+}
+
+.transportBadge.ok { color: var(--ok-text); border-color: var(--ok-border); }
+.transportBadge.no { color: var(--warn-text); border-color: var(--warn-border); }
+
+.transportDetail,
+.transportReason {
+  grid-column: 1 / -1;
+  margin-top: 5px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.transportLink { padding: 0; margin-top: var(--sp-2); grid-column: 1 / -1; }
+
+/* --- Analyze 2G: the toolbar is a strip of labelled cells --- */
+
+.analysisToolbar {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0 0 24px;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+}
+
+.analysisToolbar .fieldGroup {
+  gap: 5px;
+  justify-content: center;
+  padding: 14px var(--sp-5);
+  border-right: 1px solid var(--hairline-soft);
+}
+
+.analysisToolbar input,
+.analysisToolbar select {
+  border: none;
+  background: none;
+  height: auto;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  min-width: 90px;
+}
+
+.analysisToolbar button {
+  align-self: center;
+  margin: 0 var(--sp-2);
+}
+
+.quickZoomRow {
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.zoomPresetBtn {
+  background: var(--panel);
+  border: 1px solid var(--field-border);
+  color: var(--muted);
+  padding: 8px 11px;
+}
+
+.analysisSummary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.analysisSummary > div {
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  padding: var(--sp-4) var(--sp-5);
+}
+
+.analysisSummary h3 {
+  margin: 0 0 var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.analysisSummary p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* --- Chart 2E: trends as a cell row, sessions as rows --- */
+
+.trendPanel {
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  padding: 0;
+  margin-bottom: 24px;
+}
+
+.trendHead {
+  padding: 16px var(--sp-5);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.trendGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0;
+}
+
+.trendCard {
+  padding: 22px var(--sp-5);
+  background: var(--panel);
+  border: none;
+  border-right: 1px solid var(--hairline-soft);
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.trendLabel {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.trendValue {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  margin: 8px 0 4px;
+}
+
+.trendValue strong { font-size: 26px; font-weight: 500; }
+.trendFoot { padding: 14px var(--sp-5); border-top: 1px solid var(--hairline-soft); margin: 0; }
+
+.sessionList {
+  border: 1px solid var(--hairline);
+}
+
+.sessionFolder {
+  background: var(--panel);
+  border: none;
+  border-bottom: 1px solid var(--hairline-soft);
+  padding: 0;
+}
+
+.sessionFolder:last-child { border-bottom: none; }
+
+.sessionFolderHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 16px var(--sp-5);
+  font-size: 14.5px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.sessionFolder[open] .sessionFolderHead {
+  border-bottom: 1px solid var(--hairline-soft);
+  background: var(--panel-alt);
+}
+
+.sessionFolder .smallBtn { margin: 0 0 0 auto; }
+
+.chartRow {
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+/* --- Recordings: cards become rows --- */
+
+.recordingList {
+  display: block;
+  border: 1px solid var(--hairline);
+  margin-top: var(--sp-4);
+}
+
+.recordingList .empty { border: none; }
+
+.recordingCard {
+  background: var(--panel);
+  border: none;
+  border-bottom: 1px solid var(--hairline-soft);
+  padding: var(--sp-4) var(--sp-5);
+}
+
+.recordingCard:last-child { border-bottom: none; }

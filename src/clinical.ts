@@ -523,7 +523,13 @@ export function renderPatientTable(): void {
 
   const list = clinicalPatients
     .filter(p => !q || p.id.toLowerCase().includes(q) || (p.name || "").toLowerCase().includes(q))
-    .sort((a, b) => a.id.localeCompare(b.id));
+    // Most recently seen first — reference 2B sorts on last session, which is
+    // the order a clinic actually works in. A patient never recorded sorts to
+    // the bottom rather than to the top.
+    .sort((a, b) => (patientLastDate(b.id)?.getTime() ?? 0) - (patientLastDate(a.id)?.getTime() ?? 0)
+      || a.id.localeCompare(b.id));
+
+  renderPatientCounts();
 
   if (list.length === 0) {
     cPatientTable.innerHTML = "<div class='empty'>" +
@@ -536,19 +542,32 @@ export function renderPatientTable(): void {
   }
 
   cPatientTable.innerHTML = "";
+  cPatientTable.appendChild(patientTableHead());
+
   for (const p of list) {
     const last = patientLastDate(p.id);
     const row = document.createElement("div");
     row.className = "patientRow" + (currentPatient && currentPatient.id === p.id ? " active" : "");
-    row.innerHTML =
-      "<div class='patientRowMain'><strong>" + p.id + "</strong>" +
-      (p.name ? " <span class='patientRowName'>" + p.name + "</span>" : "") + "</div>" +
-      "<div class='patientRowMeta'>" + patientRecordingCount(p.id) + " rec · " +
-      (last ? last.toLocaleDateString() : "—") + "</div>";
+
+    const cell = (text: string, cls = ""): HTMLElement => {
+      const node = document.createElement("span");
+      node.className = cls;
+      node.textContent = text;
+      return node;
+    };
+
+    row.append(
+      cell(p.id, "mono patientCellId"),
+      cell(p.name || "—", "patientCellName"),
+      cell(p.age || "—", "mono"),
+      cell(p.sex || "—", "mono"),
+      cell(String(patientSessions(p.id).length), "mono"),
+      cell(last ? formatSessionDate(last) : "—", "mono patientCellDate"),
+    );
 
     const open = document.createElement("button");
-    open.className = "smallBtn analyzeBtn";
-    open.textContent = "Open";
+    open.className = "smallBtn " + (currentPatient && currentPatient.id === p.id ? "primaryBtn" : "secondaryBtn");
+    open.textContent = "Open exam";
     open.onclick = () => openPatient(p.id);
 
     const del = document.createElement("button");
@@ -558,11 +577,38 @@ export function renderPatientTable(): void {
 
     const actions = document.createElement("div");
     actions.className = "patientRowActions";
-    actions.appendChild(open);
-    actions.appendChild(del);
+    actions.append(open, del);
     row.appendChild(actions);
     cPatientTable.appendChild(row);
   }
+}
+
+/** The column header. Same grid as a row, so the two cannot drift apart. */
+function patientTableHead(): HTMLElement {
+  const head = document.createElement("div");
+  head.className = "patientRow patientRowHead";
+  for (const label of ["ID", "Name / label", "Age", "Sex", "Sessions", "Last session", ""]) {
+    const span = document.createElement("span");
+    span.className = "metaLabel";
+    span.textContent = label;
+    head.appendChild(span);
+  }
+  return head;
+}
+
+/** "7 patients · 19 sessions", as reference 2B prints it. Both derived. */
+function renderPatientCounts(): void {
+  const node = el("cPatientCounts");
+  if (!node) return;
+  const sessions = clinicalPatients.reduce((n, p) => n + patientSessions(p.id).length, 0);
+  node.textContent = clinicalPatients.length + " patient" + (clinicalPatients.length === 1 ? "" : "s") +
+    " · " + sessions + " session" + (sessions === 1 ? "" : "s");
+}
+
+/** Shared by the table and the chart, so one date never reads differently. */
+function formatSessionDate(d: Date): string {
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + " " +
+    d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
 // The form sits permanently above the patient list, so "reset" is all the

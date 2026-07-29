@@ -747,6 +747,25 @@ await ev("document.getElementById('cNpId').value='PT-SMOKE'; document.getElement
 await new Promise(r => setTimeout(r, 700));
 T("patient cree", (await ev("audiomx.clinical.clinicalStateAccess.patients.length")) === 1);
 T("patient ouvert", (await ev("audiomx.clinical.clinicalStateAccess.patient?.id")) === "PT-SMOKE");
+
+// La table patients de la reference 2B : un en-tete et des lignes sur la meme
+// grille, et deux chiffres derives (sessions, derniere session). Le risque
+// propre a une table construite en deux morceaux, c'est que l'en-tete et les
+// lignes n'aient pas le meme nombre de colonnes.
+const table = await ev(`(()=>{
+  const head = document.querySelector('#cPatientTable .patientRowHead');
+  const row = document.querySelector('#cPatientTable .patientRow:not(.patientRowHead)');
+  if (!head || !row) return null;
+  const cols = n => getComputedStyle(n).gridTemplateColumns.split(' ').length;
+  return { headCells: head.children.length, rowCells: row.children.length,
+           sameGrid: cols(head) === cols(row),
+           counts: document.getElementById('cPatientCounts')?.textContent };
+})()`);
+T("en-tete et lignes partagent la meme grille",
+  table && table.headCells === table.rowCells && table.sameGrid === true,
+  table ? `${table.headCells} vs ${table.rowCells} colonnes` : "table absente");
+T("les compteurs patients/sessions sont derives",
+  /^1 patient · \d+ session/.test(table?.counts || ""), table?.counts);
 await ev("audiomx.clinical.startNewSession()"); await new Promise(r => setTimeout(r, 300));
 T("session demarree", (await ev("!!audiomx.clinical.clinicalStateAccess.sessionId")));
 await ev("audiomx.clinical.selectClinicalTest(audiomx.protocol.PROTOCOL_TESTS[0].id)");
