@@ -733,118 +733,181 @@
         <div id="cPatientTable" class="patientTable">
           <div class="empty">No patients yet. Fill in a patient ID above to create one.</div>
         </div>
+
+        <!-- Moved here from the Exam screen — reference 2B files Epic under
+             "or pull from the chart", beside creating a patient by hand, which
+             is where the choice actually belongs. Same ids, same listeners. -->
+        <div id="cEhrCard" class="clinEhrCard">
+          <div class="clinEhrHead">
+            <span class="metaLabel">Or pull from the chart · Epic SMART on FHIR</span>
+            <span id="cEhrStatus" class="clinEhrStatus">Not connected</span>
+          </div>
+          <div class="clinEhrBtns">
+            <button id="cEhrConnect" class="secondaryBtn">Connect to Epic</button>
+            <button id="cEhrPull" class="secondaryBtn" style="display:none">Pull chart data</button>
+          </div>
+          <div id="cEhrPatient" class="clinEhrPatient"></div>
+          <div id="cEhrObs" class="clinEhrObs"></div>
+          <div id="cEhrHint" class="clinEhrHint"></div>
+        </div>
       </section>
 
       <!-- EXAM TAB -->
+      <!-- EXAM TAB — reference 2C.
+           Three columns: the protocol on the left, the running task and its
+           signal in the middle, the gate and the meters on the right. A session
+           strip spans the top. Every control below already existed; this is a
+           re-lay-out, and every id is the one the logic already binds to.
+
+           Two panels moved out rather than being duplicated: the Epic card now
+           lives on Patients ("or pull from the chart", reference 2B) and the
+           patient-screen preview sits full width underneath, because 2C is the
+           clinician's screen and 2D is the patient's. -->
       <section id="clinExam" class="clinPanel" hidden>
-        <div class="clinicalGrid">
-          <section class="card clinicianPanel">
-            <div class="sectionHeader">
-              <div>
-                <h2>Exam</h2>
-                <p>Drive the protocol and watch the signal.</p>
-              </div>
-            </div>
-
+        <div class="examSessionBar">
+          <div class="examCell">
+            <span class="metaLabel">Patient</span>
             <div id="cExamPatient" class="clinPatientMeta">No patient selected.</div>
-
-            <div class="clinSessionRow">
-              <button id="cNewSessionBtn" class="secondaryBtn">＋ New session</button>
-              <span id="cSessionLabel" class="clinSessionLabel">—</span>
-              <div class="fieldGroup clinNotesField">
-                <label for="cNotes">Session notes</label>
-                <input id="cNotes" type="text" placeholder="Optional notes for this session" />
-              </div>
-            </div>
-
-            <div class="clinConnectRow">
-              <button id="cConnectUsb" class="secondaryBtn">Connect MEMS (USB)</button>
-              <button id="cConnectWifi" class="secondaryBtn">Connect MEMS (Wi-Fi)</button>
-              <button id="cConnectComputer" class="secondaryBtn">Connect computer mic</button>
-              <button id="cPopoutBtn" class="secondaryBtn">Open patient view ↗</button>
-            </div>
-
-            <div id="cEhrCard" class="clinEhrCard">
-              <div class="clinEhrHead">
-                <span>🏥 Epic EHR (SMART on FHIR)</span>
-                <span id="cEhrStatus" class="clinEhrStatus">Not connected</span>
-              </div>
-              <div class="clinEhrBtns">
-                <button id="cEhrConnect" class="secondaryBtn">Connect to Epic (EHR)</button>
-                <button id="cEhrPull" class="secondaryBtn" style="display:none">Pull chart data</button>
-              </div>
-              <div id="cEhrPatient" class="clinEhrPatient"></div>
-              <div id="cEhrObs" class="clinEhrObs"></div>
-              <div id="cEhrHint" class="clinEhrHint"></div>
-            </div>
-
-            <div class="clinOptionsRow">
-              <label class="consentCheck"><input type="checkbox" id="cConsent" /> Informed consent obtained</label>
-              <label class="consentCheck"><input type="checkbox" id="cSpeak" checked /> 🔊 Read prompts aloud</label>
-            </div>
-
-            <div class="clinTestBar">
-              <div class="clinTestBarHead">Protocol</div>
-              <div id="cTestList" class="clinTestList"></div>
-            </div>
-
-            <div class="clinRunHead">
-              <div>
-                <h3 id="cTestName">Sustained Vowel (MPT)</h3>
-                <p id="cTestNote" class="clinTestNote"></p>
-              </div>
-              <div class="clinRunBtns">
-                <button id="cStartBtn" class="successBtn">Start test</button>
-                <button id="cStopBtn" class="warningBtn" disabled>End test</button>
-              </div>
-            </div>
-
-            <div id="cGateBox" class="clinGate" style="display:none"></div>
-
-            <div class="clinMetrics">
-              <div class="noiseCard">
-                <div class="noiseLabel">RMS</div>
-                <div id="cRms" class="noiseValue">-- dBFS</div>
-                <div class="indicatorOuter"><div id="cLevelBar" class="indicatorInner"></div></div>
-              </div>
-              <div class="noiseCard">
-                <div class="noiseLabel">Peak</div>
-                <div id="cPeak" class="noiseValue">-- dBFS</div>
-              </div>
-              <div class="noiseCard">
-                <div class="noiseLabel">Clipping</div>
-                <div id="cClip" class="noiseValue">0.00%</div>
-              </div>
-            </div>
-
-            <div class="plotCard">
-              <div class="plotHeader"><h3>Waveform</h3><span>live</span></div>
-              <canvas id="cWaveform" width="1000" height="200"></canvas>
-            </div>
-            <div class="plotCard">
-              <div class="plotHeader"><h3>Spectrum</h3><span>0–8 kHz · dBFS</span></div>
-              <canvas id="cSpectrum" width="1000" height="200"></canvas>
-            </div>
-          </section>
-
-          <!-- Patient interface -->
-          <section class="card patientPanel">
-            <div id="pGoBar" class="patientGoBar">Get ready…</div>
-            <div class="patientBody">
-              <div id="pCountNumber" class="patientCount"></div>
-              <div id="pTaskIcon" class="patientIcon">🫁</div>
-              <h2 id="pTaskTitle" class="patientTitle">Say “Ahhh” for as long as you can</h2>
-              <ol id="pSteps" class="patientSteps"></ol>
-              <div id="pReads" class="patientReads"></div>
-              <div id="pReadyWrap" class="patientReadyWrap" style="display:none">
-                <button id="pReadyBtn" class="patientReadyBtn">I'm ready — start</button>
-              </div>
-            </div>
-            <div id="pTimerWrap" class="patientTimerWrap" style="display:none">
-              <div id="pTimerBar" class="patientTimerBar"></div>
-            </div>
-          </section>
+          </div>
+          <div class="examCell">
+            <span class="metaLabel">Session</span>
+            <span id="cSessionLabel" class="clinSessionLabel">—</span>
+          </div>
+          <div class="examCell examCellGrow">
+            <label class="metaLabel" for="cNotes">Session notes</label>
+            <input id="cNotes" type="text" placeholder="Optional notes for this session" />
+          </div>
+          <div class="examCell examCellRow">
+            <label class="consentCheck"><input type="checkbox" id="cConsent" /> Consent</label>
+            <label class="consentCheck"><input type="checkbox" id="cSpeak" checked /> Prompts aloud</label>
+          </div>
+          <div class="examCell examCellRow">
+            <button id="cNewSessionBtn" class="secondaryBtn">New session</button>
+            <button id="cPopoutBtn" class="primaryBtn">Patient view ↗</button>
+          </div>
         </div>
+
+        <div class="examGrid">
+          <!-- protocol rail -->
+          <aside class="panel examRail">
+            <div class="panelHead">
+              <span class="metaLabel">Protocol</span>
+              <span id="cProtocolProgress" class="mono panelHeadValue">0 / 6</span>
+            </div>
+            <div id="cTestList" class="clinTestList"></div>
+          </aside>
+
+          <!-- the running task and its signal -->
+          <div class="examCentre">
+            <section class="panel">
+              <div class="panelHead panelHeadTall">
+                <div>
+                  <span id="cTaskStage" class="metaLabel">Task 01 · idle</span>
+                  <h2 id="cTestName" class="examTaskTitle">Sustained Vowel (MPT)</h2>
+                  <p id="cTestNote" class="clinTestNote"></p>
+                </div>
+                <div class="clinRunBtns">
+                  <button id="cStartBtn" class="successBtn">Start test</button>
+                  <button id="cStopBtn" class="warningBtn" disabled>End test</button>
+                </div>
+              </div>
+
+              <div class="examTimerRow">
+                <span id="cElapsed" class="examElapsed">00:00.0</span>
+                <div class="examProgress"><div id="cProgressBar" class="examProgressBar"></div></div>
+                <span id="cHoldLabel" class="metaLabel">Elapsed</span>
+              </div>
+
+              <div class="panelBody">
+                <div class="plotBlock">
+                  <div class="plotHeader">
+                    <span class="metaLabel">Waveform · live</span>
+                    <span class="mono plotHint">16 kHz</span>
+                  </div>
+                  <canvas id="cWaveform" width="1000" height="200"></canvas>
+                </div>
+                <div class="plotBlock">
+                  <div class="plotHeader">
+                    <span class="metaLabel">Spectrum · 0–8 kHz · dBFS</span>
+                    <span class="mono plotHint">~0.25 s window</span>
+                  </div>
+                  <canvas id="cSpectrum" width="1000" height="200"></canvas>
+                </div>
+              </div>
+
+              <div id="cGateBox" class="clinGate" style="display:none"></div>
+            </section>
+          </div>
+
+          <!-- gate, meters, input -->
+          <aside class="examSide">
+            <!-- The gate thresholds, judged live. The *decision* is still taken
+                 on the whole take by runClinicalQualityGate() after Stop: a
+                 take can sit inside every bound at this instant and still fail
+                 overall, so this panel reports and never accepts. -->
+            <section id="cLiveGate" class="panel gatePanel">
+              <div class="panelHead gatePanelHead">
+                <span class="metaLabel">Quality gate</span>
+                <span id="cLiveGateVerdict" class="mono gateVerdict">Idle</span>
+              </div>
+              <div class="panelBody gateRows">
+                <div class="gateRow"><span>Clipping</span><span id="cGateClip" class="mono">— <em>/ 0.5 %</em></span></div>
+                <div class="gateRow"><span>Peak</span><span id="cGatePeak" class="mono">— <em>/ −1 dBFS</em></span></div>
+                <div class="gateRow"><span>RMS</span><span id="cGateRms" class="mono">— <em>/ −55 dBFS</em></span></div>
+                <div class="gateRow"><span>Hum 60 / 120 Hz</span><span id="cGateHum" class="mono">— / —</span></div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panelHead"><span class="metaLabel">Signal health</span></div>
+              <div class="panelBody meterRows">
+                <div class="meterRow">
+                  <div class="meterHead"><span class="metaLabel">RMS</span><span id="cRms" class="meterValue">-- dBFS</span></div>
+                  <div class="indicatorOuter"><div id="cLevelBar" class="indicatorInner"></div></div>
+                </div>
+                <div class="meterRow">
+                  <div class="meterHead"><span class="metaLabel">Peak</span><span id="cPeak" class="meterValue">-- dBFS</span></div>
+                </div>
+                <div class="meterRow">
+                  <div class="meterHead"><span class="metaLabel">Clipping</span><span id="cClip" class="meterValue">0.00%</span></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panelHead">
+                <span class="metaLabel">Input</span>
+                <span id="cInputState" class="mono panelHeadValue">Not connected</span>
+              </div>
+              <div class="panelBody inputRows">
+                <button id="cConnectUsb" class="secondaryBtn">Connect MEMS (USB)</button>
+                <button id="cConnectWifi" class="secondaryBtn">Connect MEMS (Wi-Fi)</button>
+                <button id="cConnectComputer" class="secondaryBtn">Connect computer mic</button>
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        <!-- What the patient is seeing, in the clinician's own page. The real
+             patient screen is the pop-out (patient.html); this is the preview
+             that lets the clinician check it without a second monitor. -->
+        <section class="panel patientPanel">
+          <div class="panelHead"><span class="metaLabel">Patient screen · preview</span></div>
+          <div id="pGoBar" class="patientGoBar">Get ready…</div>
+          <div class="patientBody">
+            <div id="pCountNumber" class="patientCount"></div>
+            <div id="pTaskIcon" class="patientIcon">🫁</div>
+            <h2 id="pTaskTitle" class="patientTitle">Say “Ahhh” for as long as you can</h2>
+            <ol id="pSteps" class="patientSteps"></ol>
+            <div id="pReads" class="patientReads"></div>
+            <div id="pReadyWrap" class="patientReadyWrap" style="display:none">
+              <button id="pReadyBtn" class="patientReadyBtn">I'm ready — start</button>
+            </div>
+          </div>
+          <div id="pTimerWrap" class="patientTimerWrap" style="display:none">
+            <div id="pTimerBar" class="patientTimerBar"></div>
+          </div>
+        </section>
       </section>
 
       <!-- CHART TAB -->

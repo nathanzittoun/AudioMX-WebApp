@@ -2539,3 +2539,386 @@ audio {
   font-size: 15px;
   font-weight: 400;
 }
+
+/* ===========================================================================
+   EXAM — reference 2C
+
+   A session strip across the top, then three columns: the protocol on the
+   left, the running task and its signal in the middle, the gate and the
+   meters on the right. Panels are the shared .panel below rather than .card,
+   because in this language a panel has a bordered head and a padded body
+   instead of one uniform pad.
+   =========================================================================== */
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 16px var(--sp-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.panelHead.panelHeadTall {
+  align-items: flex-start;
+  padding: 26px 28px;
+}
+
+.panelHeadValue {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.panelBody {
+  padding: var(--sp-4);
+}
+
+/* --- session strip --- */
+
+.examSessionBar {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  margin-bottom: 24px;
+}
+
+.examCell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp-1);
+  padding: 16px var(--sp-5);
+  border-right: 1px solid var(--hairline-soft);
+  min-width: 190px;
+}
+
+.examCell:last-child {
+  border-right: none;
+}
+
+.examCellGrow {
+  flex: 1;
+  min-width: 240px;
+}
+
+/* The toggles and the actions sit inline. Without min-width:auto they inherit
+   the 190px floor above and push themselves onto a second row. */
+.examCellRow {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: auto;
+  padding: 16px var(--sp-4);
+}
+
+.examCellRow button {
+  white-space: nowrap;
+}
+
+.examCell .clinPatientMeta,
+.examCell .clinSessionLabel {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.examCell input[type="text"] {
+  border: none;
+  background: none;
+  height: auto;
+  padding: 0;
+  min-width: 0;
+  font-size: 15px;
+}
+
+/* --- the three columns --- */
+
+.examGrid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 300px;
+  gap: 24px;
+  align-items: start;
+}
+
+.examCentre,
+.examSide {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+/* --- protocol rail --- */
+
+.clinTestList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.clinTestBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: 15px var(--sp-4);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--hairline-soft);
+  text-align: left;
+  font-family: var(--font-ui);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.clinTestBtn:last-child {
+  border-bottom: none;
+}
+
+.clinTestBtn:hover:not(.active) {
+  background: var(--panel-alt);
+  border-color: var(--hairline-soft);
+}
+
+.clinTestLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.clinTestName {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.clinTestMeta {
+  font-size: 10.5px;
+  color: var(--muted-2);
+}
+
+/* Done / Live / Queued. Green, red and grey — state colours, doing state work. */
+.clinTestState {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.clinTestState.done { color: var(--ok-text); }
+.clinTestState.live { color: var(--rec-text); }
+.clinTestState.queued { color: var(--faint); }
+
+/* --- running task --- */
+
+.examTaskTitle {
+  margin: 8px 0 0;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.clinTestNote {
+  margin: 8px 0 0;
+  max-width: 460px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.examTimerRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.examElapsed {
+  font-family: var(--font-mono);
+  font-size: 34px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.examProgress {
+  flex: 1;
+  height: 6px;
+  background: var(--hairline-soft);
+}
+
+.examProgressBar {
+  width: 0%;
+  height: 6px;
+  background: var(--accent);
+  transition: width 0.1s linear;
+}
+
+.plotBlock + .plotBlock {
+  margin-top: var(--sp-4);
+}
+
+.plotHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-bottom: 12px;
+}
+
+.plotHint {
+  font-size: 10.5px;
+  color: var(--muted-2);
+}
+
+/* --- quality gate --- */
+
+.gatePanel.gateOk { border-color: var(--ok); }
+.gatePanel.gateBad { border-color: var(--warn); }
+
+.gatePanelHead { background: var(--panel-alt); }
+.gatePanel.gateOk .gatePanelHead { background: var(--ok-bg); border-bottom-color: var(--ok-border); }
+.gatePanel.gateBad .gatePanelHead { background: var(--warn-bg); border-bottom-color: var(--warn-border); }
+
+.gateVerdict {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.gatePanel.gateOk .gateVerdict { color: var(--ok-text); }
+.gatePanel.gateBad .gateVerdict { color: var(--warn-text); }
+
+.gateRows,
+.meterRows,
+.inputRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.gateRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.gateRow > span:last-child {
+  font-size: 14px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The bound itself, printed next to the reading it has to stay inside. */
+.gateRow em {
+  font-style: normal;
+  color: var(--muted-2);
+}
+
+.gateRow .outOfBounds {
+  color: var(--warn-text);
+}
+
+/* --- meters --- */
+
+.meterRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meterHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.meterValue {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.indicatorOuter {
+  height: 4px;
+  background: var(--hairline-soft);
+}
+
+.indicatorInner {
+  height: 4px;
+  background: var(--accent);
+  transition: width 0.08s linear;
+}
+
+.indicatorInner.warning { background: var(--warn); }
+.indicatorInner.danger { background: var(--rec); }
+
+.inputRows button {
+  width: 100%;
+  text-align: center;
+}
+
+/* --- patient preview --- */
+
+.patientPanel {
+  margin-top: 24px;
+}
+
+@media (max-width: 1280px) {
+  .examGrid {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .examSide {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .examSide > .panel {
+    flex: 1 1 280px;
+  }
+}
+
+@media (max-width: 860px) {
+  .examGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .examSide {
+    flex-direction: column;
+  }
+
+  .examCell {
+    border-right: none;
+    border-bottom: 1px solid var(--hairline-soft);
+    width: 100%;
+  }
+}
+
+.panelHeadValue.isConnected {
+  color: var(--ok-text);
+}

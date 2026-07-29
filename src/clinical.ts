@@ -9,7 +9,7 @@
 import { PROTOCOL_TESTS, getProtocolTest, type PatientMessage, type ProtocolTest } from "./core/protocol";
 import { SAMPLE_RATE } from "./core/constants";
 import { capture, device, library, ui, type Recording, type RecordingMeta } from "./core/state";
-import { clamp, dbfs } from "./core/dsp/levels";
+import { clamp, dbfs, goertzelMagnitude } from "./core/dsp/levels";
 import { computeSpectrum } from "./core/dsp/spectrum";
 import { audioContext } from "./core/audioContext";
 import { on } from "./core/bus";
@@ -461,12 +461,19 @@ function updateClinicalConnectState(): void {
     b.classList.add("secondaryBtn");
     b.textContent = CONNECT_LABELS[k];
   }
+  const state = el("cInputState");
+  if (state) {
+    state.textContent = device.connected && clinicalConnectKind
+      ? "Connected · " + CONNECT_LABELS[clinicalConnectKind].replace("Connect ", "")
+      : "Not connected";
+    state.classList.toggle("isConnected", device.connected);
+  }
   if (device.connected && clinicalConnectKind) {
     const b = el(CONNECT_IDS[clinicalConnectKind]);
     if (b) {
       b.classList.remove("secondaryBtn");
       b.classList.add("primaryBtn");
-      b.textContent = "✓ Connected — " + CONNECT_LABELS[clinicalConnectKind].replace("Connect ", "");
+      b.textContent = "Connected — " + CONNECT_LABELS[clinicalConnectKind].replace("Connect ", "");
     }
   }
 }
@@ -637,6 +644,7 @@ export function startNewSession(): void {
     return;
   }
   currentSessionId = "S-" + Date.now();
+  renderClinicalTestList();
   renderExamHeader();
   log("New session started for " + currentPatient.id + ".");
 }
@@ -666,25 +674,71 @@ export function renderExamHeader(): void {
 
 // ---- Test selection + patient prompt -----------------------------------
 
+/**
+ * Which tasks of the current session already have a take.
+ *
+ * Derived, never stored: the takes themselves are the record of what was done,
+ * so a second field tracking progress could disagree with them. Reference 2C
+ * shows every task as done / live / queued and a "n / 6" count, and this is
+ * where both come from.
+ */
+function completedTestIds(): Set<string> {
+  const done = new Set<string>();
+  if (!currentSessionId) return done;
+  for (const r of library.recordings) {
+    if (r.meta?.sessionId === currentSessionId && r.meta.testId) done.add(r.meta.testId);
+  }
+  return done;
+}
+
 function renderClinicalTestList(): void {
   cTestList.innerHTML = "";
+  const done = completedTestIds();
   for (const test of PROTOCOL_TESTS) {
     const btn = document.createElement("button");
     btn.className = "clinTestBtn";
     btn.dataset["test"] = test.id;
-    btn.innerHTML = "<span class='clinTestIcon'>" + test.icon + "</span><span>" + test.name + "</span>";
+
+    const label = document.createElement("span");
+    label.className = "clinTestLabel";
+    const name = document.createElement("span");
+    name.className = "clinTestName";
+    name.textContent = test.name;
+    const note = document.createElement("span");
+    note.className = "clinTestMeta mono";
+    note.textContent = test.holdSeconds ? test.holdSeconds + " s" : "untimed";
+    label.append(name, note);
+
+    // The references drop the emoji from the clinician's list and keep it only
+    // on the patient screen, where a glyph read across a desk earns its place.
+    const state = document.createElement("span");
+    const live = capture.recording && test.id === clinicalCurrentTest.id;
+    state.className = "clinTestState " + (live ? "live" : done.has(test.id) ? "done" : "queued");
+    state.textContent = live ? "Live" : done.has(test.id) ? "Done" : "Queued";
+
+    btn.classList.toggle("active", test.id === clinicalCurrentTest.id);
+    btn.append(label, state);
     btn.addEventListener("click", () => selectClinicalTest(test.id));
     cTestList.appendChild(btn);
+  }
+
+  const progress = el("cProtocolProgress");
+  if (progress) progress.textContent = done.size + " / " + PROTOCOL_TESTS.length;
+
+  const stage = el("cTaskStage");
+  if (stage) {
+    const index = PROTOCOL_TESTS.findIndex(x => x.id === clinicalCurrentTest.id) + 1;
+    stage.textContent = "Task " + String(index).padStart(2, "0") + " · " +
+      (capture.recording ? "running" : done.has(clinicalCurrentTest.id) ? "done" : "idle");
   }
 }
 
 export function selectClinicalTest(id: string): void {
   if (capture.recording) return;
   clinicalCurrentTest = getProtocolTest(id) || PROTOCOL_TESTS[0];
-  document.querySelectorAll<HTMLElement>(".clinTestBtn")
-    .forEach(b => b.classList.toggle("active", b.dataset["test"] === clinicalCurrentTest.id));
   cTestName.textContent = clinicalCurrentTest.name;
   cTestNote.textContent = clinicalCurrentTest.clinicianNote;
+  renderClinicalTestList();
   renderPatientPrompt(clinicalCurrentTest);
   pushPromptToPopup();
   broadcastPatient({ kind: "test", testId: clinicalCurrentTest.id });
@@ -733,6 +787,9 @@ async function startClinicalTest(): Promise<void> {
   }
   if (!currentSessionId) currentSessionId = "S-" + Date.now();
   hideClinicalGate();
+  // The rail shows the current task as Live from here; capture.recording is what
+  // it reads, and that is set by the time the first repaint happens.
+  setTimeout(() => renderClinicalTestList(), 0);
 
   // Optionally read the task aloud for the patient.
   speakCurrentPrompt();
@@ -784,12 +841,16 @@ async function stopClinicalTest(): Promise<void> {
 
 export function onClinicalRecordingSaved(recording: Recording): void {
   lastClinicalRecording = recording;
+  renderClinicalTestList();
   renderExamHeader();
   renderChart();
   renderPatientTable();
 }
 
 function setPatientRecording(on: boolean): void {
+  // The single place both ends of a take pass through, so the rail follows the
+  // live state without every caller having to remember to redraw it.
+  renderClinicalTestList();
   broadcastPatient({ kind: "go", on: on });
   pushGoToPopup(on);
   if (!pGoBar) return;
@@ -802,6 +863,29 @@ function setTimerBars(widthPct: number, visible: boolean): void {
   if (pTimerWrap) pTimerWrap.style.display = visible ? "block" : "none";
   if (pTimerBar) pTimerBar.style.width = widthPct + "%";
   pushTimerToPopup(widthPct, visible);
+  // The patient's bar counts *down* — time left is what they need. The
+  // clinician's counts *up*, because reference 2C shows elapsed against the
+  // hold length, which is what tells them whether the task ran long enough.
+  const bar = el("cProgressBar");
+  if (bar) bar.style.width = (100 - widthPct).toFixed(1) + "%";
+}
+
+/** Elapsed time on the clinician's screen, mm:ss.t. */
+function renderElapsed(): void {
+  const node = el("cElapsed");
+  if (!node) return;
+  const running = clinicalPhase === "recording" || clinicalPhase === "ready";
+  const ms = running ? Math.max(0, performance.now() - clinicalTimerStart) : 0;
+  const total = ms / 1000;
+  node.textContent = String(Math.floor(total / 60)).padStart(2, "0") + ":" +
+    (total % 60).toFixed(1).padStart(4, "0");
+
+  const hold = el("cHoldLabel");
+  if (hold) {
+    hold.textContent = clinicalCurrentTest.holdSeconds
+      ? "Hold " + clinicalCurrentTest.holdSeconds + " s · elapsed"
+      : "Elapsed";
+  }
 }
 
 // 5-second "get ready" countdown, driven by the clinician (updates both bars).
@@ -847,6 +931,7 @@ function startClinicalTimer(seconds: number | null): void {
       ? Math.max(0, 1 - elapsed / clinicalTimerDuration) * 100
       : Math.min(100, (elapsed / 60000) * 100);
     setTimerBars(w, true);
+    renderElapsed();
 
     // Auto-stop when a fixed-duration task reaches its target.
     if (clinicalTimerDuration > 0 && elapsed >= clinicalTimerDuration && clinicalPhase === "recording") {
@@ -859,6 +944,7 @@ function stopClinicalTimer(): void {
   if (clinicalTimer) { clearInterval(clinicalTimer); clinicalTimer = null; }
   broadcastPatient({ kind: "timerStop" });
   setTimerBars(100, true);
+  renderElapsed();
 }
 
 // ---- Quality gate ------------------------------------------------------
@@ -1390,11 +1476,49 @@ function drawClinicalSpectrum(): void {
 
 function updateClinicalMetrics(samples: ArrayLike<number> | null): void {
   if (!samples || samples.length === 0 || !cRmsEl) return;
-  const m = clinicalMetricsOf(Int16Array.from(samples));
+  const block = Int16Array.from(samples);
+  const m = clinicalMetricsOf(block);
   cRmsEl.textContent = m.rms.toFixed(1) + " dBFS";
   cPeakEl.textContent = m.peak.toFixed(1) + " dBFS";
   cClipEl.textContent = m.clip.toFixed(2) + "%";
   cLevelBar.style.width = clamp(((m.rms + 80) / 80) * 100, 0, 100) + "%";
+  updateLiveGate(block, m);
+}
+
+/**
+ * The gate thresholds, reported live — reference 2C prints each measurement
+ * against its bound while the take runs.
+ *
+ * It reports and never decides. runClinicalQualityGate() still judges the whole
+ * take after Stop, because a take can sit inside every bound at this instant
+ * and still fail overall: one clipped burst in a block that has already scrolled
+ * past is invisible here and fatal there. Showing "passing" is therefore a
+ * statement about *now*, and the panel says so by going back to Idle at rest.
+ */
+function updateLiveGate(block: Int16Array, m: ClinicalMetrics): void {
+  const set = (id: string, text: string, bad: boolean): void => {
+    const node = el(id);
+    if (!node) return;
+    node.textContent = text;
+    node.classList.toggle("outOfBounds", bad);
+  };
+
+  const hum60 = dbfs(goertzelMagnitude(block, 60, SAMPLE_RATE));
+  const hum120 = dbfs(goertzelMagnitude(block, 120, SAMPLE_RATE));
+
+  set("cGateClip", m.clip.toFixed(2) + " % / 0.5", m.clip > 0.5);
+  set("cGatePeak", m.peak.toFixed(1) + " / −1 dBFS", m.peak > -1);
+  set("cGateRms", m.rms.toFixed(1) + " / −55 dBFS", m.rms < -55);
+  set("cGateHum", hum60.toFixed(0) + " / " + hum120.toFixed(0), hum60 > -35 || hum120 > -35);
+
+  const failing = m.clip > 0.5 || m.peak > -1 || m.rms < -55;
+  const verdict = el("cLiveGateVerdict");
+  const panel = el("cLiveGate");
+  if (verdict) verdict.textContent = capture.recording ? (failing ? "Out of bounds" : "Passing") : "Idle";
+  if (panel) {
+    panel.classList.toggle("gateOk", capture.recording && !failing);
+    panel.classList.toggle("gateBad", capture.recording && failing);
+  }
 }
 
 // ---- Subscriptions ------------------------------------------------------
