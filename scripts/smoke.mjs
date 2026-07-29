@@ -191,8 +191,11 @@ T("la waveform est tracee sans attendre une frame",
 // reseau que le service worker ne peut pas satisfaire hors ligne.
 T("aucune police chargee depuis un CDN externe",
   (await ev("[...document.querySelectorAll('link')].every(l => !/fonts\\.(googleapis|gstatic)/.test(l.href))")) === true);
-T("la police display est bien appliquee",
-  /Bricolage/.test(await ev("getComputedStyle(document.querySelector('.lTitle')).fontFamily")));
+// La pile de la maquette : SF Pro d'abord (donc ce que rendent les captures sur
+// Mac), Geist auto-heberge en repli pour tout le reste.
+const displayStack = await ev("getComputedStyle(document.querySelector('.lTitle')).fontFamily");
+T("la pile typographique est celle de la maquette",
+  /SF Pro/.test(displayStack) && /Geist/.test(displayStack), displayStack);
 
 // Moitie manquante de l'assertion plus bas : verifier qu'ils sont VISIBLES une
 // fois atteints ne prouve rien s'ils n'ont jamais ete masques. Au chargement,

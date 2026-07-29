@@ -1,105 +1,125 @@
-/* Self-hosted so the app keeps working offline. A font CDN is a network
-   dependency the service worker cannot satisfy, and a page whose type
-   silently falls back to a system stack is not the design that was
-   approved. Latin subset only. */
+/* Self-hosted: the references link Google Fonts, which an offline-first app
+   behind a service worker cannot reach. Latin subset only.
+
+   Geist is the *fallback*, not the first choice — the stack puts SF Pro
+   first, exactly as the design references do, so a Mac renders what the
+   mockups were captured on and everything else gets Geist. */
 @font-face {
-  font-family: "Bricolage Grotesque";
-  font-style: normal;
-  font-weight: 400 800;
-  font-display: swap;
-  src: url("./assets/fonts/bricolage-400-800.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./assets/fonts/plexmono-400.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("./assets/fonts/plexmono-500.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Inter";
+  font-family: "Geist";
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url("./assets/fonts/inter-400-700.woff2") format("woff2");
+  src: url("./assets/fonts/geist-400-700.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("./assets/fonts/geistmono-400-500.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* Design tokens.
+/* Design tokens — the 1A "instrument" language from design-reference/.
    ---------------------------------------------------------------------------
-   One rule governs the palette: a colour means exactly one thing.
+   Three rules, taken from the references' own "Rules" panel:
 
-   Red used to be both the brand accent and the recording indicator, which made
-   the single colour that must shout "this is live" also the colour of ordinary
-   furniture. Brand is now the AudioMX blue — the same one the device and the
-   marketing site use — and red is reserved for capture in progress, errors and
-   destructive actions. Nothing else may use it. */
+   1. No rounded cards and no drop shadows. Panels are white rectangles
+      separated by 1px hairlines. The references name the previous 16-28px
+      radii and shadows as the thing that made this read as a template, so
+      --radius is 0 everywhere and there is no --shadow.
+   2. One accent. --accent marks the active or selected state and nothing
+      else. Green, amber and red belong to device and signal state; they are
+      never decoration.
+   3. Every number is mono, every label is mono and uppercase. Prose never is.
+
+   Each colour below is lifted from the reference markup rather than
+   approximated, so a screen can be diffed against its mockup. */
 :root {
-  /* Brand. Taken from the device renders and the marketing identity. */
-  --brand: #2f5a8c;
-  --brand-bright: #4a82be;
-  --brand-deep: #0f1d2a;
-  --brand-tint: #eef3f9;
+  /* Ground and panels */
+  --ground: #f4f5f7;
+  --panel: #ffffff;
+  --panel-alt: #fbfbfc;      /* table headers, inactive third column */
+  --hairline: #e3e6ea;       /* the 1px that separates every panel */
+  --hairline-soft: #eceef1;  /* row separators inside a panel */
+  --field-border: #dfe2e7;
 
-  /* State. Each one has a single job, named after the job. */
-  --rec: #b31b1b;        /* capture in progress, errors, delete */
-  --rec-deep: #7f1212;
-  --warn: #f58220;       /* attention needed, not yet a failure */
-  --green: #18794e;      /* connected, passing, within range */
-  --purple: #7c3aed;
+  /* Type colours, darkest to faintest */
+  --ink: #0e1420;
+  --ink-strong: #10161f;
+  --text: #3d4653;
+  --muted: #5c6675;
+  --muted-2: #8a9099;
+  --faint: #a4aab3;
 
-  /* Neutrals, biased slightly cool so they sit under the blue rather than
-     fighting it. */
-  --bg: #f5f5f7;
-  --card: rgba(255, 255, 255, 0.86);
-  --card-solid: #ffffff;
-  --plot-bg: #f0f0f2;
-  --plot-grid: #d8d8dc;
-  --ink: #1d1d1f;
-  --muted: #6e6e73;
-  --line: #dcdce0;
-  --soft-line: #ececf0;
+  /* The one accent */
+  --accent: #2f5d8f;
+  --accent-tint: #f2f6fa;    /* selected row background */
+  --accent-line: #5b9be0;    /* signal traces on dark plots */
 
-  --shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
+  /* Semantic state. Reserved for device and signal, never for chrome. */
+  --ok: #2f9e6a;
+  --ok-text: #1c7a52;
+  --ok-border: #b9dcc9;
+  --ok-bg: #f1f9f5;
 
-  /* Type. The UI face is the system stack — it renders natively on every
-     target and costs no network request, which matters for an offline-first
-     app behind a service worker. The mono face carries measurements and
-     uppercase labels, where digits have to line up. */
-  --font-display: "Bricolage Grotesque", var(--font-ui);
-  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --warn: #c9a34a;
+  --warn-text: #8a6d1f;
+  --warn-border: #e3d6ab;
+  --warn-bg: #fdf9ef;
 
-  /* Spacing scale. Every gap and pad should be one of these, so that rhythm is
-     a choice from a set rather than a number typed at the moment. */
+  --rec: #c0392b;            /* capture in progress */
+  --rec-text: #b03a2e;       /* errors, destructive actions */
+  --rec-border: #e6c3bd;
+
+  /* Plots are dark surfaces in this language. */
+  --plot-bg: #0e1420;
+  --plot-grid: #243040;
+
+  /* Type. SF Pro first, exactly as the references do, so a Mac renders what
+     the mockups were captured on; Geist is the cross-platform fallback. */
+  --font-ui: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Geist", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Geist Mono", monospace;
+  /* 1A has no separate display face: weight 600 and tight tracking do it. */
+  --font-display: var(--font-ui);
+
+  /* Spacing. The references work on a 4px grid with a 40px page gutter and
+     48px rows; these are the values that actually recur in them. */
   --sp-1: 6px;
   --sp-2: 10px;
   --sp-3: 14px;
   --sp-4: 20px;
   --sp-5: 28px;
   --sp-6: 40px;
+  --gutter: 40px;
 
-  --radius-sm: 12px;
-  --radius-md: 18px;
-  --radius-lg: 24px;
-  --radius-xl: 28px;
+  /* Square, everywhere. Kept as a token so the rule is stated once. */
+  --radius: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
 
-  /* Older names, kept as aliases. Repointing them here rather than renaming
-     1200 lines means no usage can be missed; new rules should use the names
-     above. */
+  /* Older names still referenced further down the file. Repointed rather than
+     renamed so no usage can be missed; new rules use the names above. */
+  --bg: var(--ground);
+  --card: var(--panel);
+  --card-solid: var(--panel);
+  --line: var(--field-border);
+  --soft-line: var(--hairline);
+  --brand: var(--accent);
+  --brand-bright: var(--accent-line);
+  --brand-deep: var(--ink);
+  --brand-tint: var(--accent-tint);
+  --green: var(--ok-text);
+  --warn-legacy: var(--warn);
+  --purple: var(--warn-text);
+  --rec-deep: var(--rec-text);
   --wcm-red: var(--rec);
-  --wcm-dark-red: var(--rec-deep);
+  --wcm-dark-red: var(--rec-text);
   --wcm-orange: var(--warn);
+  --shadow: none;
 }
 
 * {
@@ -108,11 +128,31 @@
 
 body {
   margin: 0;
-  font-family: var(--font-ui);
-  background:
-    radial-gradient(circle at top left, rgba(47, 90, 140, 0.10), transparent 30%),
-    linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 100%);
+  /* Flat ground, no gradient. In this language depth comes from hairlines and
+     from white panels sitting on grey — never from a glow or a shadow. */
+  background: var(--ground);
   color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Every label and every number is mono; prose never is. Stated once here as a
+   utility the screens reuse, so the rule does not get re-typed per component. */
+.mono,
+.metaLabel {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.metaLabel {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted-2);
 }
 
 /* Keyboard focus was invisible: the default ring is suppressed by the custom
