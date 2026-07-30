@@ -939,6 +939,41 @@ T("prise clinique retiree de la memoire", del && del.gone === true && del.after 
   del ? `${del.before} -> ${del.after}` : "-");
 T("prise clinique retiree d'IndexedDB", del?.stillInDb === false);
 
+// --- 5b. verdict du gate persiste ---
+// La reference 2E resume une session en "6 passed / 1 rejected". Ce n'est
+// honnete que si chaque prise porte ce que le gate a REELLEMENT dit d'elle :
+// recalculer plus tard jugerait une prise stockee avec les seuils du moment.
+// Le champ est optionnel et additif — les prises d'avant affichent "—" au lieu
+// de se voir attribuer un verdict qu'elles n'ont jamais recu.
+const gate = await ev(`(()=>{
+  const summary = audiomx.clinical.sessionGateSummary;
+  const judged = [{ gate: { passed: true, problems: [] } },
+                  { gate: { passed: false, problems: ['clip'] } }];
+  return { mixed: summary(judged),
+           none: summary([{}, {}]),
+           partial: summary([judged[0], {}]) };
+})()`);
+T("un verdict mixte est resume tel quel", gate?.mixed === "1 passed · 1 rejected", gate?.mixed);
+T("des prises sans verdict ne s'en voient pas attribuer", gate?.none === "—", gate?.none);
+T("une session partiellement jugee le dit", /not judged/.test(gate?.partial || ""), gate?.partial);
+
+// L'ecriture Epic est le seul controle qui sort du navigateur, et son chemin
+// n'a jamais ete exerce. Il demande confirmation — ecart assume par rapport a
+// la maquette, qui en fait une action directe.
+await ev("audiomx.clinical.setClinicalTab('chart')");
+await new Promise(r => setTimeout(r, 300));
+const before = dialogs.length;
+await ev("document.getElementById('cEhrWriteBtn').click()");
+await new Promise(r => setTimeout(r, 600));
+// Le PREMIER dialogue, pas le dernier : la suite accepte automatiquement, donc
+// l'ecriture part et echoue faute de session Epic, et son alerte d'erreur est
+// aussi un dialogue. Compter "au moins un dialogue" ne distinguait pas les deux.
+const firstDialog = dialogs[before] || "";
+T("l'ecriture Epic demande confirmation avant d'ecrire",
+  /Write this note into Epic/.test(firstDialog), firstDialog.slice(0, 50));
+T("la confirmation previent que le chemin n'est pas teste",
+  /never been tested/.test(firstDialog));
+
 // --- 6. fenetre patient (page reelle, pas seulement l'API) ---
 T("protocole lisible par le pop-out", (await ev("!!audiomx.protocol.getProtocolTest(audiomx.protocol.PROTOCOL_TESTS[0].id)")));
 

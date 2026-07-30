@@ -19,6 +19,7 @@ import { connectSerial } from "./device/serialSource";
 import { connectWifiMems } from "./device/wifiSource";
 import { connectComputerMic } from "./device/computerMicSource";
 import { downloadPatientFhir } from "./ehr/fhirExport";
+import { writeDocumentReference } from "./ehr/smart";
 // deleteRecording comes from libraryView, NOT from storage. The two shared the
 // name `deleteRecording` as globals and bridge.ts published the libraryView one:
 // it revokes the object URL, drops the take from library.recordings, refreshes
@@ -28,7 +29,7 @@ import { downloadPatientFhir } from "./ehr/fhirExport";
 import {
   analyzeRecording, deleteRecording, downloadRecording, renameRecording,
 } from "./rnd/libraryView";
-import { deletePatient as deletePatientFromDb, loadPatients, savePatient } from "./storage/library";
+import { deletePatient as deletePatientFromDb, loadPatients, saveRecording, savePatient } from "./storage/library";
 import type { StoredPatient } from "./storage/types";
 import { el, requireEl } from "./ui/dom";
 import { reflectNav } from "./ui/nav";
@@ -396,6 +397,7 @@ export function initClinical(): void {
   requireEl("cConnectComputer").addEventListener("click", () => void clinicalConnect("computer"));
   requireEl("cPopoutBtn").addEventListener("click", openPatientView);
   requireEl("cExportPatientBtn").addEventListener("click", () => void downloadPatientAll());
+  el("cEhrWriteBtn")?.addEventListener("click", () => void writeNoteToEpic());
   el("cExportFhirBtn")?.addEventListener("click", () => void downloadPatientFhir(currentPatient));
 
   // Space toggles Start/End while in the Exam tab (not while typing).
@@ -1002,11 +1004,89 @@ function runClinicalQualityGate(): void {
   if (m.clip > 0.5) problems.push("Clipping (" + m.clip.toFixed(1) + "%) — lower gain (raise PCM_SHIFT).");
   if (m.peak > -1) problems.push("Level too hot (peak " + m.peak.toFixed(1) + " dBFS).");
   if (m.rms < -55) problems.push("Very quiet (RMS " + m.rms.toFixed(1) + " dBFS) — move closer or check the mic.");
+  // Kept on the take, and persisted with it. Reference 2E summarises a session
+  // as "6 passed / 1 rejected", which is only truthful if each take carries
+  // what the gate actually said about it — recomputing later would judge a
+  // stored take against whatever the thresholds happen to be by then.
+  lastClinicalRecording.gate = { passed: problems.length === 0, problems };
+  void saveRecording(lastClinicalRecording);
+  renderChart();
+
   if (problems.length === 0) {
     showClinicalGate(true, "Good take — RMS " + m.rms.toFixed(1) + " dBFS, peak " + m.peak.toFixed(1) + " dBFS.", []);
   } else {
     showClinicalGate(false, "Check this recording:", problems);
   }
+}
+
+/**
+ * Write the session's measurements back to Epic as a DocumentReference.
+ *
+ * This is the only control in the app that writes outside the browser, and the
+ * path has never been exercised against Epic — reading a chart is proven, this
+ * is not. Reference 2E makes it the primary action; it asks first anyway, which
+ * is a deliberate departure from the mockup: a note in the wrong patient's
+ * chart is not something an undo button fixes.
+ *
+ * It sends what the app can actually stand behind — the acoustic measurements
+ * and the gate verdict — and says in the note itself that no risk model was
+ * involved, because none is connected.
+ */
+async function writeNoteToEpic(): Promise<void> {
+  if (!currentPatient) {
+    alert("Open a patient first.");
+    return;
+  }
+  const sessions = patientSessions(currentPatient.id);
+  const latest = sessions[sessions.length - 1];
+  if (!latest || latest.takes.length === 0) {
+    alert("This patient has no takes to write.");
+    return;
+  }
+
+  const lines = [
+    "AudioMX voice acoustic analysis",
+    "Patient " + currentPatient.id + (currentPatient.name ? " (" + currentPatient.name + ")" : ""),
+    "Session S-" + String(latest.number).padStart(2, "0") + " · " + formatSessionDate(latest.date),
+    "",
+  ];
+  for (const take of latest.takes) {
+    lines.push((take.meta?.testName || take.name || "take") + " · " + take.duration.toFixed(2) + " s" +
+      (take.gate ? " · gate " + (take.gate.passed ? "passed" : "rejected") : ""));
+    if (take.features) lines.push("  " + formatFeatures(take.features).replace(/\s+/g, " ").trim());
+  }
+  lines.push("", "Acoustic measurements only. No risk model is connected to this build, " +
+    "so no score is included and none should be inferred.");
+  const note = lines.join("\n");
+
+  if (!confirm("Write this note into Epic for " + currentPatient.id + "?\n\n" +
+      "This writes to the chart of whichever patient is in the Epic session, and " +
+      "the write path has never been tested against Epic.\n\n" +
+      note.slice(0, 400) + (note.length > 400 ? "\n…" : ""))) {
+    return;
+  }
+
+  try {
+    await writeDocumentReference(note);
+    log("Note written to Epic for " + currentPatient.id + ".");
+    alert("Epic accepted the note. Check it appears on the patient's chart.");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    log("Epic write failed: " + message);
+    alert("Epic refused the note:\n\n" + message);
+  }
+}
+
+/** "6 passed", "1 rejected", or "not judged" for takes older than the field. */
+export function sessionGateSummary(takes: Recording[]): string {
+  const judged = takes.filter(t => t.gate);
+  if (judged.length === 0) return "—";
+  const failed = judged.filter(t => t.gate && !t.gate.passed).length;
+  const parts: string[] = [];
+  if (judged.length - failed > 0) parts.push(judged.length - failed + " passed");
+  if (failed > 0) parts.push(failed + " rejected");
+  if (judged.length < takes.length) parts.push(takes.length - judged.length + " not judged");
+  return parts.join(" · ");
 }
 
 function showClinicalGate(ok: boolean, headline: string, problems: string[]): void {
@@ -1218,10 +1298,25 @@ export function renderChart(): void {
     folder.className = "sessionFolder";
     folder.open = true;
 
+    // Reference 2E lays a session out as columns, with the gate verdict as one
+    // of them. The emoji folder goes: the references keep a glyph only on the
+    // patient screen.
     const summary = document.createElement("summary");
     summary.className = "sessionFolderHead";
-    summary.innerHTML = "📁 <strong>Session " + s.number + "</strong> · " +
-      s.date.toLocaleString() + " · " + s.takes.length + " take(s)";
+    const cell = (text: string, cls: string): HTMLElement => {
+      const node = document.createElement("span");
+      node.className = cls;
+      node.textContent = text;
+      return node;
+    };
+    const gate = sessionGateSummary(s.takes);
+    summary.append(
+      cell("S-" + String(s.number).padStart(2, "0"), "mono sessionCellId"),
+      cell(formatSessionDate(s.date), "mono sessionCellDate"),
+      cell(s.takes.length + " take" + (s.takes.length === 1 ? "" : "s"), "mono"),
+      cell(gate, "mono sessionCellGate" +
+        (gate.includes("rejected") ? " hasRejected" : gate === "—" ? " notJudged" : " allPassed")),
+    );
     folder.appendChild(summary);
 
     if (s.takes.length === 0) {

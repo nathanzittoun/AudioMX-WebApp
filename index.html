@@ -986,8 +986,13 @@
             <p id="cChartPatient">No patient selected.</p>
           </div>
           <div class="chartExportBtns">
-            <button id="cExportPatientBtn" class="secondaryBtn">Download all sessions (ZIP)</button>
+            <button id="cExportPatientBtn" class="secondaryBtn">Download sessions (ZIP)</button>
             <button id="cExportFhirBtn" class="secondaryBtn">Export FHIR (JSON)</button>
+            <!-- Reference 2E makes this the primary action on the chart. It is
+                 the one control on the screen that writes outside the browser,
+                 and the path has never been exercised against Epic, so it asks
+                 first. That is a deliberate departure from the mockup. -->
+            <button id="cEhrWriteBtn" class="primaryBtn">Write note to Epic</button>
           </div>
         </div>
         <div id="cChartTrends" class="trendPanel"></div>

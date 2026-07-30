@@ -158,6 +158,11 @@ the page alone reads success as failure.
 
 - Epic rejects custom Observations, so the write path is DocumentReference
   only. Reading Patient and Observation is what proves the connection.
+- **The write path is now reachable from the UI but still untested.** The
+  chart's "Write note to Epic" button calls `writeDocumentReference`, which has
+  never been exercised against Epic. It asks for confirmation first and says so
+  in the prompt — a note in the wrong chart is not something an undo fixes.
+  Proving it takes one full exam on a sandbox patient and a look at the chart.
 - Every redirect URI the app can produce must be registered on Epic verbatim.
   `appRoot()` in [src/ehr/config.ts](src/ehr/config.ts) derives it from
   `location`, so both the localhost dev URL and the Pages URL need registering.

@@ -115,6 +115,15 @@ export interface Recording {
   features: VoiceFeatures | null;
   meta: RecordingMeta | null;
   name?: string;
+  /**
+   * Verdict of the clinical quality gate, attached after the take is closed.
+   *
+   * Optional on purpose, and additive rather than a schema change: every take
+   * recorded before this field existed simply does not have it, and the chart
+   * prints "—" for those rather than guessing. Writing a default would be worse
+   * than an absence — it would claim a take had been judged when it never was.
+   */
+  gate?: { passed: boolean; problems: string[] };
 }
 
 /** Result of an averaged FFT over a selected region. */

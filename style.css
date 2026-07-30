@@ -3396,3 +3396,30 @@ audio {
   .lInputCard.willReveal { opacity: 1; transform: none; }
   .lBars.willReveal span { height: var(--h); }
 }
+
+/* Session rows — reference 2E. Columns, with the gate verdict as one of them. */
+.sessionFolderHead {
+  display: grid;
+  grid-template-columns: 110px 150px 100px minmax(0, 1fr) auto;
+  gap: var(--sp-3);
+  align-items: center;
+}
+
+.sessionCellId { font-weight: 500; color: var(--ink); }
+.sessionCellDate { font-size: 13px; color: var(--muted); }
+
+.sessionCellGate {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sessionCellGate.allPassed { color: var(--ok-text); }
+.sessionCellGate.hasRejected { color: var(--warn-text); }
+.sessionCellGate.notJudged { color: var(--faint); }
+
+@media (max-width: 860px) {
+  .sessionFolderHead {
+    grid-template-columns: 1fr auto;
+  }
+}
