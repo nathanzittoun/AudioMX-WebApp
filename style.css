@@ -1079,7 +1079,7 @@ audio {
   display: flex;
   align-items: center;
   gap: 7px;
-  background: #eef1f6;
+  background: var(--panel-alt);
   color: var(--ink);
   border: 2px solid transparent;
   border-radius: 0;
@@ -1147,15 +1147,15 @@ audio {
 
 /* Patient interface */
 .patientPanel {
-  background: linear-gradient(160deg, #eaf1fb, #dbe8f8);
+  background: var(--panel);
   min-height: 520px;
   display: flex;
   flex-direction: column;
 }
 
 .patientGoBar {
-  background: #c9d3e0;
-  color: #45525f;
+  background: var(--hairline-soft);
+  color: var(--muted);
   text-align: center;
   font-weight: 800;
   font-size: 17px;
@@ -1185,7 +1185,7 @@ audio {
 
 .patientTitle {
   font-size: 30px;
-  color: #23405f;
+  color: var(--ink);
   margin-bottom: 18px;
   line-height: 1.2;
 }
@@ -1194,7 +1194,7 @@ audio {
   display: inline-block;
   text-align: left;
   font-size: 19px;
-  color: #2c3e50;
+  color: var(--text);
   line-height: 1.7;
   margin: 0 auto;
 }
@@ -1208,7 +1208,7 @@ audio {
 
 .patientReadLine {
   font-size: 22px;
-  color: #1f3550;
+  color: var(--ink);
   line-height: 1.5;
   margin: 6px 0;
 }
@@ -1249,7 +1249,7 @@ audio {
 .patientWindowBody {
   margin: 0;
   padding: 0;
-  background: linear-gradient(160deg, #eaf1fb, #dbe8f8);
+  background: var(--panel);
 }
 
 .patientWindowPanel {
@@ -1391,7 +1391,7 @@ audio {
   padding: 9px 14px;
   font-size: 13px;
   font-weight: 700;
-  color: #33506f;
+  color: var(--text);
 }
 .clinSessionRow .clinNotesField { flex: 1 1 240px; }
 
