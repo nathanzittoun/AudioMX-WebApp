@@ -190,10 +190,42 @@ body {
   border-bottom: 1px solid var(--hairline);
 }
 
+/* The wordmark is a button — it leads back to the landing page — so it inherits
+   the generic control rules, and that is exactly the trap: a <button> with no
+   background of its own falls back to the browser's buttonface grey, and the
+   12/16px control padding draws that grey as a rectangle across the header.
+   Every other button in this bar states its own background; this one did not. */
 .brand {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
+  background: transparent;
+  padding: 0;
+  text-align: left;
+}
+
+/* Wordmark over strapline, as reference 2A stacks them. */
+.brand > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+/* Without a rule of its own this inherited the control label — mono at 11px and
+   0.11em, in the button's colour — which is a size and a weight too loud for a
+   strapline sitting under the mark. */
+.brandTag {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  color: var(--muted-2);
+}
+
+/* No fill to darken here, so the hover lands on the one piece of text that can
+   take it. */
+.brand:hover .brandTag {
+  color: var(--muted);
 }
 
 .appIcon {

@@ -210,6 +210,20 @@ T("« Request a demo » ouvre l'app",
   (await visible("appShell")) === true && (await visible("landingMode")) === false &&
   (await visible("homeMode")) === true && (await navActive()) === "home");
 
+// Le logo est un <button>, et un <button> qui ne declare pas son propre fond
+// retombe sur le gris "buttonface" du navigateur — dessine en rectangle a
+// travers l'en-tete par le padding 12/16px de la regle generique des controles.
+// Chaque autre bouton de cette barre pose son fond ; celui-la ne le faisait pas.
+T("le logo n'a pas de fond a lui",
+  (await ev("getComputedStyle(document.querySelector('.topBar .brand')).backgroundColor"))
+    === "rgba(0, 0, 0, 0)");
+
+// Et sa baseline suit la reference 2A plutot que le libelle de controle dont
+// elle heritait : 10px, 0.13em, --muted-2, et pas 11px en couleur de bouton.
+T("la baseline du logo suit la reference 2A",
+  (await ev("getComputedStyle(document.querySelector('.brandTag')).fontSize")) === "10px" &&
+  (await ev("getComputedStyle(document.querySelector('.brandTag')).color")) === "rgb(138, 144, 153)");
+
 // Et le logo de l'en-tete est la sortie.
 await ev("document.querySelector('.topBar .brand').click()");
 await new Promise(r => setTimeout(r, 250));
