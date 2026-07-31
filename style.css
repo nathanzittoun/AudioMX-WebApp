@@ -593,14 +593,6 @@ button:disabled {
   padding: var(--sp-4) 24px;
 }
 
-.plotHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
 .plotHeader h3 {
   margin: 0;
   font-size: 18px;
@@ -659,7 +651,7 @@ canvas {
   width: 100%;
   border-radius: 0;
   overflow: hidden;
-  background: #ececf0;
+  background: var(--hairline-soft);
 }
 
 .indicatorInner {
@@ -1474,8 +1466,8 @@ audio {
 
 /* Epic EHR (SMART on FHIR) panel in the Exam tab */
 .clinEhrCard {
-  background: #f4f8fd;
-  border: 1px solid #dbe7f5;
+  background: var(--panel-alt);
+  border: 1px solid var(--hairline);
   border-radius: 0;
   padding: 12px 14px;
   margin: 12px 0;
@@ -1507,8 +1499,8 @@ audio {
 /* Per-patient trend view (Chart tab) */
 .trendPanel:empty { display: none; }
 .trendPanel {
-  background: #f4f8fd;
-  border: 1px solid #dbe7f5;
+  background: var(--panel-alt);
+  border: 1px solid var(--hairline);
   border-radius: 0;
   padding: 14px 16px;
   margin-bottom: 14px;
@@ -1528,7 +1520,7 @@ audio {
 }
 .trendCard {
   background: white;
-  border: 1px solid #dbe7f5;
+  border: 1px solid var(--hairline);
   border-radius: 0;
   padding: 10px 12px;
 }
