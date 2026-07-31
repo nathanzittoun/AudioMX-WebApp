@@ -113,9 +113,6 @@
   --brand-deep: var(--ink);
   --brand-tint: var(--accent-tint);
   --green: var(--ok-text);
-  --warn-legacy: var(--warn);
-  --purple: var(--warn-text);
-  --rec-deep: var(--rec-text);
   --wcm-red: var(--rec);
   --wcm-dark-red: var(--rec-text);
   --wcm-orange: var(--warn);
@@ -258,7 +255,7 @@ body {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #b8b8bd;
+  background: var(--faint);
   flex: none;
 }
 
@@ -822,7 +819,7 @@ audio {
 }
 
 .analyzeBtn {
-  background: #ececf0;
+  background: var(--hairline-soft);
   color: var(--ink);
 }
 
@@ -942,9 +939,9 @@ audio {
 }
 
 .noiseOn {
-  background: #0f7b3f !important;
+  background: var(--ok-text) !important;
   color: white !important;
-  border-color: #0f7b3f !important;
+  border-color: var(--ok-text) !important;
 }
 
 .waveformAnalyzeCard {
@@ -1124,8 +1121,8 @@ audio {
   font-size: 14px;
 }
 
-.clinGate.gateOk { background: #e7f4ec; border: 1px solid #b6ddc5; color: #14663d; }
-.clinGate.gateWarn { background: #fdecec; border: 1px solid #f2c2c2; color: #8f1d1d; }
+.clinGate.gateOk { background: var(--ok-bg); border: 1px solid var(--ok-border); color: var(--ok-text); }
+.clinGate.gateWarn { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text); }
 .clinGate .gateHead { font-weight: 700; margin-bottom: 6px; }
 .clinGate ul { margin: 4px 0 10px 18px; }
 .clinGate .gateBtns { display: flex; gap: 10px; }
@@ -1493,8 +1490,8 @@ audio {
   margin-bottom: 8px;
 }
 .clinEhrStatus { font-size: 12px; font-weight: 600; color: var(--muted); }
-.clinEhrStatus.ok { color: #2e9e5b; }
-.clinEhrStatus.err { color: #c0492f; }
+.clinEhrStatus.ok { color: var(--ok-text); }
+.clinEhrStatus.err { color: var(--rec-text); }
 .clinEhrBtns { display: flex; gap: 8px; flex-wrap: wrap; }
 .clinEhrPatient { margin-top: 8px; font-size: 13px; color: var(--ink); }
 .clinEhrPatient:empty { display: none; }
@@ -1505,7 +1502,7 @@ audio {
 .ehrObsList li { margin: 3px 0; }
 .ehrObsDate { color: var(--muted); font-size: 11px; }
 .clinEhrHint { margin-top: 8px; font-size: 11px; color: var(--muted); word-break: break-all; }
-.clinEhrHint.warn { color: #b0442e; font-weight: 600; }
+.clinEhrHint.warn { color: var(--rec-text); font-weight: 600; }
 
 /* Per-patient trend view (Chart tab) */
 .trendPanel:empty { display: none; }
@@ -1552,7 +1549,7 @@ audio {
 .patientCount {
   font-size: 96px;
   font-weight: 800;
-  color: #18794e;
+  color: var(--ok-text);
   line-height: 1;
   min-height: 0;
 }
@@ -1716,13 +1713,16 @@ audio {
 }
 
 .flowState.ok {
-  background: #e6f2eb;
-  color: var(--green);
+  background: var(--ok-bg);
+  color: var(--ok-text);
 }
 
+/* Ambre, pas violet : le jeu semantique de la reference est vert / ambre /
+   rouge et rien d'autre. Une couleur hors de ce jeu ne se lit plus comme un
+   etat, elle se lit comme une decoration. */
 .flowState.pending {
-  background: #f3edff;
-  color: var(--purple);
+  background: var(--warn-bg);
+  color: var(--warn-text);
 }
 
 /* --- honest notes ---
@@ -1741,7 +1741,7 @@ audio {
 .noteCard {
   padding: var(--sp-4);
   background: var(--brand-tint);
-  border: 1px solid #dde7f2;
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-md);
 }
 
@@ -1755,7 +1755,7 @@ audio {
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: #4a5b6d;
+  color: var(--text);
 }
 
 @media (max-width: 980px) {
@@ -1885,13 +1885,13 @@ audio {
 }
 
 .transportBadge.ok {
-  background: #e6f2eb;
-  color: var(--green);
+  border-color: var(--ok);
+  color: var(--ok-text);
 }
 
 .transportBadge.no {
-  background: #f7e9e9;
-  color: var(--rec);
+  border-color: var(--rec-border);
+  color: var(--rec-text);
 }
 
 .transportDetail {
@@ -1904,12 +1904,12 @@ audio {
 .transportReason {
   margin: 0;
   padding: var(--sp-2) var(--sp-3);
-  background: #fdf6f6;
+  background: var(--panel-alt);
   border-left: 3px solid var(--rec);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-size: 13px;
   line-height: 1.5;
-  color: #6d4646;
+  color: var(--text);
 }
 
 /* Text that navigates. Not a call to action — the action lives on the page it
@@ -1953,7 +1953,7 @@ audio {
   margin-top: var(--sp-3);
   padding: var(--sp-3);
   background: var(--brand-tint);
-  border: 1px solid #dde7f2;
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-sm);
 }
 
@@ -1971,6 +1971,7 @@ audio {
 
 .riskBadge {
   padding: 2px 8px;
+  border: 1px solid var(--hairline);
   border-radius: 0;
   font-family: var(--font-mono);
   font-size: 10px;
@@ -1980,25 +1981,25 @@ audio {
 }
 
 .riskBadge.pending {
-  background: #f3edff;
-  color: var(--purple);
+  border-color: var(--warn-border);
+  color: var(--warn-text);
 }
 
 .riskBadge.ok {
-  background: #e6f2eb;
-  color: var(--green);
+  border-color: var(--ok);
+  color: var(--ok-text);
 }
 
 .riskBadge.no {
-  background: #f7e9e9;
-  color: var(--rec);
+  border-color: var(--rec-border);
+  color: var(--rec-text);
 }
 
 .riskNote {
   margin: var(--sp-2) 0 0;
   font-size: 12px;
   line-height: 1.5;
-  color: #4a5b6d;
+  color: var(--text);
 }
 
 .riskScores {
