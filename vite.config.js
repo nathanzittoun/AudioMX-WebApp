@@ -31,7 +31,10 @@ export default defineConfig(({ command, isPreview }) => ({
     sourcemap: true,
     rollupOptions: {
       input: {
+        // Three pages, three audiences. index.html is the product site,
+        // app.html the clinical tool, patient.html the second display.
         main: resolve(rootDir, "index.html"),
+        app: resolve(rootDir, "app.html"),
         patient: resolve(rootDir, "patient.html"),
       },
     },

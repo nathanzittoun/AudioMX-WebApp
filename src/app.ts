@@ -14,7 +14,6 @@ import { drawLiveSpectrum } from "./rnd/liveSpectrum";
 import { updateNoiseIndicators } from "./rnd/meters";
 import { clearLiveSpectrogram } from "./ui/canvas/spectrogram";
 import { ctx2d, el } from "./ui/dom";
-import { startLanding, stopLanding } from "./ui/landing";
 import { reflectNav } from "./ui/nav";
 import { PLOT } from "./ui/theme";
 import { log } from "./ui/log";
@@ -22,32 +21,17 @@ import { setStatus } from "./ui/status";
 import { updateCurrentStats } from "./ui/captureStats";
 import { emit, on } from "./core/bus";
 
-// Five top-level containers: the landing page the app opens on, the in-app
-// overview, the device page, and the two original modes. Each extra one is a
-// value of ui.mode rather than a special case outside it, because every read of
-// ui.mode asks "is this clinical?" or "is this rnd?" — so a page with no live
-// monitor answers no to both, correctly, without one call site changing.
-export function setAppMode(
-  mode: "rnd" | "clinical" | "home" | "device" | "landing"
-): void {
+// Three top-level containers, switched here. There used to be five: a product
+// page and an overview page, both gone now that the site has its own entry
+// point. Each remaining one is a value of ui.mode rather than a special case
+// outside it, because every read of ui.mode asks "is this clinical?" or "is
+// this rnd?" — so the device page answers no to both, correctly, without one
+// call site changing.
+export function setAppMode(mode: "rnd" | "clinical" | "device"): void {
   ui.mode = mode;
-  // "landing" is the product page. It swaps out the whole application shell,
-  // header and nav included, because it addresses someone who has not decided
-  // to use the app yet and app chrome would only get in the way.
-  const landing = el("landingMode");
-  const shell = el("appShell");
-  if (landing) landing.hidden = mode !== "landing";
-  if (shell) shell.hidden = mode === "landing";
-  // Its animation loop stops itself when the page is hidden, so coming back has
-  // to restart it. A marketing animation must not burn frames behind an exam.
-  if (mode === "landing") startLanding();
-  else stopLanding();
-
-  const home = el("homeMode");
   const deviceView = el("deviceMode");
   const rnd = el("rndMode");
   const clinical = el("clinicalMode");
-  if (home) home.hidden = mode !== "home";
   if (deviceView) deviceView.hidden = mode !== "device";
   if (rnd) rnd.hidden = mode !== "rnd";
   if (clinical) clinical.hidden = mode !== "clinical";

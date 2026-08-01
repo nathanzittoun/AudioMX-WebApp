@@ -17,7 +17,7 @@
 // are injected once from main.ts instead.
 
 export interface NavHandlers {
-  setAppMode(mode: "rnd" | "clinical" | "home" | "device" | "landing"): void;
+  setAppMode(mode: "rnd" | "clinical" | "device"): void;
   showTab(tabId: string): void;
   setClinicalTab(name: string): void;
 }
@@ -26,8 +26,6 @@ export interface NavHandlers {
  *  plus the path printed beside the nav — reference 2B-2G spell out where you
  *  are rather than relying on the highlight alone. */
 const SECTIONS = {
-  landing: { mode: "landing", crumb: "" },
-  home: { mode: "home", crumb: "/ Overview" },
   device: { mode: "device", crumb: "/ Device" },
   patients: { mode: "clinical", ctab: "patients", crumb: "/ Clinical / Patients" },
   exam: { mode: "clinical", ctab: "exam", crumb: "/ Clinical / Exam" },
@@ -46,8 +44,8 @@ export function isNavSection(value: string): value is NavSection {
 let handlers: NavHandlers | null = null;
 
 /** Wire every [data-nav] element, wherever it is. The bar uses .navBtn, but a
- *  call to action on the overview page is just as much a nav link and should
- *  not have to carry the bar's styling to work. */
+ *  pointer built into a page is just as much a nav link and should not have to
+ *  carry the bar's styling to work. */
 export function initNav(bound: NavHandlers): void {
   handlers = bound;
   // Delegated rather than one listener per element: the Device page builds its
@@ -57,6 +55,8 @@ export function initNav(bound: NavHandlers): void {
     const node = (event.target as Element | null)?.closest<HTMLElement>("[data-nav]");
     if (!node) return;
     const section = node.dataset["nav"];
+    // An unknown value is a link out of the app, not a bug: the site pages
+    // use plain hrefs and must not be swallowed by this handler.
     if (section && isNavSection(section)) goto(section);
   });
 }
@@ -94,8 +94,6 @@ function shown(id: string): boolean {
 }
 
 function currentSection(): NavSection {
-  if (shown("landingMode")) return "landing";
-  if (shown("homeMode")) return "home";
   if (shown("deviceMode")) return "device";
   if (shown("clinicalMode")) {
     if (shown("clinExam")) return "exam";

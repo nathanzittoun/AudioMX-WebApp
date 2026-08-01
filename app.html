@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <!-- Without this, iOS lays the page out at 980px and scales it down, which
+       also means the max-width: 980px / 1100px breakpoints in style.css never
+       fire on a phone. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AudioMX — Voice &amp; Speech Platform</title>
+  <link rel="icon" type="image/png" href="%BASE_URL%favicon.png" />
+  <!-- Home-screen install. The icons are opaque on purpose: iOS composites a
+       transparent apple-touch-icon onto black. -->
+  <link rel="apple-touch-icon" href="%BASE_URL%icons/apple-touch-icon.png" />
+  <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+  <meta name="theme-color" content="#f5f5f7" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="AudioMX" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- ===================================================================
+       THE APPLICATION.
+
+       Split out of index.html, which is now the product site. The two are
+       separate pages so each can be worked on without touching the other, and
+       they share nothing but the stylesheet tokens.
+
+       The Epic round trip still works across that split, and it is worth
+       knowing why rather than rediscovering it: the redirect URI registered
+       with Epic is this *directory*, so the callback lands on index.html. The
+       site forwards it here with its query string intact, in the same tab, so
+       the PKCE verifier in sessionStorage survives. appRoot() then computes the
+       same directory root from app.html as it did from index.html, because it
+       strips the trailing filename — which is why the token exchange still
+       presents the redirect_uri Epic has on file. No re-registration.
+       =================================================================== -->
+  <div class="appShell" id="appShell">
+    <header class="topBar">
+      <!-- The wordmark is the way out of the app: back to the landing page.
+           data-nav works on any element — initNav is delegated. -->
+      <button class="brand" type="button" data-nav="landing" title="Back to the AudioMX home page">
+        <img class="appIcon" src="AudioMXimagelogo.png" alt="" />
+        <span>
+          <img class="wordmark" src="AudioMXnamelogo.png" alt="AudioMX" />
+          <span class="brandTag">Voice &amp; speech biomarker platform</span>
+        </span>
+      </button>
+
+      <div class="partnerLogos">
+        <img src="logo.png" alt="Weill Cornell Medicine Otolaryngology" />
+        <img src="nyp_logo.png" alt="NewYork-Presbyterian" onerror="this.style.display='none'" />
+      </div>
+
+      <div class="headerRight">
+        <div class="deviceStatus">
+          <div id="statusDot" class="statusDot" data-status-dot></div>
+          <div>
+            <div id="status" class="statusText" data-status-text>Not connected</div>
+            <div class="statusSubtext">USB-C / Wi-Fi</div>
+          </div>
+        </div>
+        <!-- The explicit way out, as reference 2A shows it. The wordmark on the
+             left leads to the same place — a clickable logo is convention, not
+             a second control to keep in step. -->
+        <button class="exitBtn" type="button" data-nav="landing">Exit to site</button>
+      </div>
+    </header>
+
+    <!-- One navigation bar for the whole app.
+         There used to be three, stacked: a mode switch, then a tab bar per
+         mode. Each button here still calls the same setAppMode / showTab /
+         setClinicalTab it always did — see src/ui/nav.ts. The group labels are
+         the part that was missing entirely: nothing on screen ever said what
+         "mode" meant, or who each half was for. -->
+    <nav class="mainNav" aria-label="Sections">
+      <button class="navBtn" data-nav="device">Device</button>
+
+      <span class="navGroup">
+        <span class="navGroupLabel">Clinical</span>
+        <button class="navBtn" data-nav="patients">Patients</button>
+        <button class="navBtn" data-nav="exam">Exam</button>
+        <button class="navBtn" data-nav="chart">Chart</button>
+      </span>
+
+      <span class="navGroup">
+        <span class="navGroupLabel">Bench</span>
+        <button class="navBtn" data-nav="record">Record</button>
+        <button class="navBtn" data-nav="analyze">Analyze</button>
+        <button class="navBtn" data-nav="recordings">Recordings</button>
+      </span>
+
+      <div id="crumb" class="crumb"></div>
+    </nav>
+
+    <!-- OVERVIEW -->
+
+    <div id="deviceMode" hidden>
+      <section class="card">
+        <div class="sectionHeader">
+          <div>
+            <h2>Device</h2>
+            <p>What AudioMX captures with.</p>
+          </div>
+          <div class="deviceStatus">
+            <div class="statusDot" data-status-dot></div>
+            <div>
+              <div class="statusText" data-status-text>Not connected</div>
+              <div class="statusSubtext">Current connection</div>
+            </div>
+          </div>
+        </div>
+        <dl id="deviceSpecs" class="specGrid"></dl>
+      </section>
+
+      <section class="card deviceInputs">
+        <div class="sectionHeader">
+          <div>
+            <h2>Inputs</h2>
+            <p>Checked against this browser and this page — asked of the API, never guessed from the browser's name.</p>
+          </div>
+        </div>
+
+        <div id="transportList" class="transportList"></div>
+
+        <!-- Moved here from the Record view. It is a setting, not a capture
+             control, and both modes read it: a clinician on Wi-Fi had to open
+             the R&D bench to change the device address. -->
+        <div class="wifiAddressRow">
+          <div class="fieldGroup">
+            <label for="wifiUrlInput">Wi-Fi address</label>
+            <input id="wifiUrlInput" type="text" value="ws://192.168.4.1:81" spellcheck="false" />
+          </div>
+          <small class="fieldHint">Default is the ESP32 access point. Change it if the device is on your network.</small>
+        </div>
+      </section>
+    <!-- Moved here from the old Overview page, which is gone. These are the
+         things this build cannot do, and they were the only part of that page
+         worth keeping: a marketing site is the wrong place for them, and
+         deleting them would have quietly removed the disclosure. The Device
+         page already answers "what can this setup do", so they belong here. -->
+      <section class="card homeNotes">
+        <div class="sectionHeader">
+          <div>
+            <h2>Before you rely on this build</h2>
+            <p>Three things that are true today. The full list lives in LIMITATIONS.md.</p>
+          </div>
+        </div>
+
+        <div class="noteGrid">
+          <div class="noteCard">
+            <h3>Data stays in this browser</h3>
+            <p>
+              Patients, sessions and audio live in this browser profile only.
+              There is no account and no sync: another computer, another
+              browser, or cleared site data means starting from zero.
+            </p>
+          </div>
+          <div class="noteCard">
+            <h3>Epic is a sandbox</h3>
+            <p>
+              The chart connection reaches Epic's public test environment, not
+              a real organisation. Use synthetic patients. No real patient data
+              may enter this build.
+            </p>
+          </div>
+          <div class="noteCard">
+            <h3>No risk score is produced</h3>
+            <p>
+              Every number on screen is a measurement of the signal. The app
+              deliberately refuses to show a score until a real model is behind
+              it — a placeholder next to a patient is a hazard, not a stub.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div><!-- /#deviceMode -->
+
+    <div id="rndMode" hidden>
+    <main>
+      <!-- RECORD VIEW -->
+      <section id="recordView" class="view activeView">
+        <div class="gridTwo">
+          <section class="card mainCard">
+            <div class="sectionHeader">
+              <div>
+                <h2>Recording</h2>
+                <p>Select the microphones, then start acquisition.</p>
+              </div>
+            </div>
+
+            <div class="sourceSelector">
+              <button class="sourceBtn active" data-source="mems">
+                <span>MEMS mics</span>
+                <small>ESP32 USB-C</small>
+              </button>
+
+              <button class="sourceBtn" data-source="computer">
+                <span>Computer mic</span>
+                <small>Built-in / external</small>
+              </button>
+            </div>
+
+            <div class="buttonRow">
+              <button id="connectBtn" class="primaryBtn">Connect MEMS device</button>
+              <button id="connectWifiBtn" class="primaryBtn">Connect MEMS Wi-Fi</button>
+              <button id="startBtn" class="successBtn" disabled>Start</button>
+              <button id="stopBtn" class="warningBtn" disabled>Stop</button>
+              <button id="calibrateNoiseBtn" class="secondaryBtn" disabled>Calibrate noise floor</button>
+              <button id="noiseAttenuatorBtn" class="secondaryBtn" disabled title="When ON, the recording is cleaned (baked in). When OFF, the recording is raw.">Noise filter OFF</button>
+            </div>
+
+            <p class="fieldHint wifiPointer">
+              The Wi-Fi address is set on the
+              <button type="button" class="inlineNavLink" data-nav="device">Device page</button>.
+            </p>
+
+            <div id="modeSelector" class="modeSelector">
+              <button class="modeBtn active" data-mode="stereo">
+                <span>Stereo</span>
+                <small>Both mics</small>
+              </button>
+
+              <button class="modeBtn" data-mode="left">
+                <span>Left</span>
+                <small>Left mic only</small>
+              </button>
+
+              <button class="modeBtn" data-mode="right">
+                <span>Right</span>
+                <small>Right mic only</small>
+              </button>
+            </div>
+
+            <div class="metaRow">
+              <div id="durationBox" class="metaBox">Duration: 0.00 s</div>
+              <div id="sampleBox" class="metaBox">Frames: 0 · 2 channels</div>
+              <div id="recordingStateBox" class="metaBox">Idle</div>
+            </div>
+
+            <div class="plotCard">
+              <div class="plotHeader">
+                <h3>Live waveform</h3>
+                <span>Rolling view</span>
+              </div>
+              <canvas id="waveform" width="1000" height="300"></canvas>
+            </div>
+
+            <div class="plotCard">
+              <div class="plotHeader">
+                <h3>Live spectrum</h3>
+                <span>~0.25 s window · 0–8 kHz</span>
+              </div>
+              <canvas id="liveSpectrum" width="1000" height="220"></canvas>
+            </div>
+
+            <div class="plotCard">
+              <div class="plotHeader">
+                <h3>Live spectrogram</h3>
+                <span>0–8 kHz · time scrolls left</span>
+              </div>
+              <canvas id="liveSpectrogram" width="1000" height="240"></canvas>
+            </div>
+          </section>
+
+          <aside class="card">
+            <div class="sectionHeader compact">
+              <div>
+                <h2>Signal health</h2>
+                <p>Live recording diagnostics.</p>
+              </div>
+            </div>
+
+            <div class="noiseDashboard">
+              <div class="noiseCard">
+                <div class="noiseLabel">RMS</div>
+                <div id="rmsDb" class="noiseValue">-- dBFS</div>
+                <div class="indicatorOuter"><div id="rmsBar" class="indicatorInner"></div></div>
+              </div>
+
+              <div class="noiseCard">
+                <div class="noiseLabel">Peak</div>
+                <div id="peakDb" class="noiseValue">-- dBFS</div>
+                <div class="indicatorOuter"><div id="peakBar" class="indicatorInner"></div></div>
+              </div>
+
+              <div class="noiseCard">
+                <div class="noiseLabel">Clipping</div>
+                <div id="clipPercent" class="noiseValue">0.00%</div>
+                <div class="indicatorOuter"><div id="clipBar" class="indicatorInner warning"></div></div>
+              </div>
+
+              <div class="noiseCard">
+                <div class="noiseLabel">60 Hz</div>
+                <div id="hum60" class="noiseValue">--</div>
+                <div class="indicatorOuter"><div id="hum60Bar" class="indicatorInner danger"></div></div>
+              </div>
+
+              <div class="noiseCard">
+                <div class="noiseLabel">120 Hz</div>
+                <div id="hum120" class="noiseValue">--</div>
+                <div class="indicatorOuter"><div id="hum120Bar" class="indicatorInner danger"></div></div>
+              </div>
+
+            </div>
+
+            <div class="noiseFloorBox">
+              <div class="noiseLabel">Noise floor</div>
+              <div id="noiseFloor" class="noiseFloorValue">Not calibrated</div>
+              <div id="noiseComment" class="noiseComment">Record silence, then calibrate.</div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ANALYZE VIEW -->
+      <section id="analyzeView" class="view">
+        <section class="card">
+          <div class="sectionHeader">
+            <div>
+              <h2>Frequency analysis</h2>
+              <p>Zoom into the FFT and export the frequency data.</p>
+            </div>
+          </div>
+
+          <div class="analysisToolbar">
+            <div class="fieldGroup">
+              <label>Source</label>
+              <select id="analysisSourceSelect">
+                <option value="live">Live buffer</option>
+              </select>
+            </div>
+
+            <div class="fieldGroup">
+              <label>From</label>
+              <input id="fftMinFreqInput" type="number" value="0" min="0" step="10" />
+            </div>
+
+            <div class="fieldGroup">
+              <label>To</label>
+              <input id="fftMaxFreqInput" type="number" value="8000" min="10" step="10" />
+            </div>
+
+            <button id="plotSpectrumBtn" class="primaryBtn" disabled>Plot FFT</button>
+            <button id="resetZoomBtn" class="secondaryBtn">Reset zoom</button>
+            <button id="downloadFftBtn" class="secondaryBtn" disabled>Download FFT</button>
+          </div>
+
+          <div class="quickZoomRow">
+            <button class="zoomPresetBtn" data-min="0" data-max="250">0–250 Hz</button>
+            <button class="zoomPresetBtn" data-min="0" data-max="1000">0–1 kHz</button>
+            <button class="zoomPresetBtn" data-min="1000" data-max="4000">1–4 kHz</button>
+            <button class="zoomPresetBtn" data-min="4000" data-max="8000">4–8 kHz</button>
+          </div>
+
+          <div class="plotCard">
+            <div class="plotHeader">
+              <h3>FFT spectrum</h3>
+              <span id="fftRangeLabel">0–8000 Hz</span>
+            </div>
+
+            <canvas id="spectrumCanvas" width="1200" height="420"></canvas>
+          </div>
+
+          <div class="plotCard">
+            <div class="plotHeader">
+              <h3>Spectrogram</h3>
+              <span>Selected region · frequency over time</span>
+            </div>
+
+            <canvas id="analysisSpectrogram" width="1200" height="300"></canvas>
+          </div>
+
+          <div class="plotCard waveformAnalyzeCard">
+            <div class="plotHeader">
+                <h3>Selected waveform region</h3>
+                <span id="selectedRangeLabel">No region selected</span>
+            </div>
+
+            <canvas id="analysisWaveformCanvas" width="1200" height="260"></canvas>
+
+            <p class="selectionHelp">
+                Drag the left or right boundary to choose the audio segment used for the FFT.
+            </p>
+          </div>
+
+          <div class="analysisSummary">
+            <div>
+              <h3>Dominant frequencies</h3>
+              <p id="dominantFrequencies">No FFT plotted yet.</p>
+            </div>
+
+            <div>
+              <h3>Interpretation</h3>
+              <p id="fftInterpretation">Record silence, then plot the FFT to identify noise bands.</p>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- LIBRARY VIEW -->
+      <section id="libraryView" class="view">
+        <section class="card">
+          <div class="sectionHeader">
+            <div>
+              <h2>Recordings</h2>
+              <p>Listen, download, or delete saved recordings.</p>
+            </div>
+
+            <div class="libraryHeaderRight">
+              <div id="recordingCount" class="countPill">0 saved</div>
+              <button id="clearAllBtn" class="smallBtn deleteBtn">Clear all data</button>
+            </div>
+          </div>
+
+          <div id="recordingList" class="recordingList">
+            <div class="empty">No recordings yet.</div>
+          </div>
+        </section>
+      </section>
+    </main>
+    </div><!-- /#rndMode -->
+
+    <!-- CLINICAL MODE -->
+    <div id="clinicalMode" hidden>
+      <!-- PATIENTS TAB -->
+      <section id="clinPatients" class="card clinPanel">
+        <div class="sectionHeader">
+          <div>
+            <h2>Patients</h2>
+            <p>Stored in this browser only. Open one to run an exam.</p>
+          </div>
+          <span id="cPatientCounts" class="countPill">0 patients · 0 sessions</span>
+        </div>
+
+        <form id="cNewPatientForm" class="newPatientForm">
+          <div class="newPatientFields">
+            <div class="fieldGroup">
+              <label for="cNpId">Patient ID *</label>
+              <input id="cNpId" type="text" placeholder="PT-0142" autocomplete="off" required />
+            </div>
+            <div class="fieldGroup">
+              <label for="cNpName">Name / label</label>
+              <input id="cNpName" type="text" placeholder="Optional" autocomplete="off" />
+            </div>
+            <div class="fieldGroup">
+              <label for="cNpAge">Age</label>
+              <input id="cNpAge" type="number" min="0" max="120" placeholder="Optional" autocomplete="off" />
+            </div>
+            <div class="fieldGroup">
+              <label for="cNpSex">Sex</label>
+              <select id="cNpSex">
+                <option value="">Not specified</option>
+                <option value="F">F</option>
+                <option value="M">M</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <p id="cNpError" class="newPatientError" hidden></p>
+          <div class="newPatientActions">
+            <button type="submit" class="primaryBtn">Create patient</button>
+            <button type="button" id="cNpClear" class="secondaryBtn">Clear</button>
+          </div>
+        </form>
+
+        <div class="fieldGroup">
+          <label for="cPatientSearch">Search</label>
+          <input id="cPatientSearch" type="text" placeholder="Search by ID or name" />
+        </div>
+        <div id="cPatientTable" class="patientTable">
+          <div class="empty">No patients yet. Fill in a patient ID above to create one.</div>
+        </div>
+
+        <!-- Moved here from the Exam screen — reference 2B files Epic under
+             "or pull from the chart", beside creating a patient by hand, which
+             is where the choice actually belongs. Same ids, same listeners. -->
+        <div id="cEhrCard" class="clinEhrCard">
+          <div class="clinEhrHead">
+            <span class="metaLabel">Or pull from the chart · Epic SMART on FHIR</span>
+            <span id="cEhrStatus" class="clinEhrStatus">Not connected</span>
+          </div>
+          <div class="clinEhrBtns">
+            <button id="cEhrConnect" class="secondaryBtn">Connect to Epic</button>
+            <button id="cEhrPull" class="secondaryBtn" style="display:none">Pull chart data</button>
+          </div>
+          <div id="cEhrPatient" class="clinEhrPatient"></div>
+          <div id="cEhrObs" class="clinEhrObs"></div>
+          <div id="cEhrHint" class="clinEhrHint"></div>
+        </div>
+      </section>
+
+      <!-- EXAM TAB -->
+      <!-- EXAM TAB — reference 2C.
+           Three columns: the protocol on the left, the running task and its
+           signal in the middle, the gate and the meters on the right. A session
+           strip spans the top. Every control below already existed; this is a
+           re-lay-out, and every id is the one the logic already binds to.
+
+           Two panels moved out rather than being duplicated: the Epic card now
+           lives on Patients ("or pull from the chart", reference 2B) and the
+           patient-screen preview sits full width underneath, because 2C is the
+           clinician's screen and 2D is the patient's. -->
+      <section id="clinExam" class="clinPanel" hidden>
+        <div class="examSessionBar">
+          <div class="examCell">
+            <span class="metaLabel">Patient</span>
+            <div id="cExamPatient" class="clinPatientMeta">No patient selected.</div>
+          </div>
+          <div class="examCell">
+            <span class="metaLabel">Session</span>
+            <span id="cSessionLabel" class="clinSessionLabel">—</span>
+          </div>
+          <div class="examCell examCellGrow">
+            <label class="metaLabel" for="cNotes">Session notes</label>
+            <input id="cNotes" type="text" placeholder="Optional notes for this session" />
+          </div>
+          <div class="examCell examCellRow">
+            <label class="consentCheck"><input type="checkbox" id="cConsent" /> Consent</label>
+            <label class="consentCheck"><input type="checkbox" id="cSpeak" checked /> Prompts aloud</label>
+          </div>
+          <div class="examCell examCellRow">
+            <button id="cNewSessionBtn" class="secondaryBtn">New session</button>
+            <button id="cPopoutBtn" class="primaryBtn">Patient view ↗</button>
+          </div>
+        </div>
+
+        <div class="examGrid">
+          <!-- protocol rail -->
+          <aside class="panel examRail">
+            <div class="panelHead">
+              <span class="metaLabel">Protocol</span>
+              <span id="cProtocolProgress" class="mono panelHeadValue">0 / 6</span>
+            </div>
+            <div id="cTestList" class="clinTestList"></div>
+          </aside>
+
+          <!-- the running task and its signal -->
+          <div class="examCentre">
+            <section class="panel">
+              <div class="panelHead panelHeadTall">
+                <div>
+                  <span id="cTaskStage" class="metaLabel">Task 01 · idle</span>
+                  <h2 id="cTestName" class="examTaskTitle">Sustained Vowel (MPT)</h2>
+                  <p id="cTestNote" class="clinTestNote"></p>
+                </div>
+                <div class="clinRunBtns">
+                  <button id="cStartBtn" class="successBtn">Start test</button>
+                  <button id="cStopBtn" class="warningBtn" disabled>End test</button>
+                </div>
+              </div>
+
+              <div class="examTimerRow">
+                <span id="cElapsed" class="examElapsed">00:00.0</span>
+                <div class="examProgress"><div id="cProgressBar" class="examProgressBar"></div></div>
+                <span id="cHoldLabel" class="metaLabel">Elapsed</span>
+              </div>
+
+              <div class="panelBody">
+                <div class="plotBlock">
+                  <div class="plotHeader">
+                    <span class="metaLabel">Waveform · live</span>
+                    <span class="mono plotHint">16 kHz</span>
+                  </div>
+                  <canvas id="cWaveform" width="1000" height="200"></canvas>
+                </div>
+                <div class="plotBlock">
+                  <div class="plotHeader">
+                    <span class="metaLabel">Spectrum · 0–8 kHz · dBFS</span>
+                    <span class="mono plotHint">~0.25 s window</span>
+                  </div>
+                  <canvas id="cSpectrum" width="1000" height="200"></canvas>
+                </div>
+              </div>
+
+              <div id="cGateBox" class="clinGate" style="display:none"></div>
+            </section>
+          </div>
+
+          <!-- gate, meters, input -->
+          <aside class="examSide">
+            <!-- The gate thresholds, judged live. The *decision* is still taken
+                 on the whole take by runClinicalQualityGate() after Stop: a
+                 take can sit inside every bound at this instant and still fail
+                 overall, so this panel reports and never accepts. -->
+            <section id="cLiveGate" class="panel gatePanel">
+              <div class="panelHead gatePanelHead">
+                <span class="metaLabel">Quality gate</span>
+                <span id="cLiveGateVerdict" class="mono gateVerdict">Idle</span>
+              </div>
+              <div class="panelBody gateRows">
+                <div class="gateRow"><span>Clipping</span><span id="cGateClip" class="mono">— <em>/ 0.5 %</em></span></div>
+                <div class="gateRow"><span>Peak</span><span id="cGatePeak" class="mono">— <em>/ −1 dBFS</em></span></div>
+                <div class="gateRow"><span>RMS</span><span id="cGateRms" class="mono">— <em>/ −55 dBFS</em></span></div>
+                <div class="gateRow"><span>Hum 60 / 120 Hz</span><span id="cGateHum" class="mono">— / —</span></div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panelHead"><span class="metaLabel">Signal health</span></div>
+              <div class="panelBody meterRows">
+                <div class="meterRow">
+                  <div class="meterHead"><span class="metaLabel">RMS</span><span id="cRms" class="meterValue">-- dBFS</span></div>
+                  <div class="indicatorOuter"><div id="cLevelBar" class="indicatorInner"></div></div>
+                </div>
+                <div class="meterRow">
+                  <div class="meterHead"><span class="metaLabel">Peak</span><span id="cPeak" class="meterValue">-- dBFS</span></div>
+                </div>
+                <div class="meterRow">
+                  <div class="meterHead"><span class="metaLabel">Clipping</span><span id="cClip" class="meterValue">0.00%</span></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panelHead">
+                <span class="metaLabel">Input</span>
+                <span id="cInputState" class="mono panelHeadValue">Not connected</span>
+              </div>
+              <div class="panelBody inputRows">
+                <button id="cConnectUsb" class="secondaryBtn">Connect MEMS (USB)</button>
+                <button id="cConnectWifi" class="secondaryBtn">Connect MEMS (Wi-Fi)</button>
+                <button id="cConnectComputer" class="secondaryBtn">Connect computer mic</button>
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        <!-- What the patient is seeing, in the clinician's own page. The real
+             patient screen is the pop-out (patient.html); this is the preview
+             that lets the clinician check it without a second monitor. -->
+        <section class="panel patientPanel">
+          <div class="panelHead"><span class="metaLabel">Patient screen · preview</span></div>
+          <div id="pGoBar" class="patientGoBar">Get ready…</div>
+          <div class="patientBody">
+            <div id="pCountNumber" class="patientCount"></div>
+            <div id="pTaskIcon" class="patientIcon">🫁</div>
+            <h2 id="pTaskTitle" class="patientTitle">Say “Ahhh” for as long as you can</h2>
+            <ol id="pSteps" class="patientSteps"></ol>
+            <div id="pReads" class="patientReads"></div>
+            <div id="pReadyWrap" class="patientReadyWrap" style="display:none">
+              <button id="pReadyBtn" class="patientReadyBtn">I'm ready — start</button>
+            </div>
+          </div>
+          <div id="pTimerWrap" class="patientTimerWrap" style="display:none">
+            <div id="pTimerBar" class="patientTimerBar"></div>
+          </div>
+        </section>
+      </section>
+
+      <!-- CHART TAB -->
+      <section id="clinChart" class="card clinPanel" hidden>
+        <div class="sectionHeader">
+          <div>
+            <h2>Patient chart</h2>
+            <p id="cChartPatient">No patient selected.</p>
+          </div>
+          <div class="chartExportBtns">
+            <button id="cExportPatientBtn" class="secondaryBtn">Download sessions (ZIP)</button>
+            <button id="cExportFhirBtn" class="secondaryBtn">Export FHIR (JSON)</button>
+            <!-- Reference 2E makes this the primary action on the chart. It is
+                 the one control on the screen that writes outside the browser,
+                 and the path has never been exercised against Epic, so it asks
+                 first. That is a deliberate departure from the mockup. -->
+            <button id="cEhrWriteBtn" class="primaryBtn">Write note to Epic</button>
+          </div>
+        </div>
+        <div id="cChartTrends" class="trendPanel"></div>
+        <div id="cChartFolders" class="sessionList">
+          <div class="empty">Open a patient from the Patients tab.</div>
+        </div>
+      </section>
+    </div><!-- /#clinicalMode -->
+
+    <div id="log" class="logBox"></div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

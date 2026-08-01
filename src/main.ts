@@ -44,7 +44,6 @@ import { el, requireEl } from "./ui/dom";
 import { toggleNoiseAttenuator } from "./rnd/noiseToggle";
 import { initClinical, setClinicalTab } from "./clinical";
 import { goto, initNav } from "./ui/nav";
-import { initLanding } from "./ui/landing";
 import { registerServiceWorker } from "./pwa";
 
 function boot(): void {
@@ -136,10 +135,12 @@ function boot(): void {
 
   initClinical();
   void initEhr();
-  // The app opens on the product page. initClinical leaves the clinical side on
-  // its Patients tab, so arriving there later is one click with nothing half-set.
-  initLanding();
-  goto("landing");
+  // The app opens on Device. The product page is a separate entry point now, so
+  // whoever loads this URL has already chosen the tool — and the first thing the
+  // tool needs is an input it can actually reach. initClinical leaves the
+  // clinical side on its Patients tab, so going there next is one click with
+  // nothing half-set.
+  goto("device");
 
   // Restore recordings persisted in this browser from earlier sessions.
   void restoreRecordings();

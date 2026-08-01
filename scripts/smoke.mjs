@@ -77,7 +77,13 @@ const ev = async x => {
   // undefined so one bad probe fails its own assertion instead of the run.
   return r?.result?.value;
 };
-const go = async () => { await cmd("Page.navigate", { url: BASE }); await new Promise(r => setTimeout(r, 4500)); };
+// Deux pages, deux cibles. BASE est la vitrine et reste la racine du
+// dossier parce que c'est l'URL de retour enregistree chez Epic ; APP est
+// l'outil clinique. La quasi-totalite de ce banc conduit APP.
+const APP = BASE + "app.html";
+const nav = async url => { await cmd("Page.navigate", { url }); await new Promise(r => setTimeout(r, 4500)); };
+const go = async () => nav(APP);
+const goSite = async () => nav(BASE);
 
 let pass = 0, fail = 0;
 const T = (label, ok, detail = "") => {
@@ -175,12 +181,20 @@ const visible = async id => ev(`(()=>{const n=document.getElementById('${id}');r
 const navActive = async () => ev(
   "[...document.querySelectorAll('.navBtn.active')].map(b=>b.dataset.nav).join(',')");
 
-// --- 1b. page vitrine ---
-// L'app ouvre sur la page produit, pas sur l'outil. Elle remplace toute la
-// coque applicative — en-tete et barre comprises — parce qu'elle s'adresse a
-// quelqu'un qui n'a pas encore decide de s'en servir.
-T("l'app ouvre sur la page produit",
-  (await visible("landingMode")) === true && (await visible("appShell")) === false);
+// --- 1b. la vitrine, sur sa propre page ---
+// Le site produit et l'outil clinique sont deux points d'entree distincts.
+// L'interet n'est pas cosmetique : la vitrine ne doit embarquer aucune ligne de
+// l'application, sinon la separation n'existe que dans l'arborescence.
+await goSite();
+errs = [];
+
+T("la vitrine charge sans exception", errs.length === 0, errs.join(" | "));
+T("la vitrine ne contient aucune coque applicative",
+  (await ev("!!document.getElementById('appShell') || !!document.getElementById('deviceMode')")) === false);
+// La preuve que la separation est reelle : window.audiomx est pose par l'app et
+// par elle seule. S'il apparait ici, c'est que le graphe de modules a refusionne.
+T("la vitrine n'embarque pas le bundle applicatif",
+  (await ev("typeof window.audiomx")) === "undefined");
 
 // La trace de l'ecran du device est dessinee des le premier rendu, pas a la
 // premiere frame : requestAnimationFrame ne tourne pas dans une page cachee
@@ -191,24 +205,57 @@ T("la trace de l'ecran est faite sans attendre une frame",
 // reseau que le service worker ne peut pas satisfaire hors ligne.
 T("aucune police chargee depuis un CDN externe",
   (await ev("[...document.querySelectorAll('link')].every(l => !/fonts\\.(googleapis|gstatic)/.test(l.href))")) === true);
-// La pile de la maquette : SF Pro d'abord (donc ce que rendent les captures sur
-// Mac), Geist auto-heberge en repli pour tout le reste.
 const displayStack = await ev("getComputedStyle(document.querySelector('.lTitle')).fontFamily");
 T("la pile typographique est celle de la maquette",
   /SF Pro/.test(displayStack) && /Geist/.test(displayStack), displayStack);
 
 // Moitie manquante de l'assertion plus bas : verifier qu'un element est VISIBLE
-// une fois atteint ne prouve rien s'il n'a jamais ete masque. Au chargement, la
-// bande de specs est sous la ligne de flottaison et doit etre invisible.
+// une fois atteint ne prouve rien s'il n'a jamais ete masque.
 T("les cellules de specs sont masquees tant qu'on ne les atteint pas",
   (await ev("getComputedStyle(document.querySelector('.lSpec')).opacity")) === "0");
 
-// "Request a demo" est la seule porte d'entree vers l'app.
-await ev("document.querySelector('.lBtn[data-nav=\"home\"]').click()");
-await new Promise(r => setTimeout(r, 250));
-T("« Request a demo » ouvre l'app",
-  (await visible("appShell")) === true && (await visible("landingMode")) === false &&
-  (await visible("homeMode")) === true && (await navActive()) === "home");
+// Les elements reveles sont masques par une classe posee en JS, puis reveles par
+// un test de rectangle dans la boucle d'animation. Ni IntersectionObserver ni
+// les evenements scroll ne se declenchent dans une page cachee : un contenu qui
+// en dependrait resterait invisible pour toujours, sans lever d'erreur.
+await ev("document.querySelector('.lSpecs').scrollIntoView()");
+await new Promise(r => setTimeout(r, 1200));
+T("la classe de reveal est bien posee",
+  (await ev("document.querySelector('.lSpec').classList.contains('in')")) === true);
+await ev(`(()=>{const s=document.createElement('style');
+  s.id='amxNoTransition';
+  s.textContent='#site *{transition:none !important;animation:none !important}';
+  document.head.appendChild(s)})()`);
+await new Promise(r => setTimeout(r, 120));
+T("le contenu revele reste visible sans transition",
+  (await ev("getComputedStyle(document.querySelector('.lSpec')).opacity")) === "1");
+await ev("document.getElementById('amxNoTransition')?.remove()");
+
+// Les portes vers l'app sont des liens, pas des bascules internes : c'est ce
+// qui rend les deux entites separables plus tard sans rien recabler.
+T("« Request a demo » est un lien vers l'app",
+  (await ev("[...document.querySelectorAll('a')].some(a => /app\\.html$/.test(a.getAttribute('href')||''))")) === true);
+T("plus aucune bascule interne vers l'app",
+  (await ev("document.querySelectorAll('[data-nav]').length")) === 0);
+
+// Le retour d'Epic atterrit ici, parce que l'URL enregistree chez Epic est ce
+// dossier. La vitrine n'a pas d'echange de jeton : elle transmet a l'app, dans
+// le meme onglet, pour que le verifieur PKCE laisse en sessionStorage survive.
+await nav(BASE + "?code=smoke&state=smoke");
+T("un retour OAuth est transmis a l'app",
+  /app\.html\?code=smoke/.test(await ev("location.href")), await ev("location.pathname"));
+// replace() et non assign() : l'URL de retour porte un code a usage unique et
+// n'a rien a faire dans l'historique.
+T("le retour OAuth ne reste pas dans l'historique",
+  (await ev("location.search")) === "?code=smoke&state=smoke");
+
+// --- 1c. retour dans l'application ---
+await go();
+errs = [];
+T("l'app ouvre sur la page Device",
+  (await visible("deviceMode")) === true && (await navActive()) === "device");
+T("la page Overview n'existe plus",
+  (await ev("!!document.getElementById('homeMode')")) === false);
 
 // Le logo est un <button>, et un <button> qui ne declare pas son propre fond
 // retombe sur le gris "buttonface" du navigateur — dessine en rectangle a
@@ -224,46 +271,11 @@ T("la baseline du logo suit la reference 2A",
   (await ev("getComputedStyle(document.querySelector('.brandTag')).fontSize")) === "10px" &&
   (await ev("getComputedStyle(document.querySelector('.brandTag')).color")) === "rgb(138, 144, 153)");
 
-// Et le logo de l'en-tete est la sortie.
-await ev("document.querySelector('.topBar .brand').click()");
-await new Promise(r => setTimeout(r, 250));
-T("le logo de l'en-tete revient a la page produit",
-  (await visible("landingMode")) === true && (await visible("appShell")) === false);
-await ev("document.querySelector('.lNavDemo').click()");
-await new Promise(r => setTimeout(r, 250));
-T("bouton Overview actif une fois dans l'app", (await navActive()) === "home");
-
-// Les elements reveles sont masques par une classe posee en JS, puis reveles par
-// un test de rectangle dans la boucle d'animation. Ni IntersectionObserver ni
-// les evenements scroll ne se declenchent dans une page cachee : un contenu qui
-// en dependrait resterait invisible pour toujours, sans lever d'erreur.
-await ev("document.querySelector('.topBar .brand').click()");
-await new Promise(r => setTimeout(r, 200));
-await ev("document.querySelector('.lSpecs').scrollIntoView()");
-await new Promise(r => setTimeout(r, 1200));
-// Deux choses, et la distinction compte.
-//
-// 1. La classe .in est bien posee. C'est LE mecanisme qui etait casse avant :
-//    un IntersectionObserver ne se declenche pas dans une page cachee, donc la
-//    classe n'arrivait jamais et le contenu restait invisible pour toujours.
-// 2. L'etat revele est declare, pas seulement interpole. On coupe les
-//    transitions avant de lire : une transition a exactement le meme defaut
-//    qu'une animation — sa valeur courante ne progresse pas dans une page qui
-//    n'est jamais affichee. La question utile n'est donc pas "l'opacite vaut-
-//    elle 1 maintenant" mais "vaudrait-elle 1 si la transition ne tournait
-//    jamais", ce qui est la garantie qu'on veut vraiment.
-T("la classe de reveal est bien posee",
-  (await ev("document.querySelector('.lSpec').classList.contains('in')")) === true);
-await ev(`(()=>{const s=document.createElement('style');
-  s.id='amxNoTransition';
-  s.textContent='#landingMode *{transition:none !important;animation:none !important}';
-  document.head.appendChild(s)})()`);
-await new Promise(r => setTimeout(r, 120));
-T("le contenu revele reste visible sans transition",
-  (await ev("getComputedStyle(document.querySelector('.lSpec')).opacity")) === "1");
-await ev("document.getElementById('amxNoTransition')?.remove()");
-await ev("scrollTo(0,0); document.querySelector('.lNavDemo').click()");
-await new Promise(r => setTimeout(r, 250));
+// Les notes d'honnetete etaient la seule partie de l'ancienne page Overview qui
+// valait d'etre gardee. Elles ont suivi sur la page Device plutot que de
+// disparaitre avec elle : une vitrine est le mauvais endroit pour ca.
+T("les notes d'honnetete ont suivi sur la page Device",
+  (await ev("!!document.querySelector('#deviceMode .homeNotes')")) === true);
 
 await navClick("record");
 T("nav -> Record bascule le mode ET l'onglet",
@@ -294,15 +306,16 @@ T("un seul bouton actif a la fois", !(await navActive()).includes(","));
 T("plus aucune ancienne barre dans le DOM",
   (await ev("document.querySelectorAll('.tabBtn, .clinTabBtn, .modeSwitchBtn').length")) === 0);
 
-// L'etat de connexion s'affiche a deux endroits pour une seule ecriture.
+// L'etat de connexion s'affiche a plusieurs endroits pour une seule ecriture.
 await ev("audiomx.status.setStatus('Smoke check', 'connected')");
-// Compte volontairement "tous", pas un nombre : ajouter un troisieme affichage
-// ne doit pas demander de retoucher l'assertion, mais en oublier un doit la
-// faire tomber.
+// Compte volontairement "tous", pas un nombre : ajouter un affichage ne doit
+// pas demander de retoucher l'assertion, mais en oublier un doit la faire
+// tomber. Le plancher est passe de 3 a 2 avec la page Overview, qui en
+// portait un troisieme et n'existe plus.
 T("l'etat de connexion est mirroite partout ou il est affiche",
   (await ev("(()=>{const t=[...document.querySelectorAll('[data-status-text]')];" +
             "const d=[...document.querySelectorAll('[data-status-dot]')];" +
-            "return t.length >= 3 && d.length === t.length &&" +
+            "return t.length >= 2 && d.length === t.length &&" +
             " t.every(n=>n.textContent==='Smoke check') &&" +
             " d.every(n=>n.classList.contains('connected'))})()")) === true,
   (await ev("document.querySelectorAll('[data-status-text]').length")) + " affichages");
@@ -375,9 +388,7 @@ T("l'adresse Wi-Fi vit sur la page Device",
   (await ev("!!document.getElementById('deviceMode').querySelector('#wifiUrlInput')")) === true &&
   (await ev("audiomx.wifiSource.getWifiUrl()")) === "ws://192.168.4.1:81");
 
-await navClick("home");
-
-// --- 1b. config Epic ---
+// --- 1d. config Epic ---
 // Rien ici ne leve d'exception quand c'est faux : Epic repond "error=4" a
 // l'autre bout, des minutes plus tard, sans rien dire de la cause. Ces valeurs
 // partent dans l'URL de login, donc c'est ici qu'on les verifie.

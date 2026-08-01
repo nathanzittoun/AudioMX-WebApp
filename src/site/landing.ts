@@ -23,10 +23,13 @@
 //      or scroll events. Measured: in a page whose visibilityState is "hidden"
 //      — a background tab, a headless browser — neither of those fires at all.
 //
-// Everything stops while the landing page is off screen. A marketing animation
-// has no business burning a frame budget behind a clinical exam.
+// The page used to stop itself whenever the application was on screen, because
+// the two shared one document and a marketing animation has no business burning
+// frames behind a clinical exam. They are separate pages now, so that gate is
+// gone: nothing can be in front of this loop, and the browser already suspends
+// requestAnimationFrame in a tab nobody is looking at.
 
-import { el } from "./dom";
+import { el } from "../ui/dom";
 
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -40,11 +43,6 @@ const NAV_STICK_AT = 80;
 let phase = 0;
 let frame = 0;
 let timecodeStartedAt = 0;
-
-function isOnScreen(): boolean {
-  const landing = el("landingMode");
-  return landing !== null && !landing.hidden;
-}
 
 /** The miniature trace inside the device screen. */
 function drawScreenWave(): void {
@@ -80,7 +78,7 @@ function drawTimecode(): void {
  * frame per pending element and nothing at all once they have all fired.
  */
 function revealVisible(): void {
-  const pending = document.querySelectorAll<HTMLElement>("#landingMode [data-reveal]:not(.in)");
+  const pending = document.querySelectorAll<HTMLElement>("#site [data-reveal]:not(.in)");
   if (pending.length === 0) return;
   const limit = window.innerHeight * 0.88;
   pending.forEach(node => {
@@ -102,7 +100,7 @@ function loop(): void {
   drawTimecode();
   revealVisible();
   reflectNavBar();
-  if (isOnScreen()) frame = requestAnimationFrame(loop);
+  frame = requestAnimationFrame(loop);
 }
 
 /** Start or restart the page. Safe to call every time it is shown. */
@@ -124,13 +122,6 @@ export function startLanding(): void {
   if (!frame) frame = requestAnimationFrame(loop);
 }
 
-export function stopLanding(): void {
-  if (frame) {
-    cancelAnimationFrame(frame);
-    frame = 0;
-  }
-}
-
 export function initLanding(): void {
   const readout = el("lReadout");
   const stage = document.querySelector<HTMLElement>(".lStage");
@@ -138,8 +129,8 @@ export function initLanding(): void {
   // Mark what may be hidden, here rather than in the stylesheet.
   if (!REDUCED) {
     document.querySelectorAll<HTMLElement>(
-      "#landingMode .lCallout, #landingMode .lSpec, #landingMode .lBars, " +
-      "#landingMode .lMeasure, #landingMode .lStep, #landingMode .lInputCard"
+      "#site .lCallout, #site .lSpec, #site .lBars, " +
+      "#site .lMeasure, #site .lStep, #site .lInputCard"
     ).forEach(node => {
       node.dataset["reveal"] = "";
       node.classList.add("willReveal");
@@ -161,7 +152,7 @@ export function initLanding(): void {
 
   // Bars are drawn from their data attribute rather than 18 inline styles, so
   // the heights stay readable in the markup as one list of numbers.
-  document.querySelectorAll<HTMLElement>("#landingMode .lBars").forEach(host => {
+  document.querySelectorAll<HTMLElement>("#site .lBars").forEach(host => {
     const heights = (host.dataset["bars"] ?? "").split(",").map(n => Number(n.trim()));
     for (const h of heights) {
       const bar = document.createElement("span");
