@@ -974,7 +974,11 @@ a {
   .hero-section { padding-top: 64px; }
   .hero-copy h1 { font-size: clamp(3rem, 16vw, 4.8rem); }
   .hero-subtitle { max-width: 22ch; margin-inline: auto; }
-  .hero-sequence { width: min(440px, 98vw); margin-top: -12px; margin-bottom: -76px; }
+  /* 98vw put the device 16px past each edge of a 390px screen — the dial and
+     both microphone grilles were cropped — and pushed the replay button, which
+     is positioned against this box, right off the display. 90vw keeps the whole
+     product and the whole control on screen and still reads as full-bleed. */
+  .hero-sequence { width: min(440px, 90vw); margin-top: -12px; margin-bottom: -76px; }
   .hero-actions { flex-direction: column; gap: 14px; }
   .section-shell { width: min(100% - 32px, 1180px); }
   .highlights-section { width: 100%; }
