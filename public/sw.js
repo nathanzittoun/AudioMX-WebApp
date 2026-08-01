@@ -26,7 +26,7 @@
 //
 // Patient audio is not the worker's business — it lives in IndexedDB.
 
-const VERSION = "audiomx-v1";
+const VERSION = "audiomx-v2";
 const ROOT = new URL("./", self.location.href);
 
 self.addEventListener("install", () => {
@@ -96,6 +96,13 @@ self.addEventListener("fetch", event => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== ROOT.origin || !url.pathname.startsWith(ROOT.pathname)) return;
+
+  // The product site's media is deliberately not cached. It is 5 MB of hero
+  // frames and product photography belonging to a marketing page, and this
+  // cache exists so a clinician can run an exam with no network. Filling it
+  // with pictures of the device would push the code that actually has to work
+  // offline out of a quota it shares.
+  if (url.pathname.includes("/site/")) return;
 
   if (request.mode === "navigate") {
     event.respondWith(networkFirst(request));
