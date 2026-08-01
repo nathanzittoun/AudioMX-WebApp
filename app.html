@@ -37,15 +37,19 @@
        =================================================================== -->
   <div class="appShell" id="appShell">
     <header class="topBar">
-      <!-- The wordmark is the way out of the app: back to the landing page.
-           data-nav works on any element — initNav is delegated. -->
-      <button class="brand" type="button" data-nav="landing" title="Back to the AudioMX home page">
+      <!-- The wordmark is the way out of the app: back to the product site.
+           A real link, not data-nav. It used to be data-nav="landing", which
+           stopped working the moment the site became its own page and "landing"
+           left the section list — isNavSection() then rejected it and the click
+           did nothing at all, silently. A cross-document link cannot rot that
+           way, and it gets middle-click and "open in new tab" for free. -->
+      <a class="brand" href="index.html" title="Back to the AudioMX home page">
         <img class="appIcon" src="AudioMXimagelogo.png" alt="" />
         <span>
           <img class="wordmark" src="AudioMXnamelogo.png" alt="AudioMX" />
           <span class="brandTag">Voice &amp; speech biomarker platform</span>
         </span>
-      </button>
+      </a>
 
       <div class="partnerLogos">
         <img src="logo.png" alt="Weill Cornell Medicine Otolaryngology" />
@@ -63,7 +67,7 @@
         <!-- The explicit way out, as reference 2A shows it. The wordmark on the
              left leads to the same place — a clickable logo is convention, not
              a second control to keep in step. -->
-        <button class="exitBtn" type="button" data-nav="landing">Exit to site</button>
+        <a class="exitBtn" href="index.html">Exit to site</a>
       </div>
     </header>
 

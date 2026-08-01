@@ -311,6 +311,18 @@ T("la baseline du logo suit la reference 2A",
   (await ev("getComputedStyle(document.querySelector('.brandTag')).fontSize")) === "10px" &&
   (await ev("getComputedStyle(document.querySelector('.brandTag')).color")) === "rgb(138, 144, 153)");
 
+// Les deux sorties de l'app sont de vrais liens vers la vitrine. Elles ont ete
+// muettes un moment : elles portaient data-nav="landing", et le jour ou la
+// vitrine est devenue sa propre page, "landing" a quitte la liste des sections.
+// isNavSection() a commence a repondre non, le clic n'a plus rien fait, et rien
+// ne l'a signale. Un lien inter-documents ne peut pas pourrir comme ca.
+T("le logo ramene a la vitrine",
+  (await ev("document.querySelector('.topBar .brand')?.getAttribute('href')")) === "index.html");
+T("« Exit to site » ramene a la vitrine",
+  (await ev("document.querySelector('.exitBtn')?.getAttribute('href')")) === "index.html");
+T("plus aucun data-nav mort dans l'en-tete",
+  (await ev("document.querySelectorAll('.topBar [data-nav]').length")) === 0);
+
 // Les notes d'honnetete etaient la seule partie de l'ancienne page Overview qui
 // valait d'etre gardee. Elles ont suivi sur la page Device plutot que de
 // disparaitre avec elle : une vitrine est le mauvais endroit pour ca.

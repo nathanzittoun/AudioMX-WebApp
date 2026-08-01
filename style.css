@@ -202,6 +202,8 @@ body {
   background: transparent;
   padding: 0;
   text-align: left;
+  text-decoration: none;
+  color: inherit;
 }
 
 /* Wordmark over strapline, as reference 2A stacks them. */
@@ -271,14 +273,26 @@ body {
   gap: 22px;
 }
 
+/* A link, not a button — it leaves the document. The mono/uppercase treatment
+   therefore has to be stated here: it used to arrive from the generic `button`
+   rule, and swapping the element silently dropped it. */
 .exitBtn {
+  display: inline-block;
   background: transparent;
   border: 1px solid #c9ced6;
   color: var(--ink);
   padding: 10px 14px;
+  font-family: var(--font-mono);
   font-size: 11px;
+  font-weight: 500;
   letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
   white-space: nowrap;
+}
+
+.exitBtn:hover {
+  border-color: var(--ink);
 }
 
 /* The one round thing in the interface, and deliberately so: a state light is
