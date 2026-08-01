@@ -266,8 +266,14 @@ const overclaim = /hipaa[- ](ready|compliant)|end-to-end|fully encrypted|encrypt
 T("aucune allegation de securite que le build ne tient pas",
   !overclaim.test(claims), claims.match(overclaim)?.[0]);
 // Et l'inverse : la limitation doit etre ecrite, pas seulement non contredite.
+// Elle a quitte sa section pour le pied de page, elle n'a pas quitte la page.
 T("la page nomme ce qui manque",
   /no encryption at rest/.test(claims) && /no audit log/.test(claims));
+// Un lien d'ancre vers une section supprimee ne fait rien et ne le dit pas.
+T("aucun lien vers une ancre absente",
+  (await ev(`[...document.querySelectorAll('a[href^="#"]')]
+     .filter(a => a.getAttribute('href') !== '#' && !document.querySelector(a.getAttribute('href')))
+     .map(a => a.getAttribute('href')).join(',')`)) === "");
 T("la page dit qu'elle est a usage de recherche",
   /research use only/.test(claims));
 

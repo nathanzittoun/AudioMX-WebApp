@@ -66,7 +66,6 @@
         <a href="#design">Design</a>
         <a href="#audio">Audio</a>
         <a href="#workflow">Clinical</a>
-        <a href="#privacy">Privacy</a>
       </nav>
     </header>
 
@@ -79,8 +78,7 @@
     </div>
 
     <div class="offer-strip">
-      Research use only — not cleared for diagnosis.
-      <a href="#privacy">What that means <span aria-hidden="true">›</span></a>
+      Research use only — not cleared for diagnosis. No real patient data.
     </div>
 
     <main>
@@ -272,26 +270,6 @@
             question worth asking mid-take: is it still running?
           </p>
         </div>
-        <div class="design-stage section-shell" data-reveal>
-          <div class="design-device">
-            <img src="%BASE_URL%site/device-profile.png" alt="The compact profile of the AudioMX One" loading="lazy" />
-          </div>
-          <div class="design-copy">
-            <p>Single-piece clinical shell</p>
-            <h3>Light in the hand.<br />Steady on the desk.</h3>
-            <p>
-              It sits between clinician and patient without becoming the third
-              thing in the room. The dial is textured deeply enough to find
-              without looking, which matters when the alternative is breaking eye
-              contact to check a screen.
-            </p>
-            <dl>
-              <div><dt>16 kHz</dt><dd>Sample rate</dd></div>
-              <div><dt>Stereo</dt><dd>Paired MEMS</dd></div>
-              <div><dt>1 gesture</dt><dd>To record</dd></div>
-            </dl>
-          </div>
-        </div>
       </section>
 
       <!-- AUDIO -->
@@ -331,38 +309,6 @@
         </div>
       </section>
 
-      <!-- PRIVACY. This section is the reason the comment at the top of this
-           file exists. Everything here is a limitation, stated plainly, because
-           the alternative — "encrypted", "HIPAA-ready", "secure transfer" — is
-           what a reader would assume and none of it is true today. -->
-      <section id="privacy" class="security-section section-shell" data-reveal>
-        <div class="security-copy">
-          <p class="section-label">Privacy, stated plainly</p>
-          <h2>It never leaves<br />this browser.</h2>
-          <p>
-            There is no backend. Patients, sessions and audio live in the
-            browser's own storage, on one machine — which is also why a colleague
-            on another computer cannot see them, and why clearing site data
-            deletes the lot.
-          </p>
-          <p>
-            That makes this <strong>research use only</strong>. No real patient
-            data may enter it as it stands: there is no audit log, no encryption
-            at rest, no authentication, and no business associate agreement. The
-            Epic connection runs against Epic's public sandbox.
-          </p>
-          <p>
-            The full list of what this build cannot do is kept in the open, in
-            <code>LIMITATIONS.md</code>, and inside the app itself.
-          </p>
-        </div>
-        <div class="security-visual" aria-hidden="true">
-          <div class="security-orbit orbit-one"></div>
-          <div class="security-orbit orbit-two"></div>
-          <div class="security-lock"><span></span> <b>local</b></div>
-        </div>
-      </section>
-
       <!-- WHERE A RESULT GOES -->
       <section class="workflow-section section-shell" data-reveal>
         <p class="section-label">From the room to the chart</p>
@@ -392,10 +338,20 @@
         <span>AudioMX</span>
       </a>
       <p>Voice and speech biomarker capture. Research use only — not cleared for diagnosis.</p>
+      <!-- The privacy section that carried this was removed as a block, but the
+           statement itself is not decoration: there is no audit log, no
+           encryption at rest and no BAA, and a page that shows a clinician
+           recording a patient should not leave that to be inferred. A footer is
+           where a statement like this normally lives. -->
+      <p class="footer-disclosure">
+        Recordings stay in the browser that made them — there is no backend, no
+        audit log, no encryption at rest and no business associate agreement.
+        The Epic connection runs against Epic's public sandbox. The full list is
+        in <code>LIMITATIONS.md</code>.
+      </p>
       <nav aria-label="Footer">
         <a href="#design">Design</a>
         <a href="#audio">Signal</a>
-        <a href="#privacy">Privacy</a>
         <a href="app.html">Open the app</a>
       </nav>
       <small>© 2026 AudioMX</small>

@@ -502,7 +502,7 @@ a {
 .highlight-card--blue .highlight-copy h3 { font-size: clamp(5rem, 11vw, 9rem); }
 .highlight-card--blue img { width: 54%; height: 77%; right: -3%; bottom: -10%; mix-blend-mode: screen; }
 .highlight-card--warm { color: #1d1d1f; background: linear-gradient(145deg, #f7fafd, #ccdae8); }
-.highlight-card--warm img { width: 66%; height: 50%; right: 4%; bottom: 6%; mix-blend-mode: multiply; opacity: 0.8; }
+.highlight-card--warm img { width: 72%; height: 46%; right: 2%; bottom: 8%; mix-blend-mode: darken; opacity: 0.9; }
 
 .scroll-product-section {
   position: relative;
@@ -734,22 +734,23 @@ a {
 .audio-heading h2 { color: #f5f5f7; }
 
 .wave-panel {
-  min-height: 650px;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 0.78fr 1.22fr;
+  grid-template-columns: 0.82fr 1.18fr;
   align-items: center;
-  gap: 20px;
+  gap: clamp(24px, 4vw, 56px);
   margin-top: 80px;
+  padding: clamp(36px, 4vw, 60px);
   overflow: hidden;
   border-radius: 34px;
-  background: linear-gradient(145deg, #0d1014, #08090a);
+  background: var(--site-metal);
 }
 
-.wave-copy { padding: 60px 0 60px 70px; }
+.wave-copy { padding: 0; }
 .wave-copy p { margin: 0; color: #8fbdf8; font-size: 0.85rem; font-weight: 650; }
 .wave-copy strong { display: block; margin: 12px 0; font-size: clamp(5.6rem, 10vw, 10rem); line-height: 0.9; letter-spacing: -0.07em; }
 .wave-copy span { display: block; max-width: 32ch; color: #9a9aa0; font-size: 1rem; line-height: 1.55; }
-.wave-panel img { width: 118%; height: 100%; min-height: 650px; object-fit: cover; object-position: 32% center; opacity: 0.86; }
+.wave-panel img { width: 100%; height: auto; max-height: 460px; object-fit: contain; border-radius: 14px; }
 
 .feature-grid {
   display: grid;
@@ -984,7 +985,7 @@ a {
   .design-device img { width: min(80%, 520px); }
   .design-copy { padding: 20px 42px 54px; }
   .wave-copy { padding: 52px 42px 0; }
-  .wave-panel img { width: 100%; min-height: 390px; }
+  .wave-panel img { width: 100%; max-height: 300px; }
   .feature-grid,
   .workflow-steps { grid-template-columns: 1fr; }
   .interface-heading { grid-template-columns: 1fr; }
@@ -1116,4 +1117,20 @@ a {
     transform: none;
     transition: none;
   }
+}
+
+/* The disclosure moved here when the privacy section was removed. Small, but
+   not hidden: it sits in the reading colour of the footer rather than a step
+   fainter, because a limitation nobody can read is not a limitation stated. */
+.footer-disclosure {
+  max-width: 62ch;
+  margin: 4px auto 0;
+  color: #6e6e73;
+  font-size: 0.76rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.footer-disclosure code {
+  font-size: 0.95em;
 }
