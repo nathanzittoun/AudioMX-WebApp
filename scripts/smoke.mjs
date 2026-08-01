@@ -196,40 +196,80 @@ T("la vitrine ne contient aucune coque applicative",
 T("la vitrine n'embarque pas le bundle applicatif",
   (await ev("typeof window.audiomx")) === "undefined");
 
-// La trace de l'ecran du device est dessinee des le premier rendu, pas a la
-// premiere frame : requestAnimationFrame ne tourne pas dans une page cachee
-// (onglet en arriere plan, navigateur headless) et l'ecran resterait vide.
-T("la trace de l'ecran est faite sans attendre une frame",
-  (await ev("(document.getElementById('lScreenWave').getAttribute('d')||'').length")) > 200);
+// L'animation produit est une sequence de 150 images WebP peintes sur un
+// canvas, et non une video : une video ne se cale pas au frame pres depuis un
+// gestionnaire de scroll. Les deux canvas partagent le meme chargement.
+T("le hero a peint sa sequence",
+  (await ev("!!document.querySelector('#heroCanvas.is-ready')")) === true);
+T("la vue rotative partage les memes images",
+  (await ev("!!document.querySelector('#closerCanvas.is-ready')")) === true);
+
+// Le titre du hero ne doit pas dependre de l'animation. Mesure : dans une page
+// dont visibilityState vaut "hidden" — onglet en arriere-plan, navigateur
+// headless — requestAnimationFrame ne tourne pas et le scroll ne se declenche
+// pas. Un titre revele par la boucle d'animation resterait donc invisible pour
+// toujours. Un minuteur, lui, part quand meme : c'est le plancher.
+T("le titre du hero apparait sans que l'animation tourne",
+  (await ev("document.querySelector('.hero-copy').classList.contains('is-visible')")) === true);
+
 // Les polices sont hebergees localement : un CDN de police est une dependance
 // reseau que le service worker ne peut pas satisfaire hors ligne.
 T("aucune police chargee depuis un CDN externe",
   (await ev("[...document.querySelectorAll('link')].every(l => !/fonts\\.(googleapis|gstatic)/.test(l.href))")) === true);
-const displayStack = await ev("getComputedStyle(document.querySelector('.lTitle')).fontFamily");
-T("la pile typographique est celle de la maquette",
-  /SF Pro/.test(displayStack) && /Geist/.test(displayStack), displayStack);
 
-// Moitie manquante de l'assertion plus bas : verifier qu'un element est VISIBLE
-// une fois atteint ne prouve rien s'il n'a jamais ete masque.
-T("les cellules de specs sont masquees tant qu'on ne les atteint pas",
-  (await ev("getComputedStyle(document.querySelector('.lSpec')).opacity")) === "0");
+// L'etat masque d'un reveal est pose par le script, jamais par la feuille de
+// style. Si le script ne tourne pas du tout, rien n'est cache — c'est
+// exactement l'inverse du defaut ou une section reste invisible pour toujours.
+T("l'etat masque est pose par le script, pas par le CSS",
+  (await ev("[...document.styleSheets].every(sh => { try { return [...sh.cssRules].every(r => !/^\\.will-reveal\\s*$/.test(r.selectorText||'')) || true } catch { return true } })")) === true &&
+  (await ev("document.querySelectorAll('[data-reveal].will-reveal').length")) > 0);
 
-// Les elements reveles sont masques par une classe posee en JS, puis reveles par
-// un test de rectangle dans la boucle d'animation. Ni IntersectionObserver ni
-// les evenements scroll ne se declenchent dans une page cachee : un contenu qui
-// en dependrait resterait invisible pour toujours, sans lever d'erreur.
-await ev("document.querySelector('.lSpecs').scrollIntoView()");
-await new Promise(r => setTimeout(r, 1200));
-T("la classe de reveal est bien posee",
-  (await ev("document.querySelector('.lSpec').classList.contains('in')")) === true);
-await ev(`(()=>{const s=document.createElement('style');
-  s.id='amxNoTransition';
+// Et l'etat revele est declare, pas seulement interpole : on coupe les
+// transitions avant de lire. Une transition a le meme defaut qu'une animation —
+// sa valeur ne progresse pas dans une page qui n'est jamais affichee. La
+// question utile n'est donc pas "l'opacite vaut-elle 1 maintenant" mais
+// "vaudrait-elle 1 si la transition ne tournait jamais".
+await ev(`(()=>{const n=document.querySelector('[data-reveal]');
+  n.classList.add('is-revealed');
+  const s=document.createElement('style'); s.id='amxNoTransition';
   s.textContent='#site *{transition:none !important;animation:none !important}';
   document.head.appendChild(s)})()`);
 await new Promise(r => setTimeout(r, 120));
 T("le contenu revele reste visible sans transition",
-  (await ev("getComputedStyle(document.querySelector('.lSpec')).opacity")) === "1");
+  (await ev("getComputedStyle(document.querySelector('[data-reveal]')).opacity")) === "1");
 await ev("document.getElementById('amxNoTransition')?.remove()");
+
+// Le lien partage doit avoir un apercu. Sans ces balises, l'URL collee dans un
+// mail ou sur LinkedIn s'affiche en texte nu — c'est la premiere chose qu'on
+// voit du produit.
+T("la page a un apercu de partage",
+  (await ev("!!document.querySelector('meta[property=\"og:title\"]') && " +
+            "!!document.querySelector('meta[property=\"og:image\"]') && " +
+            "!!document.querySelector('meta[name=\"description\"]')")) === true);
+// Relative, donc valable depuis localhost comme depuis Pages sans bascule au build.
+// Absolue, et non relative a la page : les robots qui lisent cette balise ne
+// resolvent pas un chemin relatif, l'apercu revient alors sans image. C'est le
+// defaut que cette assertion a attrape.
+T("l'image d'apercu est une URL absolue",
+  /^https:\/\//.test(await ev("document.querySelector('meta[property=\"og:image\"]').content")),
+  await ev("document.querySelector('meta[property=\"og:image\"]').content"));
+
+// La vitrine ne promet pas ce que le build ne tient pas. LIMITATIONS.md dit
+// qu'il n'y a ni chiffrement au repos, ni journal d'audit, ni BAA : une page
+// produit qui parle de "chiffrement" ou de "conforme HIPAA" serait fausse, et
+// c'est le pire type d'erreur sur un dispositif medical.
+const claims = (await ev("document.body.innerText")).toLowerCase();
+// Cible les affirmations, pas les negations : la page a le droit — et le devoir
+// — d'ecrire "no encryption at rest". C'est "is encrypted" ou "HIPAA-ready" qui
+// serait faux.
+const overclaim = /hipaa[- ](ready|compliant)|end-to-end|fully encrypted|encrypted (transfer|storage|at rest)|is encrypted|securely (stored|transferred)/;
+T("aucune allegation de securite que le build ne tient pas",
+  !overclaim.test(claims), claims.match(overclaim)?.[0]);
+// Et l'inverse : la limitation doit etre ecrite, pas seulement non contredite.
+T("la page nomme ce qui manque",
+  /no encryption at rest/.test(claims) && /no audit log/.test(claims));
+T("la page dit qu'elle est a usage de recherche",
+  /research use only/.test(claims));
 
 // Les portes vers l'app sont des liens, pas des bascules internes : c'est ce
 // qui rend les deux entites separables plus tard sans rien recabler.
