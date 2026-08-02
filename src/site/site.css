@@ -495,14 +495,14 @@ a {
 }
 
 .highlight-card--dark { color: #f5f5f7; background: var(--site-metal); }
-.highlight-card--dark img { width: 84%; height: 42%; left: 8%; bottom: 7%; object-fit: contain; object-position: center bottom; border-radius: 12px; }
+.highlight-card--dark img { width: 84%; height: 42%; left: 8%; bottom: 7%; object-fit: contain; object-position: center bottom; border-radius: 20px; }
 .highlight-card--ice { color: #1d1d1f; background: linear-gradient(150deg, #e9f2fd, #b8d3f0); }
 .highlight-card--ice img { width: 58%; height: 62%; right: 3%; bottom: 4%; object-position: center bottom; }
 .highlight-card--blue { color: #fff; background: linear-gradient(145deg, #2872d2, #79a8e4); }
 .highlight-card--blue .highlight-copy h3 { font-size: clamp(5rem, 11vw, 9rem); }
 .highlight-card--blue img { width: 54%; height: 77%; right: -3%; bottom: -10%; mix-blend-mode: screen; }
 .highlight-card--warm { color: #1d1d1f; background: linear-gradient(150deg, #f7f8f9, #d3d8dd); }
-.highlight-card--warm img { width: 72%; height: 46%; right: 2%; bottom: 8%; mix-blend-mode: darken; opacity: 0.9; }
+.highlight-card--warm img { width: 74%; height: 48%; right: 2%; bottom: 7%; }
 
 .scroll-product-section {
   position: relative;
@@ -805,84 +805,16 @@ a {
   line-height: 1.45;
 }
 
-.interface-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 20px;
-}
 
-.interface-card {
-  grid-column: span 6;
-  overflow: hidden;
-  border-radius: 30px;
-  color: #f5f5f7;
-  background: var(--site-metal);
-  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.08);
-}
 
-.interface-card--wide { grid-column: span 7; }
-.interface-card--compact { grid-column: span 5; }
-.interface-card--full { grid-column: 1 / -1; }
 
-.interface-card-copy {
-  min-height: 132px;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 24px;
-  align-items: start;
-  padding: 30px 32px 26px;
-}
 
-.interface-card-copy > span {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 1px solid #3a3d42;
-  border-radius: 50%;
-  color: #8fb8e6;
-  font-size: 0.68rem;
-  font-weight: 650;
-}
 
-.interface-card h3 {
-  margin: 0;
-  font-size: clamp(1.45rem, 2.4vw, 2.45rem);
-  line-height: 1;
-  letter-spacing: -0.04em;
-}
 
-.interface-card-copy p {
-  max-width: 38ch;
-  margin: 10px 0 0;
-  color: #92959d;
-  font-size: 0.84rem;
-  line-height: 1.5;
-}
 
-.interface-card img {
-  width: 100%;
-  height: auto;
-  display: block;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
 
-.interface-card--full {
-  display: grid;
-  grid-template-columns: 0.38fr 0.62fr;
-  align-items: center;
-}
 
-.interface-card--full .interface-card-copy {
-  min-height: 100%;
-  align-content: center;
-  padding: clamp(34px, 5vw, 72px);
-}
 
-.interface-card--full img {
-  border-top: 0;
-  border-left: 1px solid #202226;
-}
 
 .security-section {
   min-height: 860px;
@@ -990,13 +922,6 @@ a {
   .workflow-steps { grid-template-columns: 1fr; }
   .interface-heading { grid-template-columns: 1fr; }
   .interface-heading .section-label { grid-column: auto; margin-bottom: -24px; }
-  .interface-grid { grid-template-columns: 1fr; }
-  .interface-card,
-  .interface-card--wide,
-  .interface-card--compact,
-  .interface-card--full { grid-column: auto; }
-  .interface-card--full { grid-template-columns: 1fr; }
-  .interface-card--full img { border-left: 0; border-top: 1px solid #202226; }
   .feature-grid article { min-height: 260px; }
   .feature-grid h3 { margin-top: 60px; }
   .security-visual { width: min(560px, 80vw); justify-self: center; }
@@ -1056,9 +981,6 @@ a {
   .interface-heading .section-label { margin-bottom: 14px; }
   .interface-heading h2 { font-size: clamp(3.2rem, 14vw, 5rem); }
   .interface-heading > p:last-child { margin-top: 28px; }
-  .interface-card { border-radius: 24px; }
-  .interface-card-copy { min-height: 118px; padding: 24px; }
-  .interface-card--full .interface-card-copy { min-height: 150px; padding: 28px 24px; }
   .security-section { padding-block: 100px; }
   .security-visual { width: 88vw; }
   .workflow-steps { margin-top: 44px; }
@@ -1133,4 +1055,94 @@ a {
 
 .footer-disclosure code {
   font-size: 0.95em;
+}
+
+/* ---------------------------------------------------------------------
+   The session strip
+
+   Five screenshots used to be five full-width cards, and they read as the
+   whole application rather than as one take. Here each screen is evidence
+   for a step instead of the subject of one: small, in order, in a single
+   row that says "sequence" before anything is read.
+   --------------------------------------------------------------------- */
+
+.step-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: clamp(14px, 1.6vw, 24px);
+  align-items: start;
+}
+
+.step-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.step-card figure {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--site-metal);
+  box-shadow: 0 10px 26px rgba(16, 26, 40, 0.12);
+}
+
+/* A fixed aspect on every frame, so five screenshots of different heights
+   still line their captions up. */
+.step-card img {
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  display: block;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.step-num {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--site-blue);
+  font-size: 0.74rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.step-card h3 {
+  margin: 0 0 6px;
+  color: #1d1d1f;
+  font-size: clamp(0.95rem, 1.2vw, 1.15rem);
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.step-card p {
+  margin: 0;
+  color: #6e6e73;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* Below the point where five columns stop being readable, the row becomes a
+   swipe rather than a stack: five stacked cards would be the wall of images
+   this section exists to stop being. */
+@media (max-width: 900px) {
+  .step-strip {
+    grid-auto-flow: column;
+    grid-auto-columns: 58vw;
+    grid-template-columns: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 12px;
+    scrollbar-width: none;
+  }
+
+  .step-strip::-webkit-scrollbar { display: none; }
+  .step-card { scroll-snap-align: center; }
+}
+
+@media (max-width: 600px) {
+  .step-strip { grid-auto-columns: 78vw; }
 }

@@ -112,6 +112,43 @@
         </div>
       </section>
 
+      <!-- AUDIO -->
+      <section id="audio" class="audio-section">
+        <div class="section-shell audio-heading" data-reveal>
+          <p class="section-label">Signal</p>
+          <h2>A recording is<br />only the start.</h2>
+        </div>
+        <div class="wave-panel section-shell" data-reveal>
+          <div class="wave-copy">
+            <p>Sampled at</p>
+            <strong>16 kHz</strong>
+            <span>
+              Enough for every measure on this page and for the speech band that
+              carries them. The rate is pinned rather than negotiated: the FFT
+              axis, the WAV header and every duration in the app assume it.
+            </span>
+          </div>
+          <img src="%BASE_URL%site/screen-ui.png" alt="The AudioMX interface showing a detailed waveform" loading="lazy" />
+        </div>
+        <div class="feature-grid section-shell" data-reveal>
+          <article>
+            <span class="feature-number">01</span>
+            <h3>Captured off the main thread.</h3>
+            <p>Recording runs in an audio worklet, so drawing a waveform can never cost you a block of audio. It used to.</p>
+          </article>
+          <article>
+            <span class="feature-number">02</span>
+            <h3>Measured on the spot.</h3>
+            <p>F0, harmonics-to-noise, jitter and shimmer are extracted the moment a take is saved. Not that evening, not next week.</p>
+          </article>
+          <article>
+            <span class="feature-number">03</span>
+            <h3>Checked before it counts.</h3>
+            <p>Level, clipping and duration are reported against the task's own thresholds, so a take that will not survive analysis is caught immediately.</p>
+          </article>
+        </div>
+      </section>
+
       <!-- HIGHLIGHTS -->
       <section id="highlights" class="highlights-section section-shell" data-reveal>
         <div class="section-heading-row">
@@ -146,7 +183,7 @@
               <h3><span>USB-C, Wi-Fi,</span><span>or no device at all.</span></h3>
               <small>The same capture path serves all three, including the computer's own microphone, so the software can be tried before the hardware arrives.</small>
             </div>
-            <img src="%BASE_URL%site/device-etch.jpg" alt="Technical drawing of the AudioMX recorder" loading="lazy" />
+            <img src="%BASE_URL%site/device-etch.png" alt="Technical drawing of the AudioMX recorder" loading="lazy" />
           </article>
         </div>
       </section>
@@ -201,60 +238,46 @@
             moments.
           </p>
         </div>
-        <div class="interface-grid section-shell">
-          <article class="interface-card interface-card--wide" data-reveal>
-            <div class="interface-card-copy">
-              <span>01</span>
-              <div>
-                <h3>Choose the task.</h3>
-                <p>The protocol is settled before anyone speaks.</p>
-              </div>
+        <div class="step-strip section-shell">
+          <article class="step-card" data-reveal>
+            <figure><img src="%BASE_URL%site/workflow/choose-task.png" alt="The task list with Pa-Ta-Ka selected for a patient" loading="lazy" /></figure>
+            <div class="step-copy">
+              <span class="step-num">01</span>
+              <h3>Choose the task.</h3>
+              <p>The protocol is settled before anyone speaks.</p>
             </div>
-            <img src="%BASE_URL%site/workflow/choose-task.png" alt="The task list with Pa-Ta-Ka selected for a patient" loading="lazy" />
           </article>
-
-          <article class="interface-card interface-card--compact" data-reveal>
-            <div class="interface-card-copy">
-              <span>02</span>
-              <div>
-                <h3>Watch it happen.</h3>
-                <p>Elapsed time, level and waveform stay visible throughout.</p>
-              </div>
+          <article class="step-card" data-reveal>
+            <figure><img src="%BASE_URL%site/workflow/running.png" alt="A Pa-Ta-Ka recording in progress with live waveform" loading="lazy" /></figure>
+            <div class="step-copy">
+              <span class="step-num">02</span>
+              <h3>Watch it happen.</h3>
+              <p>Elapsed time, level and waveform stay visible.</p>
             </div>
-            <img src="%BASE_URL%site/workflow/running.png" alt="A Pa-Ta-Ka recording in progress with live waveform" loading="lazy" />
           </article>
-
-          <article class="interface-card interface-card--compact" data-reveal>
-            <div class="interface-card-copy">
-              <span>03</span>
-              <div>
-                <h3>Fix it without stopping.</h3>
-                <p>Too loud is said while there is still time to move back.</p>
-              </div>
+          <article class="step-card" data-reveal>
+            <figure><img src="%BASE_URL%site/workflow/too-loud.png" alt="A level warning asking the speaker to move back" loading="lazy" /></figure>
+            <div class="step-copy">
+              <span class="step-num">03</span>
+              <h3>Fix it without stopping.</h3>
+              <p>Too loud is said while there is still time.</p>
             </div>
-            <img src="%BASE_URL%site/workflow/too-loud.png" alt="A level warning asking the speaker to move further from the microphone" loading="lazy" />
           </article>
-
-          <article class="interface-card interface-card--wide" data-reveal>
-            <div class="interface-card-copy">
-              <span>04</span>
-              <div>
-                <h3>Give the patient their own screen.</h3>
-                <p>One instruction, large enough to read across a desk.</p>
-              </div>
+          <article class="step-card" data-reveal>
+            <figure><img src="%BASE_URL%site/workflow/patient-screen.png" alt="The patient-facing screen showing one instruction" loading="lazy" /></figure>
+            <div class="step-copy">
+              <span class="step-num">04</span>
+              <h3>Give the patient a screen.</h3>
+              <p>One instruction, readable across a desk.</p>
             </div>
-            <img src="%BASE_URL%site/workflow/patient-screen.png" alt="The patient-facing screen asking them to repeat pa-ta-ka" loading="lazy" />
           </article>
-
-          <article class="interface-card interface-card--full" data-reveal>
-            <div class="interface-card-copy">
-              <span>05</span>
-              <div>
-                <h3>Accept the take.</h3>
-                <p>The numbers that decide are shown before you move on.</p>
-              </div>
+          <article class="step-card" data-reveal>
+            <figure><img src="%BASE_URL%site/workflow/accepted.png" alt="An accepted take showing level, peak and clipping" loading="lazy" /></figure>
+            <div class="step-copy">
+              <span class="step-num">05</span>
+              <h3>Accept the take.</h3>
+              <p>The numbers that decide, before you move on.</p>
             </div>
-            <img src="%BASE_URL%site/workflow/accepted.png" alt="An accepted take showing level, peak and clipping figures" loading="lazy" />
           </article>
         </div>
       </section>
@@ -269,43 +292,6 @@
             One continuous shell, one control, and a screen that answers the only
             question worth asking mid-take: is it still running?
           </p>
-        </div>
-      </section>
-
-      <!-- AUDIO -->
-      <section id="audio" class="audio-section">
-        <div class="section-shell audio-heading" data-reveal>
-          <p class="section-label">Signal</p>
-          <h2>A recording is<br />only the start.</h2>
-        </div>
-        <div class="wave-panel section-shell" data-reveal>
-          <div class="wave-copy">
-            <p>Sampled at</p>
-            <strong>16 kHz</strong>
-            <span>
-              Enough for every measure on this page and for the speech band that
-              carries them. The rate is pinned rather than negotiated: the FFT
-              axis, the WAV header and every duration in the app assume it.
-            </span>
-          </div>
-          <img src="%BASE_URL%site/screen-ui.png" alt="The AudioMX interface showing a detailed waveform" loading="lazy" />
-        </div>
-        <div class="feature-grid section-shell" data-reveal>
-          <article>
-            <span class="feature-number">01</span>
-            <h3>Captured off the main thread.</h3>
-            <p>Recording runs in an audio worklet, so drawing a waveform can never cost you a block of audio. It used to.</p>
-          </article>
-          <article>
-            <span class="feature-number">02</span>
-            <h3>Measured on the spot.</h3>
-            <p>F0, harmonics-to-noise, jitter and shimmer are extracted the moment a take is saved. Not that evening, not next week.</p>
-          </article>
-          <article>
-            <span class="feature-number">03</span>
-            <h3>Checked before it counts.</h3>
-            <p>Level, clipping and duration are reported against the task's own thresholds, so a take that will not survive analysis is caught immediately.</p>
-          </article>
         </div>
       </section>
 
