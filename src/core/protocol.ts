@@ -65,7 +65,7 @@ export const PROTOCOL_TESTS: ProtocolTest[] = [
     ],
     reads: null,
     holdSeconds: 15,
-    clinicianNote: "Maximum Phonation Time — vocal-fold closure & respiratory support."
+    clinicianNote: "Maximum phonation time: vocal-fold closure and respiratory support."
   },
   {
     id: "ddk",
@@ -79,7 +79,7 @@ export const PROTOCOL_TESTS: ProtocolTest[] = [
     ],
     reads: null,
     holdSeconds: 8,
-    clinicianNote: "Oral diadochokinetic rate — oral coordination (dysphagia-relevant)."
+    clinicianNote: "Oral diadochokinetic rate: oral coordination, relevant to dysphagia."
   },
   {
     id: "capev",
@@ -88,11 +88,11 @@ export const PROTOCOL_TESTS: ProtocolTest[] = [
     patientTitle: "Read these sentences out loud",
     patientSteps: [
       "Read each line in your normal voice.",
-      "Take your time — one line at a time."
+      "Take your time. One line at a time."
     ],
     reads: CAPEV_SENTENCES,
     holdSeconds: null,
-    clinicianNote: "CAPE-V — roughness, breathiness, strain, pitch, loudness."
+    clinicianNote: "CAPE-V: roughness, breathiness, strain, pitch, loudness."
   },
   {
     id: "rainbow",
@@ -105,7 +105,7 @@ export const PROTOCOL_TESTS: ProtocolTest[] = [
     ],
     reads: [RAINBOW_PASSAGE],
     holdSeconds: null,
-    clinicianNote: "Connected speech — resonance, fluency, articulation, prosody."
+    clinicianNote: "Connected speech: resonance, fluency, articulation, prosody."
   },
   {
     id: "cough",
@@ -118,7 +118,7 @@ export const PROTOCOL_TESTS: ProtocolTest[] = [
     ],
     reads: null,
     holdSeconds: 3,
-    clinicianNote: "Cough strength — airway protection / pulmonary cue."
+    clinicianNote: "Cough strength: airway protection and pulmonary cue."
   },
   {
     id: "spontaneous",
@@ -131,7 +131,7 @@ export const PROTOCOL_TESTS: ProtocolTest[] = [
     ],
     reads: null,
     holdSeconds: 30,
-    clinicianNote: "Free speech — natural prosody & articulation."
+    clinicianNote: "Free speech: natural prosody and articulation."
   }
 ];
 

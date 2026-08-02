@@ -82,7 +82,7 @@ export async function launch(): Promise<void> {
   // file:// has no usable origin, so there is nothing Epic could redirect back
   // to. A localhost dev server is fine as long as its exact URL is registered.
   if (location.protocol === "file:") {
-    throw new Error("Open the app over http(s) (npm run dev) — a file:// URL cannot be an OAuth redirect target.");
+    throw new Error("Open the app over http(s) (npm run dev). A file:// URL cannot be an OAuth redirect target.");
   }
 
   const cfg = await discover();
@@ -124,10 +124,10 @@ export async function handleRedirect(): Promise<boolean> {
 
   if (params.get("error")) {
     throw new Error("Epic returned an error: " + params.get("error") +
-      " — " + (params.get("error_description") || ""));
+      ": " + (params.get("error_description") || ""));
   }
   if (params.get("state") !== sessionStorage.getItem("smart_state")) {
-    throw new Error("State mismatch (possible CSRF) — aborting.");
+    throw new Error("State mismatch (possible CSRF). Aborting.");
   }
 
   const body = new URLSearchParams({

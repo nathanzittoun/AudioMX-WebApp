@@ -192,7 +192,7 @@ function pushGoToPopup(on: boolean): void {
   const go = doc.getElementById("pGoBar");
   if (!go) return;
   go.classList.toggle("go", on);
-  go.textContent = on ? "● Recording — begin speaking" : "Get ready…";
+  go.textContent = on ? "● Recording. Begin speaking." : "Get ready…";
 }
 
 function pushTimerToPopup(widthPct: number, visible: boolean): void {
@@ -475,7 +475,7 @@ function updateClinicalConnectState(): void {
     if (b) {
       b.classList.remove("secondaryBtn");
       b.classList.add("primaryBtn");
-      b.textContent = "Connected — " + CONNECT_LABELS[clinicalConnectKind].replace("Connect ", "");
+      b.textContent = "Connected: " + CONNECT_LABELS[clinicalConnectKind].replace("Connect ", "");
     }
   }
 }
@@ -516,7 +516,8 @@ function patientLastDate(id: string): Date | null {
 
 function demographicsStr(p: StoredPatient | null): string {
   if (!p) return "";
-  return [p.age ? p.age + " y" : "", p.sex || ""].filter(Boolean).join(", ");
+  return [p.age ? p.age + " y" : "", p.sex || "", p.epicId ? "Epic" : ""]
+    .filter(Boolean).join(", ");
 }
 
 export function renderPatientTable(): void {
@@ -558,13 +559,26 @@ export function renderPatientTable(): void {
       return node;
     };
 
+    // A patient pulled from a chart and a patient typed in by hand behave
+    // identically everywhere else, so the row is the one place that difference
+    // can be seen. It matters: a name that came from Epic was not transcribed
+    // by anyone, and a name that was typed might have been mistyped.
+    const nameCell = cell(p.name || "–", "patientCellName");
+    if (p.epicId) {
+      const tag = document.createElement("span");
+      tag.className = "epicTag";
+      tag.textContent = "Epic";
+      tag.title = "Created from an Epic chart, Epic id " + p.epicId;
+      nameCell.appendChild(tag);
+    }
+
     row.append(
       cell(p.id, "mono patientCellId"),
-      cell(p.name || "—", "patientCellName"),
-      cell(p.age || "—", "mono"),
-      cell(p.sex || "—", "mono"),
+      nameCell,
+      cell(p.age || "–", "mono"),
+      cell(p.sex || "–", "mono"),
       cell(String(patientSessions(p.id).length), "mono"),
-      cell(last ? formatSessionDate(last) : "—", "mono patientCellDate"),
+      cell(last ? formatSessionDate(last) : "–", "mono patientCellDate"),
     );
 
     const open = document.createElement("button");
@@ -651,12 +665,68 @@ function submitNewPatient(event: Event): void {
     void savePatient(patient);
     log("Patient created: " + id);
   } else {
-    log("Patient " + id + " already exists — opening it.");
+    log("Patient " + id + " already exists. Opening it.");
   }
 
   resetNewPatientForm();
   renderPatientTable();
   openPatient(id);
+}
+
+/**
+ * Create, or re-open, the local patient behind an Epic chart.
+ *
+ * Called once a login has resolved. Three rules, and each one exists because
+ * the alternative is a mis-attributed recording, which on this device is the
+ * failure that matters most:
+ *
+ *   1. Match on the Epic id first. The MRN can be edited in Epic and the
+ *      display name can change on marriage; the FHIR id is the only handle
+ *      that survives both, so a second login lands on the same local record
+ *      instead of quietly starting a parallel one.
+ *   2. Never take an id that already belongs to somebody else. If the MRN
+ *      collides with a patient created by hand, the suffix walks until it is
+ *      free rather than merging two people into one row.
+ *   3. Refresh demographics from Epic on every connect, because Epic is the
+ *      source of truth for them and a stale age silently changes what a
+ *      measurement means.
+ */
+export function upsertPatientFromEpic(details: {
+  epicId: string;
+  mrn?: string;
+  name: string;
+  age: string;
+  sex: string;
+}): string {
+  let patient = clinicalPatients.find(p => p.epicId === details.epicId);
+
+  if (!patient) {
+    const preferred = (details.mrn || details.epicId).trim();
+    let id = preferred;
+    let n = 2;
+    while (clinicalPatients.some(p => p.id === id)) id = preferred + "-" + n++;
+
+    patient = {
+      id,
+      name: details.name,
+      age: details.age,
+      sex: details.sex,
+      createdAt: new Date(),
+      epicId: details.epicId,
+    };
+    clinicalPatients.push(patient);
+    log("Patient created from Epic: " + id + " (" + details.name + ")");
+  } else {
+    patient.name = details.name;
+    patient.age = details.age;
+    patient.sex = details.sex;
+    log("Patient " + patient.id + " re-linked to Epic.");
+  }
+
+  void savePatient(patient);
+  renderPatientTable();
+  openPatient(patient.id);
+  return patient.id;
 }
 
 function openPatient(id: string): void {
@@ -708,16 +778,16 @@ export function renderExamHeader(): void {
   if (!cExamPatient) return;
   if (!currentPatient) {
     cExamPatient.innerHTML = "<em>No patient selected.</em> Pick one in the Patients tab.";
-    cSessionLabel.textContent = "—";
+    cSessionLabel.textContent = "–";
     return;
   }
   cExamPatient.innerHTML = "<strong>" + currentPatient.id + "</strong>" +
-    (currentPatient.name ? " — " + currentPatient.name : "") +
+    (currentPatient.name ? " · " + currentPatient.name : "") +
     (demographicsStr(currentPatient) ? " · " + demographicsStr(currentPatient) : "") +
     " · " + patientRecordingCount(currentPatient.id) + " recording(s)";
   cSessionLabel.textContent = currentSessionId
     ? "Session " + sessionNumberOf(currentSessionId) + " (active)"
-    : "No active session — starts on first take";
+    : "No active session. Starts on the first take.";
 }
 
 // ---- Test selection + patient prompt -----------------------------------
@@ -903,7 +973,7 @@ function setPatientRecording(on: boolean): void {
   pushGoToPopup(on);
   if (!pGoBar) return;
   pGoBar.classList.toggle("go", on);
-  pGoBar.textContent = on ? "● Recording — begin speaking" : "Get ready…";
+  pGoBar.textContent = on ? "● Recording. Begin speaking." : "Get ready…";
 }
 
 // Set both timer bars (in-app + pop-out) at once.
@@ -1001,9 +1071,9 @@ function runClinicalQualityGate(): void {
   if (!lastClinicalRecording || !lastClinicalRecording.analysisSamples) return;
   const m = clinicalMetricsOf(lastClinicalRecording.analysisSamples);
   const problems: string[] = [];
-  if (m.clip > 0.5) problems.push("Clipping (" + m.clip.toFixed(1) + "%) — lower gain (raise PCM_SHIFT).");
+  if (m.clip > 0.5) problems.push("Clipping (" + m.clip.toFixed(1) + "%). Lower the gain (raise PCM_SHIFT).");
   if (m.peak > -1) problems.push("Level too hot (peak " + m.peak.toFixed(1) + " dBFS).");
-  if (m.rms < -55) problems.push("Very quiet (RMS " + m.rms.toFixed(1) + " dBFS) — move closer or check the mic.");
+  if (m.rms < -55) problems.push("Very quiet (RMS " + m.rms.toFixed(1) + " dBFS). Move closer, or check the mic.");
   // Kept on the take, and persisted with it. Reference 2E summarises a session
   // as "6 passed / 1 rejected", which is only truthful if each take carries
   // what the gate actually said about it — recomputing later would judge a
@@ -1013,7 +1083,7 @@ function runClinicalQualityGate(): void {
   renderChart();
 
   if (problems.length === 0) {
-    showClinicalGate(true, "Good take — RMS " + m.rms.toFixed(1) + " dBFS, peak " + m.peak.toFixed(1) + " dBFS.", []);
+    showClinicalGate(true, "Good take. RMS " + m.rms.toFixed(1) + " dBFS, peak " + m.peak.toFixed(1) + " dBFS.", []);
   } else {
     showClinicalGate(false, "Check this recording:", problems);
   }
@@ -1080,7 +1150,7 @@ async function writeNoteToEpic(): Promise<void> {
 /** "6 passed", "1 rejected", or "not judged" for takes older than the field. */
 export function sessionGateSummary(takes: Recording[]): string {
   const judged = takes.filter(t => t.gate);
-  if (judged.length === 0) return "—";
+  if (judged.length === 0) return "–";
   const failed = judged.filter(t => t.gate && !t.gate.passed).length;
   const parts: string[] = [];
   if (judged.length - failed > 0) parts.push(judged.length - failed + " passed");
@@ -1271,7 +1341,7 @@ export function renderChart(): void {
   renderPatientTrends();
   if (cChartPatient) {
     cChartPatient.innerHTML = "<strong>" + currentPatient.id + "</strong>" +
-      (currentPatient.name ? " — " + currentPatient.name : "");
+      (currentPatient.name ? " · " + currentPatient.name : "");
   }
 
   const sessions = patientSessions(currentPatient.id).slice().reverse(); // newest first
@@ -1315,7 +1385,7 @@ export function renderChart(): void {
       cell(formatSessionDate(s.date), "mono sessionCellDate"),
       cell(s.takes.length + " take" + (s.takes.length === 1 ? "" : "s"), "mono"),
       cell(gate, "mono sessionCellGate" +
-        (gate.includes("rejected") ? " hasRejected" : gate === "—" ? " notJudged" : " allPassed")),
+        (gate.includes("rejected") ? " hasRejected" : gate === "–" ? " notJudged" : " allPassed")),
     );
     folder.appendChild(summary);
 
@@ -1354,7 +1424,7 @@ function renderChartTake(r: Recording): HTMLElement {
   analysis.className = "featureCard";
   analysis.innerHTML =
     "<div class='featureHead'>Acoustic features <span class='featureTag'>preview</span></div>" +
-    "<div class='featureBody'>" + (r.features ? formatFeatures(r.features) : "—") + "</div>";
+    "<div class='featureBody'>" + (r.features ? formatFeatures(r.features) : "–") + "</div>";
   // Was the literal string "AI risk score: pending model". It asks the model
   // now, so it stops being a claim the app makes on its own behalf.
   analysis.appendChild(riskSlot(r));
@@ -1495,11 +1565,11 @@ function openPatientView(): void {
   if (!patientWindowRef) {
     const manual = new URL(url, location.href).href;
     log("Patient window blocked by the browser. Open this address on the " +
-      "patient's screen instead — it follows the session: " + manual);
+      "patient's screen instead. It follows the session: " + manual);
     alert(
       "The browser blocked the patient window.\n\n" +
       "Allow pop-ups for this site, or open this address on the patient's " +
-      "screen — it follows the session automatically:\n\n" + manual);
+      "screen. It follows the session automatically:\n\n" + manual);
     return;
   }
 

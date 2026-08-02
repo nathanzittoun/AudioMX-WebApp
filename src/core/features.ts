@@ -213,7 +213,7 @@ export function extractVoiceFeatures(
 
 /** Compact one-line summary for a chart row. */
 export function formatFeatures(f: VoiceFeatures | null | undefined): string {
-  if (!f) return "—";
+  if (!f) return "–";
   if (!f.voiced) return "unvoiced / no clear pitch (" + Math.round(f.voicedFraction * 100) + "% voiced)";
   return "F0 " + f.f0.toFixed(0) + " Hz · jitter " + f.jitterPct.toFixed(2) +
     "% · shimmer " + f.shimmerPct.toFixed(1) + "% · HNR " + f.hnrDb.toFixed(1) + " dB" +

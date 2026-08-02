@@ -329,12 +329,6 @@ T("« Exit to site » ramene a la vitrine",
 T("plus aucun data-nav mort dans l'en-tete",
   (await ev("document.querySelectorAll('.topBar [data-nav]').length")) === 0);
 
-// Les notes d'honnetete etaient la seule partie de l'ancienne page Overview qui
-// valait d'etre gardee. Elles ont suivi sur la page Device plutot que de
-// disparaitre avec elle : une vitrine est le mauvais endroit pour ca.
-T("les notes d'honnetete ont suivi sur la page Device",
-  (await ev("!!document.querySelector('#deviceMode .homeNotes')")) === true);
-
 await navClick("record");
 T("nav -> Record bascule le mode ET l'onglet",
   (await visible("rndMode")) === true &&
@@ -695,9 +689,12 @@ T("un input non supporte expose sa raison", (await ev(`(()=>{
     return !b || (b.disabled ? (b.title||'').length>20 : !b.title)});})()`)) === true);
 
 // --- 1a3. panneau Epic ---
-T('indice Epic affiche l URI de retour exacte', (await ev(
-  "(()=>{const h=document.getElementById('cEhrHint');return !!h && h.textContent.includes(location.origin)})()"
-)) === true);
+// L'indice affichait l'URI de retour et rappelait qu'elle doit etre enregistree
+// chez Epic. C'est un detail de deploiement, pas quelque chose a expliquer a un
+// clinicien — ni a qui regarde par-dessus son epaule. Il reste vide.
+T('le panneau Epic n expose pas son URI de retour', (await ev(
+  "(document.getElementById('cEhrHint')?.textContent || '').trim()"
+)) === "");
 T('nom patient FHIR: champ text prioritaire', (await ev(
   "audiomx.ehrPanel.patientDisplayName({id:'x', name:[{text:'Jane Q Doe', given:['Jane'], family:'Doe'}]})"
 )) === 'Jane Q Doe');
@@ -1037,7 +1034,7 @@ const gate = await ev(`(()=>{
            partial: summary([judged[0], {}]) };
 })()`);
 T("un verdict mixte est resume tel quel", gate?.mixed === "1 passed · 1 rejected", gate?.mixed);
-T("des prises sans verdict ne s'en voient pas attribuer", gate?.none === "—", gate?.none);
+T("des prises sans verdict ne s'en voient pas attribuer", gate?.none === "–", gate?.none);
 T("une session partiellement jugee le dit", /not judged/.test(gate?.partial || ""), gate?.partial);
 
 // L'ecriture Epic est le seul controle qui sort du navigateur, et son chemin
@@ -1098,6 +1095,50 @@ await go();
 T("recordings restaures apres reload", (await ev("audiomx.state.library.recordings.length")) === 3);
 T("patients restaures apres reload", (await ev("audiomx.clinical.clinicalStateAccess.patients.length")) === 1);
 T("aucune exception au reload", errs.length === 0, errs.join(" | "));
+
+// --- 9. le patient cree depuis une fiche Epic ---
+// Place en fin de suite : ce bloc ecrit des patients en base via
+// savePatient(), et au milieu du parcours ils faussaient le comptage des
+// patients et la restauration apres reload testes plus haut.
+// Charger une fiche s'arretait a l'affichage : le clinicien retapait ensuite le
+// nom, le MRN, l'age et le sexe dans le formulaire, a cote d'un panneau qui
+// affichait deja les quatre. Retaper est precisement l'endroit ou un mauvais
+// patient s'attache a un enregistrement.
+const up = "audiomx.clinical.upsertPatientFromEpic";
+const pats = "audiomx.clinical.clinicalStateAccess.patients";
+await ev(`${pats}.length = 0`);
+
+const created = await ev(`${up}({epicId:'sm1',mrn:'SMOKE-1',name:'Ada Lovelace',age:'36',sex:'female'})`);
+T("une connexion Epic cree le patient", created === "SMOKE-1", created);
+T("nom, age et sexe viennent de la fiche",
+  (await ev(`JSON.stringify(${pats}.map(p=>[p.name,p.age,p.sex,p.epicId]))`))
+    === '[["Ada Lovelace","36","female","sm1"]]');
+
+// Le MRN peut etre modifie dans Epic et le nom peut changer : l'identifiant
+// FHIR est le seul qui survit aux deux, donc c'est lui qui fait la
+// correspondance. Sinon une seconde connexion ouvrirait un dossier parallele.
+await ev(`${up}({epicId:'sm1',mrn:'SMOKE-1',name:'Ada Byron',age:'37',sex:'female'})`);
+T("une seconde connexion ne duplique pas le dossier",
+  (await ev(`${pats}.length`)) === 1);
+T("les donnees demographiques se rafraichissent depuis Epic",
+  (await ev(`${pats}[0].name`)) === "Ada Byron" && (await ev(`${pats}[0].age`)) === "37");
+
+// Un MRN qui percute un patient saisi a la main ne doit surtout pas fusionner
+// deux personnes dans la meme ligne.
+await ev(`${pats}.push({id:'SMOKE-2',name:'Saisi main',age:'30',sex:'male',createdAt:new Date()})`);
+const dodged = await ev(`${up}({epicId:'sm2',mrn:'SMOKE-2',name:'Homonyme',age:'60',sex:'male'})`);
+T("un MRN deja pris ne fusionne pas deux patients",
+  dodged === "SMOKE-2-2" && (await ev(`${pats}.length`)) === 3, dodged);
+
+// Sans MRN, l'identifiant FHIR fait l'affaire : mieux vaut un identifiant
+// technique qu'un dossier sans identifiant.
+T("sans MRN, l'id FHIR sert de repli",
+  (await ev(`${up}({epicId:'sm3',name:'Sans Mrn',age:'22',sex:'other'})`)) === "sm3");
+
+// Et la difference se voit : un nom venu d'une fiche n'a ete transcrit par
+// personne, un nom tape a la main a pu l'etre de travers.
+T("le patient issu d'Epic est marque comme tel",
+  (await ev("document.querySelectorAll('#cPatientTable .epicTag').length")) === 3);
 
 // --- 8. PWA : installable, puis reellement hors ligne ---
 // Place en dernier : la coupure reseau plus bas fait remonter des erreurs

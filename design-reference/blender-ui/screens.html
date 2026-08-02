@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AudioMX Blender UI plates</title>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("../../assets/fonts/geist-400-700.woff2") format("woff2");
+      font-weight: 400 700;
+    }
+    @font-face {
+      font-family: "Geist Mono";
+      src: url("../../assets/fonts/geistmono-400-500.woff2") format("woff2");
+      font-weight: 400 500;
+    }
+
+    :root {
+      --black: #090a0c;
+      --surface: #15171b;
+      --surface-2: #1c1e23;
+      --line: #292c32;
+      --white: #f5f5f7;
+      --muted: #92959d;
+      --faint: #60636b;
+      --blue: #92b9e5;
+      --blue-strong: #6ca6e6;
+      --blue-dark: #26394f;
+      --red: #e4a09a;
+      --green: #8ed3b5;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: #e8e9ec;
+      font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Geist", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #stage { width: 960px; height: 600px; }
+    .screen {
+      position: relative;
+      width: 960px;
+      height: 600px;
+      overflow: hidden;
+      background: var(--black);
+      color: var(--white);
+    }
+    .safe { position: absolute; inset: 34px 44px; }
+    .mono { font-family: "Geist Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .eyebrow {
+      font-family: "Geist Mono", ui-monospace, monospace;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .brand { color: var(--white); letter-spacing: -.03em; font-size: 20px; font-weight: 620; }
+    .brand span { color: var(--blue); }
+    .topline { display: flex; align-items: center; justify-content: space-between; height: 30px; }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: 50px; line-height: 1.02; letter-spacing: -.045em; font-weight: 610; }
+    h2 { font-size: 31px; line-height: 1.08; letter-spacing: -.035em; font-weight: 590; }
+    .sub { color: var(--muted); font-size: 21px; line-height: 1.3; letter-spacing: -.015em; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; }
+    .dot.green { background: var(--green); }
+    .dot.red { background: var(--red); }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 52px;
+      border-radius: 26px;
+      padding: 0 26px;
+      background: var(--blue);
+      color: #0c1117;
+      font-size: 18px;
+      font-weight: 620;
+      letter-spacing: -.01em;
+    }
+    .hairline { height: 1px; background: var(--line); }
+
+    /* 01 — patient */
+    .patient-head { margin-top: 52px; display: flex; align-items: flex-end; justify-content: space-between; }
+    .patient-list { margin-top: 31px; display: grid; gap: 7px; }
+    .patient-row {
+      height: 76px;
+      border-radius: 20px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 1fr 160px 70px;
+      align-items: center;
+      background: var(--surface);
+      color: var(--white);
+    }
+    .patient-row .id { font-size: 22px; font-weight: 560; letter-spacing: -.02em; }
+    .patient-row .meta { font-size: 15px; color: var(--muted); }
+    .patient-row .date { font-size: 14px; color: var(--muted); text-align: right; }
+    .patient-row.selected { background: var(--blue); color: #0b1118; }
+    .patient-row.selected .meta, .patient-row.selected .date { color: #304256; }
+    .patient-foot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; }
+
+    /* 02 — Epic */
+    .epic-layout { height: 100%; display: grid; place-items: center; text-align: center; }
+    .link-mark { position: relative; width: 170px; height: 82px; margin: 0 auto 34px; }
+    .link-ring {
+      position: absolute;
+      top: 5px;
+      width: 72px;
+      height: 72px;
+      border: 5px solid var(--blue);
+      border-radius: 50%;
+    }
+    .link-ring.left { left: 18px; }
+    .link-ring.right { right: 18px; }
+    .link-bar { position: absolute; left: 74px; top: 38px; width: 22px; height: 6px; border-radius: 3px; background: var(--green); }
+    .epic-title { font-size: 54px; letter-spacing: -.05em; font-weight: 610; }
+    .epic-sub { margin-top: 13px; color: var(--muted); font-size: 22px; }
+    .epic-badges { margin-top: 31px; display: flex; gap: 10px; justify-content: center; }
+    .quiet-badge {
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      padding: 10px 15px;
+      color: var(--muted);
+      font-family: "Geist Mono", monospace;
+      font-size: 12px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .success-badge { color: var(--green); border-color: #355747; }
+
+    /* 03 — tests */
+    .tests-head { margin-top: 29px; display: flex; align-items: end; justify-content: space-between; }
+    .tests-head h1 { font-size: 45px; }
+    .test-list { margin-top: 25px; display: grid; gap: 5px; }
+    .test-row {
+      min-height: 58px;
+      border-radius: 16px;
+      display: grid;
+      grid-template-columns: 38px 1fr 110px;
+      align-items: center;
+      padding: 0 20px;
+      color: var(--white);
+      background: #111317;
+    }
+    .test-row .num { color: var(--faint); font-size: 13px; }
+    .test-row .name { font-size: 20px; letter-spacing: -.02em; }
+    .test-row .duration { text-align: right; color: var(--muted); font-size: 15px; }
+    .test-row.selected { min-height: 68px; background: var(--blue); color: #0b1118; }
+    .test-row.selected .num, .test-row.selected .duration { color: #304256; }
+    .test-row.selected .name { font-size: 23px; font-weight: 620; }
+    .test-hint { position: absolute; right: 0; bottom: 0; display: flex; align-items: center; gap: 16px; }
+
+    /* 04 — recording */
+    .recording-head { display: flex; align-items: flex-start; justify-content: space-between; }
+    .recording-status { color: var(--red); font-size: 21px; font-weight: 580; }
+    .recording-task { color: var(--muted); font-size: 16px; }
+    .recording-title { margin-top: 35px; display: flex; justify-content: space-between; align-items: end; }
+    .recording-title h1 { font-size: 66px; }
+    .recording-instruction { margin-top: 9px; color: var(--muted); font-size: 25px; }
+    .timer { font-size: 74px; font-weight: 450; letter-spacing: -.065em; line-height: .9; }
+    .timer small { margin-left: 5px; color: var(--muted); font: 400 23px/1 "Geist", sans-serif; }
+    .progress { margin-top: 25px; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+    .progress span { display: block; width: 60%; height: 100%; background: var(--blue); border-radius: inherit; }
+    .wave { position: absolute; left: 0; right: 0; top: 291px; height: 137px; display: flex; align-items: center; gap: 8px; }
+    .wave i { display: block; flex: 1; min-width: 4px; border-radius: 8px; background: var(--blue); }
+    .level-row { position: absolute; left: 0; right: 0; bottom: 4px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 25px; }
+    .level-track { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; }
+    .level-track span { display: block; width: 62%; height: 100%; background: #dbe2e9; border-radius: inherit; }
+    .level-copy { color: var(--muted); font-size: 20px; }
+
+    /* 05 — accepted */
+    .accepted-head { margin-top: 52px; display: grid; grid-template-columns: 80px 1fr auto; gap: 24px; align-items: center; }
+    .check-disc { width: 76px; height: 76px; border-radius: 50%; background: #dfe7ef; position: relative; }
+    .check-disc::before {
+      content: "";
+      position: absolute;
+      left: 22px;
+      top: 20px;
+      width: 27px;
+      height: 16px;
+      border-left: 4px solid #111820;
+      border-bottom: 4px solid #111820;
+      transform: rotate(-45deg);
+    }
+    .accepted-copy h1 { font-size: 47px; }
+    .accepted-copy p { margin-top: 8px; color: var(--muted); font-size: 21px; }
+    .saved-state { color: var(--green); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; }
+    .metric-grid { margin-top: 44px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .metric { height: 126px; padding: 22px 25px; background: var(--surface); border-radius: 22px; }
+    .metric label { display: block; color: var(--muted); font-size: 16px; }
+    .metric strong { display: block; margin-top: 13px; font: 500 39px/1 "Geist Mono", monospace; letter-spacing: -.04em; }
+    .session-rail { position: absolute; left: 0; right: 0; bottom: 54px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+    .session-rail i { display: block; height: 8px; border-radius: 4px; background: var(--line); }
+    .session-rail i.done { background: #dce5ee; }
+    .accepted-foot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; color: var(--muted); font-size: 18px; }
+
+    /* 06 — ending */
+    .end-layout { height: 100%; display: grid; place-items: center; text-align: center; }
+    .end-check { width: 104px; height: 104px; border-radius: 50%; border: 3px solid var(--blue); margin: 0 auto 26px; position: relative; }
+    .end-check::before {
+      content: "";
+      position: absolute;
+      left: 31px;
+      top: 28px;
+      width: 38px;
+      height: 23px;
+      border-left: 5px solid var(--blue);
+      border-bottom: 5px solid var(--blue);
+      transform: rotate(-45deg);
+    }
+    .end-title { font-size: 60px; letter-spacing: -.055em; font-weight: 610; }
+    .end-sub { margin-top: 12px; font-size: 24px; color: var(--muted); }
+    .end-status { margin-top: 27px; display: flex; justify-content: center; gap: 10px; }
+    .end-tagline { margin-top: 33px; font-size: 19px; color: var(--white); letter-spacing: -.01em; }
+    .end-wave { margin: 25px auto 0; width: 230px; height: 24px; }
+    .end-wave svg { display: block; width: 100%; height: 100%; }
+
+    /* Storyboard contact sheet */
+    body.storyboard { background: #f1f2f4; color: #14161a; padding: 34px; }
+    .board-title { font-size: 30px; font-weight: 650; letter-spacing: -.035em; }
+    .board-sub { margin-top: 6px; color: #6b6e75; font-size: 15px; }
+    .board-grid { margin-top: 24px; display: grid; grid-template-columns: repeat(3, 480px); gap: 26px 22px; }
+    .board-cell { width: 480px; }
+    .board-label { height: 28px; font: 500 12px/1 "Geist Mono", monospace; letter-spacing: .11em; text-transform: uppercase; color: #777a82; }
+    .board-frame { position: relative; width: 480px; height: 300px; overflow: hidden; box-shadow: 0 14px 35px rgba(11, 14, 20, .12); }
+    .board-frame .screen { position: absolute; inset: 0 auto auto 0; transform: scale(.5); transform-origin: top left; }
+    template { display: none; }
+  </style>
+</head>
+<body>
+  <main id="stage"></main>
+
+  <template id="tpl-patient">
+    <section class="screen">
+      <div class="safe">
+        <div class="topline"><div class="brand">Audio<span>MX</span></div><div class="eyebrow mono">12:30</div></div>
+        <div class="patient-head"><div><div class="eyebrow">Voice exam</div><h1 style="margin-top:12px">Select patient</h1></div><div class="eyebrow">Recent</div></div>
+        <div class="patient-list">
+          <div class="patient-row selected"><div><div class="id">Patient 0047</div><div class="meta">3 previous sessions</div></div><div class="meta mono">64 · F</div><div class="date mono">Today</div></div>
+          <div class="patient-row"><div><div class="id">Patient 0046</div><div class="meta">5 previous sessions</div></div><div class="meta mono">51 · M</div><div class="date mono">28 Jul</div></div>
+          <div class="patient-row"><div><div class="id">Patient 0044</div><div class="meta">2 previous sessions</div></div><div class="meta mono">38 · F</div><div class="date mono">24 Jul</div></div>
+        </div>
+        <div class="patient-foot"><span class="eyebrow">Synthetic patient</span><span class="pill">Continue</span></div>
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-epic">
+    <section class="screen">
+      <div class="safe">
+        <div class="topline"><div class="brand">Audio<span>MX</span></div><div class="eyebrow"><span class="dot green"></span>Patient 0047</div></div>
+        <div class="epic-layout">
+          <div style="margin-top:-4px">
+            <div class="link-mark"><i class="link-ring left"></i><i class="link-ring right"></i><i class="link-bar"></i></div>
+            <div class="epic-title">Epic connected</div>
+            <p class="epic-sub">Patient 0047 verified</p>
+            <div class="epic-badges"><span class="quiet-badge success-badge">Connected</span><span class="quiet-badge">SMART on FHIR</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-tests">
+    <section class="screen">
+      <div class="safe">
+        <div class="topline"><div class="brand">Audio<span>MX</span></div><div class="eyebrow">Patient 0047</div></div>
+        <div class="tests-head"><div><div class="eyebrow">Protocol · 6 tasks</div><h1 style="margin-top:10px">Voice exam</h1></div><span class="eyebrow"><span class="dot green"></span>Epic connected</span></div>
+        <div class="test-list">
+          <div class="test-row selected"><span class="num mono">02</span><span class="name">Pa-Ta-Ka</span><span class="duration mono">8 s</span></div>
+          <div class="test-row"><span class="num mono">01</span><span class="name">Sustained vowel</span><span class="duration mono">15 s</span></div>
+          <div class="test-row"><span class="num mono">03</span><span class="name">CAPE-V sentences</span><span class="duration mono">Untimed</span></div>
+          <div class="test-row"><span class="num mono">04</span><span class="name">Rainbow passage</span><span class="duration mono">Untimed</span></div>
+          <div class="test-row"><span class="num mono">05</span><span class="name">Voluntary cough</span><span class="duration mono">3 s</span></div>
+          <div class="test-row"><span class="num mono">06</span><span class="name">Spontaneous speech</span><span class="duration mono">30 s</span></div>
+        </div>
+        <div class="test-hint"><span class="eyebrow">Selected</span><span class="pill">Start Pa-Ta-Ka</span></div>
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-recording">
+    <section class="screen">
+      <div class="safe">
+        <div class="recording-head"><div class="recording-status"><span class="dot red"></span>Recording</div><div class="recording-task mono">Task 2 of 6 · Patient 0047</div></div>
+        <div class="recording-title"><div><h1>Pa-Ta-Ka</h1><p class="recording-instruction">As fast and as clearly as you can</p></div><div class="timer mono">4.8<small>s</small></div></div>
+        <div class="progress"><span></span></div>
+        <div class="wave">
+          <i style="height:22px"></i><i style="height:42px"></i><i style="height:28px"></i><i style="height:54px"></i><i style="height:36px"></i><i style="height:72px"></i><i style="height:46px"></i><i style="height:92px"></i><i style="height:52px"></i><i style="height:116px"></i><i style="height:69px"></i><i style="height:128px"></i><i style="height:91px"></i><i style="height:110px"></i><i style="height:74px"></i><i style="height:122px"></i><i style="height:88px"></i><i style="height:132px"></i><i style="height:96px"></i><i style="height:118px"></i><i style="height:80px"></i><i style="height:104px"></i><i style="height:62px"></i><i style="height:91px"></i><i style="height:57px"></i><i style="height:78px"></i><i style="height:43px"></i><i style="height:67px"></i><i style="height:36px"></i><i style="height:55px"></i><i style="height:29px"></i><i style="height:44px"></i><i style="height:22px"></i><i style="height:35px"></i><i style="height:18px"></i><i style="height:27px"></i>
+        </div>
+        <div class="level-row"><div class="level-track"><span></span></div><div class="level-copy">Level good</div></div>
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-accepted">
+    <section class="screen">
+      <div class="safe">
+        <div class="topline"><div class="brand">Audio<span>MX</span></div><div class="eyebrow">Task 2 of 6</div></div>
+        <div class="accepted-head">
+          <div class="check-disc"></div>
+          <div class="accepted-copy"><h1>Take accepted</h1><p>Pa-Ta-Ka · 8.0 s · Patient 0047</p></div>
+          <div class="saved-state mono"><span class="dot green"></span>Saved</div>
+        </div>
+        <div class="metric-grid">
+          <div class="metric"><label>Peak</label><strong>−6.2</strong></div>
+          <div class="metric"><label>Level</label><strong>−24.1</strong></div>
+          <div class="metric"><label>Clipping</label><strong>0.00%</strong></div>
+        </div>
+        <div class="session-rail"><i class="done"></i><i class="done"></i><i></i><i></i><i></i><i></i></div>
+        <div class="accepted-foot"><span>Next · CAPE-V sentences</span><span class="mono">2 / 6 complete</span></div>
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-complete">
+    <section class="screen">
+      <div class="safe">
+        <div class="topline"><div class="brand">Audio<span>MX</span></div><div class="eyebrow">Patient 0047</div></div>
+        <div class="end-layout">
+          <div style="margin-top:10px">
+            <div class="end-check"></div>
+            <div class="end-title">Task complete</div>
+            <div class="end-sub">Pa-Ta-Ka · 8.0 s</div>
+            <div class="end-status"><span class="quiet-badge success-badge">Saved locally</span><span class="quiet-badge success-badge">Epic connected</span></div>
+            <div class="end-tagline">Captured. Measured. Ready to review.</div>
+            <div class="end-wave"><svg viewBox="0 0 230 24" aria-hidden="true"><path d="M1 12 C12 12 15 4 25 12 S39 20 49 12 62 2 74 12 89 21 101 12 116 3 130 12 145 20 158 12 174 5 186 12 201 18 229 12" fill="none" stroke="#92b9e5" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <script>
+    const screens = [
+      ["patient", "01 · Select patient"],
+      ["epic", "02 · Epic connected"],
+      ["tests", "03 · Choose Pa-Ta-Ka"],
+      ["recording", "04 · Record"],
+      ["accepted", "05 · Validate and save"],
+      ["complete", "06 · Complete"]
+    ];
+    const params = new URLSearchParams(location.search);
+    const requested = params.get("screen") || "patient";
+    const stage = document.getElementById("stage");
+
+    if (requested === "storyboard") {
+      document.body.className = "storyboard";
+      stage.style.width = "1484px";
+      stage.style.height = "716px";
+      stage.innerHTML = '<div class="board-title">AudioMX · On-device clinical journey</div>' +
+        '<div class="board-sub">Six 16:10 interface plates for the Blender hero animation</div>' +
+        '<div class="board-grid"></div>';
+      const grid = stage.querySelector(".board-grid");
+      for (const [id, label] of screens) {
+        const cell = document.createElement("div");
+        cell.className = "board-cell";
+        cell.innerHTML = '<div class="board-label">' + label + '</div><div class="board-frame"></div>';
+        cell.querySelector(".board-frame").append(document.getElementById("tpl-" + id).content.cloneNode(true));
+        grid.append(cell);
+      }
+    } else {
+      const template = document.getElementById("tpl-" + requested) || document.getElementById("tpl-patient");
+      stage.append(template.content.cloneNode(true));
+    }
+    document.documentElement.dataset.ready = "true";
+  </script>
+</body>
+</html>

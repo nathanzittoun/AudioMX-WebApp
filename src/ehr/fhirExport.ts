@@ -337,7 +337,7 @@ export async function buildFhirBundle(
     // result/conclusion when they actually have content.
     const report: FhirResource = {
       resourceType: "DiagnosticReport",
-      text: fhirNarrative("Voice acoustic analysis — " + (testName || "voice task") +
+      text: fhirNarrative("Voice acoustic analysis: " + (testName || "voice task") +
         " · " + obsRefs.length + " measurement(s)"),
       status: "final",
       category: [{
@@ -345,7 +345,7 @@ export async function buildFhirBundle(
       } satisfies CodeableConcept],
       code: {
         coding: [{ system: FHIR_ACOUSTIC_SYSTEM, code: "VOICE-ACOUSTIC", display: "Voice acoustic analysis" }],
-        text: "Voice acoustic analysis — " + (testName || "voice task"),
+        text: "Voice acoustic analysis: " + (testName || "voice task"),
       } satisfies CodeableConcept,
       subject: { reference: patientRef },
       effectiveDateTime: when,

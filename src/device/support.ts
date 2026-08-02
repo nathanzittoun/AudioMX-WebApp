@@ -19,7 +19,7 @@ export function serialSupport(): Support {
       ok: false,
       reason:
         "USB needs Chrome or Edge on a computer. Safari and iPad do not support " +
-        "Web Serial — use Wi-Fi or the computer microphone there.",
+        "Web Serial. Use Wi-Fi or the computer microphone there.",
     };
   }
   return OK;

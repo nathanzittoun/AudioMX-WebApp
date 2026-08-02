@@ -3462,3 +3462,29 @@ audio {
     grid-template-columns: 1fr auto;
   }
 }
+
+/* A patient created from an Epic chart, marked where the difference is worth
+   knowing: a name pulled from a chart was not transcribed by anyone, and a
+   name typed into the form might have been mistyped. Outline rather than fill,
+   like every other state chip in this language. */
+.epicTag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--accent-line);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+/* Shown under the Epic panel once a chart has become a local patient, so the
+   connection reads as "this produced something" rather than as a status line. */
+.ehrLinked {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ok-text);
+}

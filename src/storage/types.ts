@@ -49,6 +49,16 @@ export interface StoredPatient {
   age: string;
   sex: string;
   createdAt: Date | string;
+  /**
+   * The Epic FHIR Patient id this record was pulled from, when it was.
+   *
+   * Optional and additive: every patient created by hand before this existed
+   * reads back as undefined, which is the truth about them. It is the FHIR id
+   * rather than the MRN because that is what every later API call needs, and
+   * because two organisations can issue the same MRN while a FHIR id is unique
+   * to its server.
+   */
+  epicId?: string;
 }
 
 /** CRUD over one collection. */

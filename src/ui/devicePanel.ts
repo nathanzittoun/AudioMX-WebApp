@@ -27,7 +27,7 @@ interface Transport {
 
 function specs(): Array<[string, string]> {
   return [
-    ["Capsules", "2 × MEMS — stereo, left or right alone"],
+    ["Capsules", "2 × MEMS, stereo, left or right alone"],
     ["Sample rate", (SAMPLE_RATE / 1000) + " kHz, 16-bit"],
     ["Wired", "USB-C, serial at " + BAUD_RATE.toLocaleString("en-US") + " baud"],
     ["Wireless", "Wi-Fi access point, audio over WebSocket"],

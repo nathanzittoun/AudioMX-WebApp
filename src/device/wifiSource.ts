@@ -156,7 +156,7 @@ export function openWifiSocket(url: string): void {
         reconnectAttempts++;
         const delay = reconnectDelayMs(reconnectAttempts);
 
-        setStatus("Wi-Fi lost — reconnecting...", "idle");
+        setStatus("Wi-Fi lost. Reconnecting...", "idle");
         log(`Wi-Fi dropped. Reconnect attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} in ${delay / 1000}s.`);
 
         clearTimeout(reconnectTimer);

@@ -7,11 +7,10 @@
 // type.
 
 import { el } from "../ui/dom";
-import { redirectUri } from "./config";
 import { handleRedirect, launch, listObservations, loadPatient } from "./smart";
 import { log } from "../ui/log";
 import { setAppMode } from "../app";
-import { setClinicalTab } from "../clinical";
+import { setClinicalTab, upsertPatientFromEpic } from "../clinical";
 
 /** The slice of a FHIR Patient this panel displays. */
 interface FhirPatient {
@@ -19,6 +18,45 @@ interface FhirPatient {
   gender?: string;
   birthDate?: string;
   name?: Array<{ text?: string; given?: string[]; family?: string }>;
+  identifier?: Array<{
+    value?: string;
+    type?: { text?: string; coding?: Array<{ code?: string }> };
+  }>;
+}
+
+/**
+ * The chart number a clinician would recognise.
+ *
+ * Epic returns several identifiers on a Patient and only one of them is the
+ * MRN the ward writes on a wristband; the rest are internal (FHIR ids, EPI,
+ * enterprise ids) and mean nothing at the bedside. Matched on the standard MR
+ * type code first, then on the label, because the sandbox spells the label
+ * differently from production.
+ */
+function patientMrn(p: FhirPatient): string | undefined {
+  const mr = p.identifier?.find(i =>
+    i.type?.coding?.some(c => c.code === "MR") ||
+    /\bMRN?\b/i.test(i.type?.text ?? "")
+  );
+  return mr?.value?.trim() || undefined;
+}
+
+/**
+ * Age in whole years from a FHIR birthDate.
+ *
+ * Parsed by hand rather than through Date(): "1974-03-02" is read as UTC
+ * midnight, so anyone west of Greenwich would be handed a birthday one day
+ * early, which is a whole year wrong for a patient born on the first of a
+ * month. Returns "" rather than a guess when Epic sends no birthDate.
+ */
+function ageFromBirthDate(birthDate?: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(birthDate ?? "");
+  if (!m) return "";
+  const now = new Date();
+  let age = now.getFullYear() - Number(m[1]);
+  const monthDelta = (now.getMonth() + 1) - Number(m[2]);
+  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < Number(m[3]))) age -= 1;
+  return age >= 0 && age < 130 ? String(age) : "";
 }
 
 interface FhirObservation {
@@ -55,12 +93,14 @@ export function renderEhrHint(): void {
   // once registered. Only file:// can never work.
   if (location.protocol === "file:") {
     hint.className = "clinEhrHint warn";
-    hint.textContent = "⚠ Open the app over http(s) (npm run dev) — a file:// " +
+    hint.textContent = "⚠ Open the app over http(s) (npm run dev). A file:// " +
       "URL cannot be an OAuth redirect target.";
   } else {
+    // Deliberately blank. The redirect URI and its registration are a setup
+    // detail for whoever deploys this, not something to explain to a clinician
+    // — or to anyone reading over their shoulder.
     hint.className = "clinEhrHint";
-    hint.textContent = "Sign-in returns to " + redirectUri() +
-      " — this exact URL must be registered on Epic.";
+    hint.textContent = "";
   }
 }
 
@@ -107,10 +147,28 @@ async function afterEhrConnected(): Promise<void> {
   try {
     const p = await loadPatient<FhirPatient>();
     const name = patientDisplayName(p);
+    const mrn = patientMrn(p);
+    const age = ageFromBirthDate(p.birthDate);
+
+    // Loading the chart used to end here, leaving the clinician to retype the
+    // name, the MRN, the age and the sex into the new-patient form beside a
+    // panel already showing all four. Retyping is where a wrong patient gets
+    // attached to a recording, so the record is created from the chart itself.
+    const localId = upsertPatientFromEpic({
+      epicId: p.id,
+      mrn,
+      name,
+      age,
+      sex: p.gender ?? "",
+    });
+
     box.innerHTML =
       "<strong>" + name + "</strong> · " + (p.gender || "?") +
+      (age ? " · " + age + "y" : "") +
       " · DOB " + (p.birthDate || "?") +
-      " <span class='ehrId'>Epic id " + p.id + "</span>";
+      " <span class='ehrId'>Epic id " + p.id +
+      (mrn ? " · MRN " + mrn : "") + "</span>" +
+      "<div class='ehrLinked'>Open in this app as patient " + localId + "</div>";
     log("EHR: connected to Epic, loaded " + name + ".");
   } catch (e) {
     // Connected but unable to read: worth distinguishing, since the fix is a

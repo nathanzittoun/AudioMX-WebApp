@@ -6,7 +6,7 @@
        also means the max-width: 980px / 1100px breakpoints in style.css never
        fire on a phone. -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AudioMX — Voice &amp; Speech Platform</title>
+  <title>AudioMX Clinical Console</title>
   <link rel="icon" type="image/png" href="%BASE_URL%favicon.png" />
   <!-- Home-screen install. The icons are opaque on purpose: iOS composites a
        transparent apple-touch-icon onto black. -->
@@ -121,7 +121,6 @@
         <div class="sectionHeader">
           <div>
             <h2>Inputs</h2>
-            <p>Checked against this browser and this page — asked of the API, never guessed from the browser's name.</p>
           </div>
         </div>
 
@@ -136,46 +135,6 @@
             <input id="wifiUrlInput" type="text" value="ws://192.168.4.1:81" spellcheck="false" />
           </div>
           <small class="fieldHint">Default is the ESP32 access point. Change it if the device is on your network.</small>
-        </div>
-      </section>
-    <!-- Moved here from the old Overview page, which is gone. These are the
-         things this build cannot do, and they were the only part of that page
-         worth keeping: a marketing site is the wrong place for them, and
-         deleting them would have quietly removed the disclosure. The Device
-         page already answers "what can this setup do", so they belong here. -->
-      <section class="card homeNotes">
-        <div class="sectionHeader">
-          <div>
-            <h2>Before you rely on this build</h2>
-            <p>Three things that are true today. The full list lives in LIMITATIONS.md.</p>
-          </div>
-        </div>
-
-        <div class="noteGrid">
-          <div class="noteCard">
-            <h3>Data stays in this browser</h3>
-            <p>
-              Patients, sessions and audio live in this browser profile only.
-              There is no account and no sync: another computer, another
-              browser, or cleared site data means starting from zero.
-            </p>
-          </div>
-          <div class="noteCard">
-            <h3>Epic is a sandbox</h3>
-            <p>
-              The chart connection reaches Epic's public test environment, not
-              a real organisation. Use synthetic patients. No real patient data
-              may enter this build.
-            </p>
-          </div>
-          <div class="noteCard">
-            <h3>No risk score is produced</h3>
-            <p>
-              Every number on screen is a measurement of the signal. The app
-              deliberately refuses to show a score until a real model is behind
-              it — a placeholder next to a patient is a hazard, not a stub.
-            </p>
-          </div>
         </div>
       </section>
     </div><!-- /#deviceMode -->
@@ -513,7 +472,7 @@
           </div>
           <div class="examCell">
             <span class="metaLabel">Session</span>
-            <span id="cSessionLabel" class="clinSessionLabel">—</span>
+            <span id="cSessionLabel" class="clinSessionLabel">–</span>
           </div>
           <div class="examCell examCellGrow">
             <label class="metaLabel" for="cNotes">Session notes</label>
@@ -521,7 +480,7 @@
           </div>
           <div class="examCell examCellRow">
             <label class="consentCheck"><input type="checkbox" id="cConsent" /> Consent</label>
-            <label class="consentCheck"><input type="checkbox" id="cSpeak" checked /> Prompts aloud</label>
+            <label class="consentCheck"><input type="checkbox" id="cSpeak" /> Prompts aloud</label>
           </div>
           <div class="examCell examCellRow">
             <button id="cNewSessionBtn" class="secondaryBtn">New session</button>
@@ -593,10 +552,10 @@
                 <span id="cLiveGateVerdict" class="mono gateVerdict">Idle</span>
               </div>
               <div class="panelBody gateRows">
-                <div class="gateRow"><span>Clipping</span><span id="cGateClip" class="mono">— <em>/ 0.5 %</em></span></div>
-                <div class="gateRow"><span>Peak</span><span id="cGatePeak" class="mono">— <em>/ −1 dBFS</em></span></div>
-                <div class="gateRow"><span>RMS</span><span id="cGateRms" class="mono">— <em>/ −55 dBFS</em></span></div>
-                <div class="gateRow"><span>Hum 60 / 120 Hz</span><span id="cGateHum" class="mono">— / —</span></div>
+                <div class="gateRow"><span>Clipping</span><span id="cGateClip" class="mono">– <em>/ 0.5 %</em></span></div>
+                <div class="gateRow"><span>Peak</span><span id="cGatePeak" class="mono">– <em>/ −1 dBFS</em></span></div>
+                <div class="gateRow"><span>RMS</span><span id="cGateRms" class="mono">– <em>/ −55 dBFS</em></span></div>
+                <div class="gateRow"><span>Hum 60 / 120 Hz</span><span id="cGateHum" class="mono">– / –</span></div>
               </div>
             </section>
 
@@ -643,7 +602,7 @@
             <ol id="pSteps" class="patientSteps"></ol>
             <div id="pReads" class="patientReads"></div>
             <div id="pReadyWrap" class="patientReadyWrap" style="display:none">
-              <button id="pReadyBtn" class="patientReadyBtn">I'm ready — start</button>
+              <button id="pReadyBtn" class="patientReadyBtn">I'm ready, start</button>
             </div>
           </div>
           <div id="pTimerWrap" class="patientTimerWrap" style="display:none">

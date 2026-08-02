@@ -63,7 +63,7 @@ function pwRenderTest(testId: string): void {
 
 function pwSetGo(on: boolean): void {
   pwGoBar.classList.toggle("go", on);
-  pwGoBar.textContent = on ? "● Recording — begin speaking" : "Get ready…";
+  pwGoBar.textContent = on ? "● Recording. Begin speaking." : "Get ready…";
 }
 
 function pwStartTimer(seconds: number | null): void {
