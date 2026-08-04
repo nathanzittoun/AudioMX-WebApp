@@ -8,6 +8,7 @@
 // ever needs the recorder, a transport or storage, the split has been broken —
 // there is a smoke assertion that fails when window.audiomx appears here.
 
+import { initFilmSection } from "./filmSection";
 import { initHeroSequence } from "./heroSequence";
 import { initScrollDevice } from "./scrollDevice";
 import { el } from "../ui/dom";
@@ -138,6 +139,7 @@ function boot(): void {
   initReveals();
   initHeroSequence();
   initScrollDevice();
+  initFilmSection();
 }
 
 // Same reasoning as the application's entry: the bundle is injected in <head>,

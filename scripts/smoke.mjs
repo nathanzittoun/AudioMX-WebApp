@@ -204,6 +204,87 @@ T("le hero a peint sa sequence",
 T("la vue rotative partage les memes images",
   (await ev("!!document.querySelector('#closerCanvas.is-ready')")) === true);
 
+// Le film d'usage est la seule chose animee de cette page qui soit une <video>,
+// et c'est justifie : les deux autres sont *frottees* (l'une par un minuteur,
+// l'autre par le scroll) et une video ne se cale pas au frame pres. Celui-ci ne
+// fait que se derouler, le cas ou la video gagne : 530 ko contre 3,2 Mo.
+T("le film d'usage est une video et non une sequence d'images",
+  (await ev("document.getElementById('inUseFilm')?.tagName")) === "VIDEO" &&
+  /site\/in-use\.mp4$/.test(await ev("document.querySelector('#inUseFilm source')?.getAttribute('src') || ''")));
+// Rien n'est telecharge tant que la section n'est pas approchee. Un visiteur qui
+// ne descend jamais jusque-la ne paie pas les 530 ko, et celui qui descend
+// n'arrive pas apres la fin du film.
+T("le film n'est pas charge avant d'etre atteint",
+  (await ev("document.getElementById('inUseFilm').preload")) === "none");
+// La commande est visible avant que quoi que ce soit ait tourne. L'inverse —
+// masquee en pariant sur le demarrage automatique — donne une image fixe sans
+// aucun moyen de la lancer, ce qui est un rectangle mort au milieu de la page.
+T("le film propose une commande avant d'avoir tourne",
+  (await ev("!!document.querySelector('.film-button') && " +
+            "!document.querySelector('.film-button').classList.contains('is-hidden')")) === true &&
+  (await ev("document.querySelector('.film-button b').textContent")) === "Play");
+T("le film a autant de chapitres que de reperes",
+  (await ev("document.querySelectorAll('.film-chapters li').length")) === 4 &&
+  (await ev("document.querySelectorAll('[data-chapter]').length")) === 4);
+
+// On appuie sur Play. Dans ce navigateur le document est "hidden" et le
+// demarrage est refuse : c'est exactement le chemin qu'on veut eprouver, et il
+// se produit aussi en mode economie d'energie sur iOS ou sous une politique
+// d'entreprise. play() rend une promesse ; l'implementation naive l'avale dans
+// un catch vide et masque le bouton, ce qui echoue ici et nulle part ailleurs.
+await ev("document.querySelector('.film-button').click()");
+await new Promise(r => setTimeout(r, 2600));
+T("le fichier video repond et se decode",
+  (await ev("document.getElementById('inUseFilm').videoWidth")) === 700 &&
+  (await ev("document.getElementById('inUseFilm').duration")) === 9);
+T("l'image d'attente du film repond",
+  (await ev(`new Promise(res => { const i = new Image();
+     i.onload = () => res(i.naturalWidth); i.onerror = () => res(0);
+     i.src = document.getElementById('inUseFilm').poster })`)) === 700);
+T("un demarrage refuse laisse une commande utilisable",
+  (await ev("document.getElementById('inUseFilm').paused")) === true &&
+  (await ev("!!document.querySelector('.film-button') && " +
+            "!document.querySelector('.film-button').classList.contains('is-hidden')")) === true);
+
+// Chaque chapitre deplace reellement le film, et le chapitre allume suit la
+// position — pas l'inverse. Le lien entre le texte et l'image est la seule
+// chose que cette section promet.
+await ev("document.querySelector('[data-chapter=\"3\"]').click()");
+await new Promise(r => setTimeout(r, 600));
+T("un chapitre deplace le film et s'allume",
+  (await ev("document.getElementById('inUseFilm').currentTime")) === 7 &&
+  (await ev("[...document.querySelectorAll('.film-chapters li')].findIndex(l => l.classList.contains('is-active'))")) === 3);
+// Garde-fou contre la derive : si le film est remonte plus court, le dernier
+// chapitre tombe hors de la video et decrit une image que personne ne verra.
+T("le dernier chapitre tombe bien avant la fin du film",
+  (await ev("document.getElementById('inUseFilm').currentTime < document.getElementById('inUseFilm').duration - 1")) === true);
+// Le film se lit entre la vue rotative et les captures de l'application :
+// l'objet, puis son usage, puis le logiciel. Un deplacement casse ce fil sans
+// rien casser d'autre, donc rien ne le signalerait.
+T("le film est place entre la vue rotative et les captures",
+  (await ev(`(() => { const ids = [...document.querySelectorAll('main > section')].map(s => s.id);
+     return ids.indexOf('closer-look') < ids.indexOf('in-use')
+         && ids.indexOf('in-use') < ids.indexOf('workflow'); })()`)) === true);
+
+// Le rendu du packaging. Il est en chargement differe — il est tout en bas —
+// donc on force le chargement avant de mesurer, sinon naturalWidth vaut 0 et
+// l'assertion passerait pour une image absente.
+T("le rendu du packaging repond",
+  (await ev(`(async () => { const i = document.querySelector('.box-shot img');
+     if (!i) return 0;
+     i.loading = 'eager';
+     if (!i.complete || !i.naturalWidth) await new Promise(r => { i.onload = i.onerror = r; });
+     return i.naturalWidth; })()`)) === 960);
+// Le carton photographie est une maquette. Tant que ce n'est pas le carton
+// reel, la page doit le dire : une photo de packaging sur un site de dispositif
+// medical se lit comme un produit qui existe et qui a ete valide.
+T("le packaging est annonce comme un prototype",
+  /prototype and not final/.test(await ev("document.body.innerText")));
+T("le packaging se lit juste avant l'appel a l'action",
+  (await ev(`(() => { const ids = [...document.querySelectorAll('main > section')].map(s => s.id);
+     return ids.indexOf('in-the-box') < ids.indexOf('contact')
+         && ids.indexOf('workflow') < ids.indexOf('in-the-box'); })()`)) === true);
+
 // Le titre du hero ne doit pas dependre de l'animation. Mesure : dans une page
 // dont visibilityState vaut "hidden" — onglet en arriere-plan, navigateur
 // headless — requestAnimationFrame ne tourne pas et le scroll ne se declenche

@@ -226,6 +226,101 @@
         </div>
       </section>
 
+      <!-- IN USE. A nine second run of the device, as video.
+
+           A <video> here where the two sections around it are 150-frame WebP
+           sequences painted on a canvas, and the difference is not taste: those
+           two are scrubbed, one by a timer and one by the scroll position, and
+           a video cannot be seeked frame-accurately from a handler. This one
+           only ever plays forward, which is the case the video wins outright.
+           530 kB against the 3.2 MB the same nine seconds would cost as frames.
+
+           preload="none" and no autoplay attribute. The file is fetched when
+           the section comes within reach and played when it is actually on
+           screen, so a visitor who never scrolls this far never pays for it,
+           and one who does never arrives after the film has already finished.
+
+           muted and playsinline are what make inline playback legal on iOS at
+           all. muted is also honest here: the file carries no audio track. -->
+      <section id="in-use" class="film-section">
+        <div class="section-shell film-heading" data-reveal>
+          <p class="section-label">In use</p>
+          <h2>From patient<br />to accepted.</h2>
+          <p>
+            Nine seconds, start to finish. Four moments decide whether a take is
+            worth anything, and all four happen before the patient has left the
+            room. The screens that run them are further down.
+          </p>
+        </div>
+
+        <div class="section-shell film-layout">
+          <div class="film-col" data-reveal>
+            <div class="film-stage">
+            <video id="inUseFilm" class="film-video"
+                   poster="%BASE_URL%site/in-use-poster.jpg"
+                   preload="none" muted playsinline disablepictureinpicture
+                   aria-label="The AudioMX One runs a Pa-Ta-Ka take, from choosing the patient to accepting the recording.">
+              <source src="%BASE_URL%site/in-use.mp4" type="video/mp4" />
+            </video>
+            <button class="film-button" type="button">
+              <span class="film-button-icon" aria-hidden="true">▶</span>
+              <b>Play</b>
+            </button>
+            </div>
+            <!-- Under the film and not under the chapters: it describes what
+                 is being watched, and next to the chapters it read as a note
+                 about the product. -->
+            <p class="film-note">Animated sequence. Timings condensed.</p>
+          </div>
+
+          <div class="film-side">
+            <!-- Each chapter is a real button and seeks the film to its own
+                 beat. The titles are <b> and not <h3>: heading content is
+                 invalid inside a button, and these are labels on a control
+                 rather than sections of the document.
+
+                 The copy says why each moment matters, deliberately, because
+                 the step strip below already says what happens on each screen.
+                 Written the other way round these two sections were the same
+                 list twice, one section apart. -->
+            <ol class="film-chapters">
+              <li>
+                <button type="button" data-chapter="0">
+                  <i aria-hidden="true"><span></span></i>
+                  <em>01</em>
+                  <b>Start with the patient.</b>
+                  <span>A take filed against the wrong record is the failure that matters most. It is settled first.</span>
+                </button>
+              </li>
+              <li>
+                <button type="button" data-chapter="1">
+                  <i aria-hidden="true"><span></span></i>
+                  <em>02</em>
+                  <b>Choose the task.</b>
+                  <span>The protocol fixes what is said, so a voice can be compared with itself later.</span>
+                </button>
+              </li>
+              <li>
+                <button type="button" data-chapter="2">
+                  <i aria-hidden="true"><span></span></i>
+                  <em>03</em>
+                  <b>Watch it run.</b>
+                  <span>Level and elapsed time stay on screen, because a take is only worth what it measures.</span>
+                </button>
+              </li>
+              <li>
+                <button type="button" data-chapter="3">
+                  <i aria-hidden="true"><span></span></i>
+                  <em>04</em>
+                  <b>Accept the take.</b>
+                  <span>Peak, level and clipping are read while the patient is still in the room.</span>
+                </button>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
       <!-- CLINICAL WORKFLOW. Real screenshots of the running app. -->
       <section id="workflow" class="interface-section">
         <div class="interface-heading section-shell" data-reveal>
@@ -303,6 +398,38 @@
           <article><span>1</span><h3>Capture</h3><p>Run the protocol without looking away from the patient.</p></article>
           <article><span>2</span><h3>Measure</h3><p>Read the numbers and accept or redo the take on the spot.</p></article>
           <article><span>3</span><h3>File</h3><p>Write a note back to the chart over SMART on FHIR, or export the session.</p></article>
+        </div>
+      </section>
+
+      <!-- IN THE BOX. Last thing before the call to action, which is where a
+           product page puts what actually arrives.
+
+           The render is a photograph of a mock-up, so it is a picture of an
+           intention rather than of a shipping product. The copy under it says
+           so. Read the disclosure before changing it: the panel down the side
+           of the box carries claims that LIMITATIONS.md does not support. -->
+      <section id="in-the-box" class="box-section">
+        <div class="section-shell box-layout">
+          <div class="box-copy" data-reveal>
+            <p class="section-label">In the box</p>
+            <h2>Power on.<br />Connect.<br />Start the exam.</h2>
+            <p>
+              A recorder, a USB-C cable and a card with three steps on it. The
+              software is already in the browser, so there is nothing to install
+              before the first take.
+            </p>
+            <ul class="box-contents">
+              <li>AudioMX One recorder</li>
+              <li>USB-C cable</li>
+              <li>Quick start guide</li>
+            </ul>
+            <p class="box-note">Packaging shown is a prototype and not final.</p>
+          </div>
+          <figure class="box-shot" data-reveal>
+            <img src="%BASE_URL%site/packaging.jpg" width="960" height="1200"
+                 alt="The AudioMX One beside its box, a USB-C cable and a quick start card."
+                 loading="lazy" decoding="async" />
+          </figure>
         </div>
       </section>
 

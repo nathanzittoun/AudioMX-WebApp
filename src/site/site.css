@@ -770,6 +770,314 @@ a {
 .feature-grid h3 { max-width: 8ch; margin: 90px 0 16px; font-size: clamp(1.8rem, 3vw, 3rem); line-height: 1; letter-spacing: -0.04em; }
 .feature-grid p { margin: 0; color: #a8bacd; font-size: 0.9rem; line-height: 1.55; }
 
+/* ---------------------------------------------------------------------
+   In use: the nine second film
+
+   The film's own background is not flat. It runs #ffffff at the top to
+   #f4f5f4 at the bottom, sampled from the file. The stage carries that exact
+   gradient so the two meet with no seam, which is what lets the device read
+   as floating on the page rather than as a video pasted onto it. If the film
+   is ever re-rendered on a different ground, this gradient moves with it.
+   --------------------------------------------------------------------- */
+
+/* Pale blue, not white. The closer look above ends on white and the step strip
+   below is #f5f5f7, so a white film section had no edges of its own and read as
+   an unfinished part of one or the other. The blue is the page's own
+   --site-sky, and it is what gives a white product on a white ground something
+   to sit against, which is the same job it does in the packaging section. */
+.film-section {
+  padding: clamp(96px, 11vw, 168px) 0 clamp(84px, 9vw, 140px);
+  background: linear-gradient(180deg,
+    #fff 0%,              /* the closer look above ends white */
+    var(--site-sky) 34%,  /* the blue happens where the film is */
+    #eef3fa 68%,
+    #f4f5f7 100%);        /* and lands on the step strip's own #f5f5f7 */
+}
+
+.film-heading {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 40px;
+  align-items: end;
+  margin-bottom: clamp(40px, 5vw, 64px);
+}
+
+.film-heading .section-label { grid-column: 1 / -1; margin-bottom: -18px; }
+
+.film-heading h2 {
+  margin: 0;
+  color: #1d1d1f;
+  font-size: clamp(2.6rem, 5vw, 5rem);
+  font-weight: 650;
+  line-height: 0.92;
+  letter-spacing: -0.055em;
+}
+
+.film-heading > p:last-child {
+  max-width: 46ch;
+  margin: 0 0 8px;
+  color: #6e6e73;
+  font-size: clamp(1rem, 1.2vw, 1.16rem);
+  line-height: 1.5;
+}
+
+.film-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+  gap: clamp(40px, 6vw, 88px);
+  align-items: center;
+}
+
+/* Capped, and the cap is the film's own width. The source is 700px across, so
+   a stage wider than 350 CSS pixels is already upscaling on a 2x display and
+   the device screen — the only part of this worth looking at — goes soft. 380
+   is the most it takes before that shows. */
+.film-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 380px;
+}
+
+.film-stage {
+  position: relative;
+  overflow: hidden;
+  /* The film's own ground, continued. See the note above this block. */
+  background: linear-gradient(180deg, #fff 0%, #f4f5f4 100%);
+  border-radius: 30px;
+  box-shadow: 0 24px 60px -30px rgba(23, 34, 47, 0.32);
+  aspect-ratio: 700 / 902;
+}
+
+.film-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* cover, not contain: the box is the film's own ratio, so this is identity
+     except for sub-pixel rounding, where it is what stops a hairline of stage
+     showing along one edge. */
+  object-fit: cover;
+}
+
+/* The control is a Play button before the film has run and a Replay button
+   after, and it is never absent. A muted autoplay can still be refused (iOS
+   Low Power Mode, a Firefox setting, an enterprise policy), and a poster with
+   no way to start it is a dead rectangle. */
+.film-button {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px 9px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #1d1d1f;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 550;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 2px 14px rgba(23, 34, 47, 0.14);
+  transition: opacity 240ms ease, background 180ms ease;
+}
+
+.film-button:hover { background: rgba(255, 255, 255, 0.96); }
+.film-button-icon { font-size: 0.62rem; line-height: 1; }
+
+/* Hidden only while the film is actually running: pausing is not what this
+   button is for, and a control that changes meaning mid-play is worse than
+   one that steps out of the way. */
+.film-button.is-hidden { opacity: 0; pointer-events: none; }
+
+.film-side { max-width: 560px; }
+
+.film-chapters {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.film-chapters button {
+  display: block;
+  width: 100%;
+  padding: 18px 20px 20px;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 260ms ease;
+}
+
+/* White on the blue ground, not grey. #f5f5f7 was invisible here, which left
+   the active chapter marked by nothing but its text colour. */
+.film-chapters button:hover { background: rgba(255, 255, 255, 0.55); }
+
+.film-chapters li.is-active button {
+  background: #fff;
+  box-shadow: 0 8px 26px -14px rgba(23, 34, 47, 0.35);
+}
+
+/* The number, in the same blue and the same size as the step strip below and
+   the feature cards above. This page marks a sequence one way. */
+.film-chapters em {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--site-blue);
+  font-size: 0.74rem;
+  font-weight: 650;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The rail under each chapter fills while that chapter plays. It is the film's
+   position expressed as the thing the reader is already looking at, which is
+   why there is no separate scrubber. */
+.film-chapters i {
+  display: block;
+  height: 2px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(29, 45, 63, 0.13);
+}
+
+/* Darker on the chapter that is playing. An empty track at the top of the
+   raised card was indistinguishable from the hairline that separates the
+   chapters below it, so at rest the progress rail read as a divider. */
+.film-chapters li.is-active i { background: rgba(29, 45, 63, 0.22); }
+
+.film-chapters i span {
+  display: block;
+  height: 100%;
+  background: var(--site-blue);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.film-chapters li.is-played i span { transform: scaleX(1); }
+
+.film-chapters b {
+  display: block;
+  margin-bottom: 6px;
+  color: #86868b;
+  font-size: clamp(1.05rem, 1.5vw, 1.32rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  transition: color 260ms ease;
+}
+
+.film-chapters li.is-active b { color: #1d1d1f; }
+
+/* > span, not a descendant selector: the rail's own span is a span too, and a
+   loose selector here gave it a line-height and a colour it has no use for. */
+.film-chapters button > span {
+  display: block;
+  max-width: 44ch;
+  color: #a1a1a6;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  transition: color 260ms ease;
+}
+
+.film-chapters li.is-active button > span { color: #6e6e73; }
+
+.film-note {
+  margin: 0;
+  padding-left: 4px;
+  color: #a1a1a6;
+  font-size: 0.74rem;
+}
+
+/* ---------------------------------------------------------------------
+   In the box
+
+   A pale blue band between the white section above it and the night-blue
+   close below, so the page steps down into the dark instead of dropping into
+   it. The render's own ground is a blue gradient lit from the right and not
+   a flat fill, so unlike the film it cannot be continued into the page: it
+   lives inside a card with real edges and fills it corner to corner.
+   --------------------------------------------------------------------- */
+
+.box-section {
+  padding: clamp(88px, 10vw, 150px) 0;
+  background: linear-gradient(180deg, #fff 0%, var(--site-sky) 42%, #eaf1f9 100%);
+}
+
+.box-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 540px);
+  gap: clamp(40px, 6vw, 90px);
+  align-items: center;
+}
+
+/* Capped well inside its column. The text measure is set by reading comfort,
+   not by the space left over, and the slack between the two halves is what
+   stops a three-line list from looking like a form. */
+.box-copy { max-width: 480px; }
+
+.box-copy h2 {
+  margin: 0 0 22px;
+  color: #1d1d1f;
+  font-size: clamp(2.3rem, 4.2vw, 4rem);
+  font-weight: 650;
+  line-height: 0.94;
+  letter-spacing: -0.055em;
+}
+
+.box-copy > p:not(.section-label):not(.box-note) {
+  max-width: 44ch;
+  margin: 0;
+  color: #52616f;
+  font-size: clamp(1rem, 1.2vw, 1.12rem);
+  line-height: 1.55;
+}
+
+.box-contents {
+  display: grid;
+  gap: 0;
+  max-width: 34ch;
+  margin: 30px 0 22px;
+  padding: 0;
+  list-style: none;
+}
+
+.box-contents li {
+  padding: 13px 0;
+  border-top: 1px solid rgba(29, 45, 63, 0.14);
+  color: #1d1d1f;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.box-contents li:last-child { border-bottom: 1px solid rgba(29, 45, 63, 0.14); }
+
+.box-note {
+  margin: 0;
+  color: #7f8fa3;
+  font-size: 0.76rem;
+}
+
+.box-shot {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 30px;
+  box-shadow: 0 30px 70px -34px rgba(23, 34, 47, 0.45);
+}
+
+.box-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .interface-section {
   padding: clamp(110px, 13vw, 190px) 0;
   background: #f5f5f7;
@@ -1145,4 +1453,38 @@ a {
 
 @media (max-width: 600px) {
   .step-strip { grid-auto-columns: 78vw; }
+}
+
+/* The film is a portrait frame, so the two-column layout runs out of room
+   before the rest of the page does: at 900px the stage is narrow enough that
+   the device screen stops being readable, which is the only reason to show it
+   at all. Stack instead, and cap the stage rather than letting it grow to the
+   full column width — a 900px-tall video is a section nobody scrolls past. */
+@media (max-width: 900px) {
+  .film-heading { grid-template-columns: 1fr; gap: 18px; align-items: start; }
+  .film-heading .section-label { margin-bottom: 0; }
+  .film-heading > p:last-child { margin-bottom: 0; }
+  .film-layout { grid-template-columns: 1fr; gap: 34px; }
+  .film-col { width: min(340px, 76vw); margin-inline: auto; }
+  .film-side { max-width: none; }
+  .film-chapters button { padding: 15px 16px 17px; }
+}
+
+@media (max-width: 600px) {
+  .film-col { width: min(300px, 82vw); }
+}
+
+@media (max-width: 900px) {
+  /* Image first: it is what the section is for, and a list of three things
+     read before seeing the box is a list of nothing. */
+  .box-layout { grid-template-columns: 1fr; gap: 34px; }
+  .box-shot { order: -1; max-width: 420px; margin-inline: auto; }
+  .box-contents { max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No autoplay is enforced in filmSection.ts, not here; this only stops the
+     rail from sliding, since it is the one part of the section that moves on
+     its own once the film is running. */
+  .film-chapters i span { transition: none; }
 }
