@@ -39,18 +39,45 @@ export function initFilmSection(): void {
 
   let requested = false;   // the file has been asked for
   let started = false;     // the film has been played at least once
+  let refused = false;     // the browser declined to start it on its own
   let shown = -1;          // which chapter is lit, so the DOM is left alone otherwise
   let raf = 0;
 
-  // No aria-label: the visible word is already the accessible name, and a
-  // label that does not contain the visible text breaks voice control, which
-  // asks for the button by what is written on it.
-  const setButton = (text: string, icon: string, hidden: boolean): void => {
+  /** The film's own length once it is known, and its nominal length until then. */
+  const nearTheEnd = (): boolean =>
+    video.ended || video.currentTime >= duration() - 0.05;
+
+  /**
+   * Put the control into whichever of its four states the film is actually in.
+   *
+   * Derived from the element every time rather than set at each call site. The
+   * first version set the label from wherever the code happened to be, and a
+   * refused start could leave "Replay" written on a film that had never run.
+   *
+   * No aria-label: the visible word is already the accessible name, and a label
+   * that does not contain the visible text breaks voice control, which asks for
+   * the button by what is written on it.
+   */
+  const refresh = (): void => {
     if (!button) return;
+
+    const text = nearTheEnd() ? "Replay" : video.currentTime > 0.05 ? "Resume" : "Play";
     if (label) label.textContent = text;
     const glyph = button.querySelector(".film-button-icon");
-    if (glyph) glyph.textContent = icon;
-    button.classList.toggle("is-hidden", hidden);
+    if (glyph) glyph.textContent = text === "Replay" ? "↻" : "▶";
+    // Centred and unmissable only once a start has actually been refused, not
+    // before one has been tried. Where the film does autoplay — which is most
+    // of the time — nothing changes and no large button flashes on the way
+    // past. Where it does not, a corner pill was indistinguishable from a
+    // caption and the visitor had no way of knowing there was anything to
+    // press, which is exactly the report this handles.
+    button.classList.toggle("is-initial", refused && !started);
+
+    // Out of the way while the film is running, and only then. The label above
+    // is set first on purpose: computing it after this early return left a
+    // hidden button carrying whatever it last said, so a film that reached the
+    // end still had "Play" written on it underneath.
+    button.classList.toggle("is-hidden", !video.paused && !video.ended);
   };
 
   /** The film's own length once it is known, and its nominal length until then:
@@ -109,24 +136,41 @@ export function initFilmSection(): void {
     video.play().then(
       () => {
         started = true;
-        setButton("Replay", "↻", true);
+        refresh();
         if (!raf) raf = requestAnimationFrame(tick);
       },
-      () => setButton(started ? "Replay" : "Play", started ? "↻" : "▶", false)
+      () => {
+        refused = true;
+        refresh();
+      }
     );
   };
 
-  video.addEventListener("timeupdate", sync);
-  video.addEventListener("ended", () => {
-    sync();
-    setButton("Replay", "↻", false);
-  });
+  // State comes from the element, so anything that changes it — this code, a
+  // context menu, the keyboard — lands on the same control.
+  video.addEventListener("timeupdate", () => { sync(); refresh(); });
+  ["play", "pause", "ended"].forEach(name =>
+    video.addEventListener(name, () => { sync(); refresh(); })
+  );
   // A film that cannot load must not leave a control that cannot do anything.
   // The poster stays, and the section still reads.
   video.addEventListener("error", () => button?.remove());
 
-  button?.addEventListener("click", () => {
-    if (video.ended || video.currentTime >= duration() - 0.05) video.currentTime = 0;
+  /**
+   * The whole stage is the control, not just the pill.
+   *
+   * This is the fix for the report that the film "does not play": when a
+   * browser declines to start it, the only way back was a small pill in a
+   * corner, and nothing about a poster said it was a film at all. A click
+   * anywhere on it now starts it, and a click while it runs pauses it, which
+   * is what a video does everywhere else.
+   */
+  stage.addEventListener("click", () => {
+    if (!video.paused && !video.ended) {
+      video.pause();
+      return;
+    }
+    if (nearTheEnd()) video.currentTime = 0;
     play();
   });
 
@@ -170,13 +214,22 @@ export function initFilmSection(): void {
     // Two thirds on screen, not merely touching it: at the moment the top edge
     // appears the film is one line of pixels tall and the first second is lost.
     const visible = Math.min(box.bottom, h) - Math.max(box.top, 0);
-    if (!started && visible > box.height * 0.66) {
+    if (!started && video.paused && visible > box.height * 0.66) {
       // Asked for less movement means the film waits to be asked for. The
       // poster, the button and the chapters carry the section on their own.
       if (REDUCED) return;
+      play();
+    }
+
+    // The listener goes only once the film has actually started, never merely
+    // because starting it was attempted. Removing it on the attempt meant a
+    // single refusal — Low Power Mode, a per-site autoplay setting, a tab that
+    // was in the background at the wrong moment — was final, with no second
+    // try for the rest of the visit. This costs one rectangle test per scroll
+    // frame until it succeeds, and nothing after.
+    if (started) {
       window.removeEventListener("scroll", watch);
       window.removeEventListener("resize", watch);
-      play();
     }
   };
 
@@ -185,7 +238,7 @@ export function initFilmSection(): void {
   // an autoplay, and is a dead poster for every visitor who does not: one who
   // never scrolls this far in a tab that was opened in the background, one
   // whose browser declines, one on a connection where the file is still coming.
-  setButton("Play", "▶", false);
+  refresh();
   sync();
   watch();
   window.addEventListener("scroll", watch, { passive: true });

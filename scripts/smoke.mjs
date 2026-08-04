@@ -245,6 +245,40 @@ T("un demarrage refuse laisse une commande utilisable",
   (await ev("document.getElementById('inUseFilm').paused")) === true &&
   (await ev("!!document.querySelector('.film-button') && " +
             "!document.querySelector('.film-button').classList.contains('is-hidden')")) === true);
+// Et cette commande dit encore "Play", pas "Replay" : l'etat vient de
+// l'element, pas de l'endroit du code d'ou l'on vient. La premiere version
+// ecrivait "Replay" sur un film qui n'avait jamais tourne.
+T("la commande n'annonce pas une lecture qui n'a pas eu lieu",
+  (await ev("document.querySelector('.film-button b').textContent")) === "Play");
+// Et elle passe au format central, celui qu'on ne peut pas rater, uniquement
+// parce qu'un demarrage a ete refuse. La ou le film demarre tout seul, rien ne
+// change et aucun gros bouton ne clignote au passage.
+T("un refus fait passer la commande en grand format",
+  (await ev("document.querySelector('.film-button').classList.contains('is-initial')")) === true);
+// Le defaut signale par Nathan : quand le navigateur refuse de demarrer le
+// film, la seule porte de sortie etait une pastille dans un coin, et rien ne
+// disait qu'il y avait quelque chose a lancer. Toute l'image est desormais la
+// commande. On clique a cote du bouton, en haut a gauche de l'image.
+await ev(`(() => { const s = document.querySelector('.film-stage');
+  const b = s.getBoundingClientRect();
+  s.dispatchEvent(new MouseEvent('click', { bubbles: true,
+    clientX: b.left + 12, clientY: b.top + 12 })); })()`);
+await new Promise(r => setTimeout(r, 900));
+// Ce second essai part, lui : le fichier est cette fois deja en memoire. C'est
+// aussi ce qui explique le premier refus — ce navigateur refuse de demarrer une
+// video qui n'a pas encore de donnees dans une page non affichee.
+T("un clic sur l'image elle-meme lance le film",
+  (await ev("document.getElementById('inUseFilm').paused")) === false &&
+  (await ev("document.getElementById('inUseFilm').currentTime")) > 0);
+// L'invariant qui compte, verifie a chaque etat traverse : la commande n'est
+// masquee que pendant que le film tourne. Masquee sur un film a l'arret, c'est
+// une image fixe que personne ne peut lancer, et c'est le defaut signale.
+T("la commande n'est jamais absente sur un film a l'arret",
+  (await ev(`(() => { const v = document.getElementById('inUseFilm');
+     const b = document.querySelector('.film-button');
+     if (!b) return false;
+     const cache = b.classList.contains('is-hidden');
+     return (v.paused || v.ended) ? !cache : cache; })()`)) === true);
 
 // Chaque chapitre deplace reellement le film, et le chapitre allume suit la
 // position — pas l'inverse. Le lien entre le texte et l'image est la seule

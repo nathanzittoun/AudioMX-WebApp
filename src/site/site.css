@@ -842,6 +842,8 @@ a {
 .film-stage {
   position: relative;
   overflow: hidden;
+  /* The whole stage is the control, so it has to say so. */
+  cursor: pointer;
   /* The film's own ground, continued. See the note above this block. */
   background: linear-gradient(180deg, #fff 0%, #f4f5f4 100%);
   border-radius: 30px;
@@ -887,6 +889,38 @@ a {
 
 .film-button:hover { background: rgba(255, 255, 255, 0.96); }
 .film-button-icon { font-size: 0.62rem; line-height: 1; }
+
+/* Before the film has ever run, the control is centred and unmissable rather
+   than a pill in a corner. A corner pill on an untouched poster reads as a
+   caption, and a visitor whose browser declined to autoplay had no way of
+   knowing there was anything to press. Once it has run once, "Replay" goes
+   back to the corner where it belongs. */
+.film-button.is-initial {
+  right: auto;
+  bottom: auto;
+  top: 50%;
+  left: 50%;
+  padding: 15px 26px 15px 22px;
+  font-size: 0.92rem;
+  background: rgba(23, 34, 47, 0.82);
+  color: #fff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 10px 34px rgba(23, 34, 47, 0.3);
+}
+
+.film-button.is-initial:hover { background: rgba(23, 34, 47, 0.94); }
+.film-button.is-initial .film-button-icon { font-size: 0.78rem; }
+
+/* The stage dims a touch behind the centred control, so white artwork on a
+   white ground cannot swallow it. */
+.film-stage:has(.film-button.is-initial)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(23, 34, 47, 0.06);
+  pointer-events: none;
+}
 
 /* Hidden only while the film is actually running: pausing is not what this
    button is for, and a control that changes meaning mid-play is worse than
