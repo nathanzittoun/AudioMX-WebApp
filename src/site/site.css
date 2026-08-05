@@ -495,7 +495,21 @@ a {
 }
 
 .highlight-card--dark { color: #f5f5f7; background: var(--site-metal); }
-.highlight-card--dark img { width: 84%; height: 42%; left: 8%; bottom: 7%; object-fit: contain; object-position: center bottom; border-radius: 20px; }
+/* aspect-ratio rather than a percentage height, and it is what makes the
+   rounding visible at all. With a fixed height the box did not match the
+   file's 1696x1056, object-fit: contain letterboxed the picture inside it, and
+   border-radius then clipped the empty margin instead of the artwork: the
+   screen kept four square corners with a radius declared on it. Giving the box
+   the picture's own ratio means the two edges coincide. */
+.highlight-card--dark img {
+  width: 84%;
+  height: auto;
+  aspect-ratio: 1696 / 1056;
+  left: 8%;
+  bottom: 7%;
+  object-fit: cover;
+  border-radius: 18px;
+}
 .highlight-card--ice { color: #1d1d1f; background: linear-gradient(150deg, #e9f2fd, #b8d3f0); }
 .highlight-card--ice img { width: 58%; height: 62%; right: 3%; bottom: 4%; object-position: center bottom; }
 .highlight-card--blue { color: #fff; background: linear-gradient(145deg, #2872d2, #79a8e4); }
