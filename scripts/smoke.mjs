@@ -380,10 +380,19 @@ const claims = (await ev("document.body.innerText")).toLowerCase();
 const overclaim = /hipaa[- ](ready|compliant)|end-to-end|fully encrypted|encrypted (transfer|storage|at rest)|is encrypted|securely (stored|transferred)/;
 T("aucune allegation de securite que le build ne tient pas",
   !overclaim.test(claims), claims.match(overclaim)?.[0]);
-// Et l'inverse : la limitation doit etre ecrite, pas seulement non contredite.
-// Elle a quitte sa section pour le pied de page, elle n'a pas quitte la page.
-T("la page nomme ce qui manque",
-  /no encryption at rest/.test(claims) && /no audit log/.test(claims));
+// L'inventaire technique de ce qui manque — pas de serveur, pas de journal
+// d'audit, pas de chiffrement au repos, pas de BAA — a ete retire de la page a
+// la demande de Nathan. C'etait une decision de produit, prise en connaissance
+// de cause ; ce n'est pas un oubli et ce banc n'a pas a la refuser.
+//
+// Ce qui reste garde est l'affirmation qui compte pour un dispositif medical :
+// la page dit qu'elle est a usage de recherche et non validee pour le
+// diagnostic. Elle le dit deux fois, en haut et en pied, et l'assertion plus
+// bas la verifie. Le garde-fou sur les allegations excessives, lui, est
+// inchange : la page peut ne plus enumerer ses limites, elle ne peut toujours
+// pas revendiquer ce qu'elle ne tient pas.
+T("la page ne se declare pas validee pour le diagnostic",
+  /not cleared for diagnosis/.test(claims));
 // Un lien d'ancre vers une section supprimee ne fait rien et ne le dit pas.
 T("aucun lien vers une ancre absente",
   (await ev(`[...document.querySelectorAll('a[href^="#"]')]

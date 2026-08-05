@@ -1397,22 +1397,6 @@ a {
   }
 }
 
-/* The disclosure moved here when the privacy section was removed. Small, but
-   not hidden: it sits in the reading colour of the footer rather than a step
-   fainter, because a limitation nobody can read is not a limitation stated. */
-.footer-disclosure {
-  max-width: 62ch;
-  margin: 4px auto 0;
-  color: #6e6e73;
-  font-size: 0.76rem;
-  line-height: 1.6;
-  text-wrap: pretty;
-}
-
-.footer-disclosure code {
-  font-size: 0.95em;
-}
-
 /* ---------------------------------------------------------------------
    The session strip
 
@@ -1436,22 +1420,30 @@ a {
   min-width: 0;
 }
 
+/* The frame is black, and it is the screenshots' own black: #0b0c0e, sampled
+   from all five files, which are uniform to the pixel along every edge. That
+   is what lets the frame keep its size while the picture sits smaller inside
+   it — the letterbox and the screenshot are the same colour, so there is no
+   edge to see. A metallic fill here would have drawn a visible band instead. */
 .step-card figure {
   margin: 0;
   overflow: hidden;
   border-radius: 16px;
-  background: var(--site-metal);
+  background: #0b0c0e;
   box-shadow: 0 10px 26px rgba(16, 26, 40, 0.12);
 }
 
 /* A fixed aspect on every frame, so five screenshots of different heights
-   still line their captions up. */
+   still line their captions up.
+   contain, not cover: the files are 960x600 and the frame is 16/11, so cover
+   filled the height and cut both sides off every screenshot. The task list
+   lost its left edge and the running take lost its timer. */
 .step-card img {
   width: 100%;
   aspect-ratio: 16 / 11;
   display: block;
-  object-fit: cover;
-  object-position: top center;
+  object-fit: contain;
+  object-position: center;
 }
 
 .step-num {
